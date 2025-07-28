@@ -8,7 +8,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
   }
 
-  const API_URL = process.env.BACKEND_API_URL || 'http://localhost:3001'; // Assuming your backend API URL
+  const API_URL = process.env.BACKEND_API_URL; // Your backend API URL
+
+  if (!API_URL) {
+    console.error('API Error: BACKEND_API_URL is not configured.');
+    return NextResponse.json({ error: 'Backend API URL not configured' }, { status: 500 });
+  }
+
+  console.log(`[Job Details API] Attempting to fetch from: ${API_URL}/jobs/by-result/${fileId}`);
 
   try {
     const response = await fetch(`${API_URL}/jobs/by-result/${fileId}`);
