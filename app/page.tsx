@@ -4,7 +4,7 @@ import DraggableWindow from './components/DraggableWindow';
 const HomePage = async () => {
   let capsuleContent = "";
   try {
-    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/capsule-signal`;
 
     console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);

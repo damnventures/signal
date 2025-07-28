@@ -61,14 +61,13 @@ body {
 
 .window {
     width: 100%;
+    max-width: 672px;
     background: #ffffff;
     border: 2px solid #000000;
     box-shadow: 
         2px 2px 0px #808080,
         4px 4px 0px #404040;
     overflow: hidden;
-    margin-bottom: 96px;
-    position: relative;
 }
 
 .window-top-bar {
