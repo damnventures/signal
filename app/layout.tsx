@@ -15,13 +15,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [loading, setLoading] = useState(true);
+  const [speedUp, setSpeedUp] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000); // Show loading for 3 seconds
+    const initialLoadTimer = setTimeout(() => {
+      setSpeedUp(true); // Trigger speed-up animation
+      const hideOverlayTimer = setTimeout(() => {
+        setLoading(false); // Hide overlay after speed-up
+      }, 500); // Adjust this duration to match your speed-up animation time
+      return () => clearTimeout(hideOverlayTimer);
+    }, 3000); // Initial loading for 3 seconds
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(initialLoadTimer);
   }, []);
 
   return (
@@ -29,7 +34,7 @@ export default function RootLayout({
       <body className={inter.className}>
         {loading && (
           <div className="loading-overlay">
-            <div className="loading-bar"></div>
+            <div className={`loading-bar ${speedUp ? 'speed-up' : ''}`}></div>
           </div>
         )}
         {children}

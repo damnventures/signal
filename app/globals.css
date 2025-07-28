@@ -212,11 +212,24 @@ body {
     animation: fill-bar 3s forwards; /* Animate width over 3 seconds */
 }
 
+.loading-bar.speed-up {
+    animation: speed-up-fill 0.5s forwards; /* Speed up animation */
+}
+
 @keyframes fill-bar {
     0% {
         width: 0%;
     }
     100% {
-        width: 10%; /* Fill to 10% width */
+        width: 10%; /* Initial fill to 10% */
+    }
+}
+
+@keyframes speed-up-fill {
+    0% {
+        width: 10%; /* Start from where the initial animation left off */
+    }
+    100% {
+        width: 100%;
     }
 }
