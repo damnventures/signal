@@ -37,8 +37,8 @@ const HomePage = async () => {
             {capsuleContent}
           </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 };
 
