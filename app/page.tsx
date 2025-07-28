@@ -1,7 +1,18 @@
 import React from 'react';
-import CapsuleSignal from './components/CapsuleSignal';
 
-const HomePage = () => {
+const HomePage = async () => {
+  let capsuleContent = "";
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000'}/api/capsule-signal`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch capsule signal: ${response.statusText}`);
+    }
+    const data = await response.json();
+    capsuleContent = data.signal || JSON.stringify(data, null, 2);
+  } catch (error: any) {
+    capsuleContent = `Error fetching capsule content: ${error.message}`;
+  }
+
   return (
     <main className="main-container">
       <div className="window">
@@ -11,9 +22,8 @@ const HomePage = () => {
             Good morning, Vanya
           </h1>
           <p className="main-text">
-            Here is your summary AppleTalk. Start exploring your application, customize it by editing the code, and deploy it with ease.
+            {capsuleContent}
           </p>
-          <CapsuleSignal />
         </div>
       </div>
     </main>
