@@ -32,7 +32,7 @@ const HomePage = () => {
 
       if (subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
         const newHighlight = {
-          title: subTitleMatch[1].trim(),
+          title: subTitleMatch[1].trim().replace(/\*\*/g, ''),
           setup: setupMatch[1].trim(),
           quote: quoteMatch[1].trim(),
           whyItMatters: whyItMattersMatch[1].trim(),
@@ -113,7 +113,7 @@ const HomePage = () => {
 
   const renderMarkdown = useCallback((text: string) => {
     // Replace **text** or ***text*** with <strong>text</strong>
-    const boldedText = text.replace(/\*\*\*?([^*]+?)\*\*\*?/g, '<strong>$1</strong>');
+    const boldedText = text.replace(/\*{2,3}(.*?)\*{2,3}/g, '<strong>$1</strong>');
     return <span dangerouslySetInnerHTML={{ __html: boldedText }} />;
   }, []);
 
@@ -147,7 +147,7 @@ const HomePage = () => {
               initialPosition={calculateInitialPosition(index + 1)}
             >
               <div className="window-content">
-                <h2 className="main-heading">{highlight.title.replace(/\*\*/g, '')}</h2>
+                <h2 className="main-heading">{highlight.title}</h2>
                 <p className="main-text"><strong>Setup:</strong> {renderMarkdown(highlight.setup)}</p>
                 <p className="main-text"><strong>Quote:</strong> {renderMarkdown(highlight.quote)}</p>
                 <p className="main-text"><strong>Why it matters:</strong> {renderMarkdown(highlight.whyItMatters)}</p>
