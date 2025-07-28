@@ -148,9 +148,9 @@ const HomePage = () => {
             >
               <div className="window-content">
                 <h2 className="main-heading">{highlight.title}</h2>
-                <p className="main-text"><strong>Setup:</strong> {renderMarkdown(highlight.setup)}</p>
-                <p className="main-text"><strong>Quote:</strong> {renderMarkdown(highlight.quote)}</p>
-                <p className="main-text"><strong>Why it matters:</strong> {renderMarkdown(highlight.whyItMatters)}</p>
+                <p className="main-text"><strong><i>Highlight</i></strong> {renderMarkdown(highlight.setup)}</p>
+                <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
+                <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
               </div>
             </DraggableWindow>
           ))}
