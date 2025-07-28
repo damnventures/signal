@@ -1,4 +1,5 @@
 import React from 'react';
+import CapsuleSignal from './components/CapsuleSignal';
 
 const HomePage = () => {
   return (
@@ -12,6 +13,7 @@ const HomePage = () => {
           <p className="main-text">
             Here is your summary AppleTalk. Start exploring your application, customize it by editing the code, and deploy it with ease.
           </p>
+          <CapsuleSignal />
         </div>
       </div>
     </main>
