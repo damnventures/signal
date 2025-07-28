@@ -15,6 +15,7 @@ const HomePage = () => {
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
   const [nextZIndex, setNextZIndex] = useState(1);
+  const [fetchedOriginalLinks, setFetchedOriginalLinks] = useState<string[]>([]);
 
   const parseHighlights = useCallback((text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
@@ -85,6 +86,28 @@ const HomePage = () => {
           setNextZIndex(parsed.length + 2);
         }
 
+        if (data.fileIds && Array.isArray(data.fileIds)) {
+          for (const fileId of data.fileIds) {
+            try {
+              const jobDetailsResponse = await fetch(`/api/job-details?fileId=${fileId}`);
+              if (jobDetailsResponse.ok) {
+                const jobDetails = await jobDetailsResponse.json();
+                if (jobDetails.originalLink) {
+                  console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
+                  setFetchedOriginalLinks(prevLinks => [...prevLinks, jobDetails.originalLink]);
+                } else {
+                  console.warn(`[HomePage] No originalLink found for fileId ${fileId}`);
+                }
+              } else {
+                const errorText = await jobDetailsResponse.text();
+                console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+              }
+            } catch (error: any) {
+              console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
+            }
+          }
+        }
+
         console.log(`[HomePage] Successfully fetched capsule content.`);
       } catch (error: any) {
         console.error(`[HomePage] Error fetching capsule content: ${error.message}`);
@@ -130,6 +153,26 @@ const HomePage = () => {
               <p className="main-text">Good morning, Vanya</p>
             </div>
           </DraggableWindow>
+
+          {fetchedOriginalLinks.length > 0 && (
+            <DraggableWindow
+              id="original-links"
+              onBringToFront={handleBringToFront}
+              initialZIndex={cardZIndexes['original-links'] || nextZIndex}
+              initialPosition={calculateInitialPosition(highlightsData.length + 2)} // Position after highlights
+            >
+              <div className="window-content">
+                <h2 className="main-heading">Original Links</h2>
+                <ul>
+                  {fetchedOriginalLinks.map((link, index) => (
+                    <li key={index} className="main-text">
+                      <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </DraggableWindow>
+          )}
 
           {highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
             <p>No highlights found or parsing failed.</p>
