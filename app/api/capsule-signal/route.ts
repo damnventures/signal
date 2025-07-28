@@ -10,8 +10,8 @@ export async function GET() {
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
-  console.log(`Attempting to fetch from: ${requestUrl}`);
-  console.log(`Using API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
+  console.log(`[Route] Attempting to fetch from: ${requestUrl}`);
+  console.log(`[Route] Using API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
 
   try {
     const response = await fetch(requestUrl, {
@@ -21,15 +21,16 @@ export async function GET() {
     });
 
     if (!response.ok) {
-      console.error(`API Error: Failed to fetch signal. Status: ${response.status}, StatusText: ${response.statusText}`);
-      throw new Error(`Failed to fetch signal: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`[Route] API Error: Failed to fetch capsule. Status: ${response.status}, StatusText: ${response.statusText}, Body: ${errorText}`);
+      throw new Error(`Failed to fetch capsule: ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('API Success: Data fetched successfully.');
+    console.log('[Route] API Success: Capsule fetched successfully.');
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error(`API Error: An exception occurred: ${error.message}`);
+    console.error(`[Route] API Error: An exception occurred: ${error.message}`);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
