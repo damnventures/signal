@@ -119,10 +119,7 @@ const HomePage = () => {
 
   return (
     <main className="main-container">
-      {capsuleContent === "" ? (
-        <p>Loading capsule content...</p>
-      ) : (
-        <>
+      <>
           <DraggableWindow
             id="header"
             onBringToFront={handleBringToFront}
@@ -155,7 +152,6 @@ const HomePage = () => {
             </DraggableWindow>
           ))}
         </>
-      )}
     </main>
   );
 };
