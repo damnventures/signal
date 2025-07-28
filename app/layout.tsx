@@ -1,6 +1,9 @@
+'use client';
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { useState, useEffect } from 'react';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,9 +17,26 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000); // Show loading for 3 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {loading && (
+          <div className="loading-overlay">
+            <div className="loading-bar"></div>
+          </div>
+        )}
+        {children}
+      </body>
     </html>
   );
 }
