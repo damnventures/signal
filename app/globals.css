@@ -50,21 +50,14 @@ body {
     background-size: 4px 4px;
     background-position: 0 0, 2px 2px;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 16px;
     box-sizing: border-box;
 }
 
 .main-container {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-    align-items: center;
-    width: 100%;
-    max-width: 672px;
+    /* Removed centering styles as DraggableWindow handles positioning */
 }
+
 
 .window {
     width: 100%;
