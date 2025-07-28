@@ -200,59 +200,23 @@ body {
     background-size: 4px 4px;
     background-position: 0 0, 2px 2px;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start; /* Align to start (left) */
     align-items: flex-start; /* Align to top */
     z-index: 9999;
 }
 
 .loading-bar {
-    width: 100%; /* Adjust width as needed */
+    width: 0%; /* Start with 0 width */
     height: 15px; /* Height of the bar */
-    position: relative;
-    overflow: hidden;
+    background-color: #000; /* Solid black bar */
+    animation: fill-bar 3s forwards; /* Animate width over 3 seconds */
 }
 
-.loading-bar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -50%;
-    width: 50%; /* Make the moving part a solid block */
-    height: 100%;
-    background-color: #000; /* Solid black moving line */
-    animation: loading-animation 1.5s infinite linear;
-}
-
-@keyframes loading-animation {
+@keyframes fill-bar {
     0% {
-        left: -50%;
+        width: 0%;
     }
     100% {
-        left: 100%;
-    }
-}
-
-.loading-bar::after {
-    content: '';
-    position: absolute;
-    top: 2px; /* Position for the dots */
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle, #000 1px, transparent 1px) 0 0,
-        radial-gradient(circle, #000 1px, transparent 1px) 10px 0,
-        radial-gradient(circle, #000 1px, transparent 1px) 20px 0;
-    background-size: 4px 4px;
-    background-repeat: repeat-x;
-    animation: dots-animation 1.5s infinite linear;
-}
-
-@keyframes dots-animation {
-    0% {
-        background-position-x: 0;
-    }
-    100% {
-        background-position-x: 40px; /* Adjust based on dot spacing */
+        width: 10%; /* Fill to 10% width */
     }
 }
