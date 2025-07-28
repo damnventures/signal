@@ -1,45 +1,145 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
 import DraggableWindow from './components/DraggableWindow';
 
-const HomePage = async () => {
-  let capsuleContent = "";
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-    const apiUrl = `${baseUrl}/api/capsule-signal`;
+interface Highlight {
+  title: string;
+  setup: string;
+  quote: string;
+  whyItMatters: string;
+}
 
-    console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
+const HomePage = () => {
+  const [capsuleContent, setCapsuleContent] = useState<string>("");
+  const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
+  const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
+  const [nextZIndex, setNextZIndex] = useState(1);
 
-    const response = await fetch(apiUrl, {
-      cache: 'no-store', // Ensure fresh data
-      next: { revalidate: 0 }, // Always revalidate on access
+  const parseHighlights = useCallback((text: string): Highlight[] => {
+    const highlights: Highlight[] = [];
+    const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
+
+    highlightBlocks.forEach(block => {
+      const titleMatch = block.match(/\*\*Highlight \d+: ([^*]+)\*\*/);
+      const subTitleMatch = block.match(/\*\*Title:\s*([^*]+)\*\*/);
+      const setupMatch = block.match(/\*\*Setup:\s*([^*]+)\*\*/);
+      const quoteMatch = block.match(/\*\*Quote:\s*([^*]+)\*\*/);
+      const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([^*]+)\*\*/);
+
+      if (titleMatch && subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
+        highlights.push({
+          title: subTitleMatch[1].trim(),
+          setup: setupMatch[1].trim(),
+          quote: quoteMatch[1].trim(),
+          whyItMatters: whyItMattersMatch[1].trim(),
+        });
+      }
     });
+    return highlights;
+  }, []);
 
-    console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
+  useEffect(() => {
+    const fetchCapsuleContent = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
+        const apiUrl = `${baseUrl}/api/capsule-signal`;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
-      throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
-    }
+        console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
 
-    const data = await response.json();
-    capsuleContent = data.highlights || data.signal || JSON.stringify(data, null, 2);
-    console.log(`[HomePage] Successfully fetched capsule content: ${capsuleContent}`);
-  } catch (error: any) {
-    console.error(`[HomePage] Error fetching capsule content: ${error.message}`);
-    capsuleContent = 'Unable to load capsule content. Please try again later.';
-  }
+        const response = await fetch(apiUrl, {
+          cache: 'no-store',
+          next: { revalidate: 0 },
+        });
+
+        console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
+          throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const fetchedContent = data.highlights || data.signal || JSON.stringify(data, null, 2);
+        setCapsuleContent(fetchedContent);
+
+        if (data.highlights) {
+          const parsed = parseHighlights(data.highlights);
+          setHighlightsData(parsed);
+          const initialZIndexes: Record<string, number> = {};
+          initialZIndexes['header'] = 1;
+          parsed.forEach((_, index) => {
+            initialZIndexes[`highlight-${index}`] = index + 2;
+          });
+          setCardZIndexes(initialZIndexes);
+          setNextZIndex(parsed.length + 2);
+        }
+
+        console.log(`[HomePage] Successfully fetched capsule content.`);
+      } catch (error: any) {
+        console.error(`[HomePage] Error fetching capsule content: ${error.message}`);
+        setCapsuleContent('Unable to load capsule content. Please try again later.');
+      }
+    };
+
+    fetchCapsuleContent();
+  }, [parseHighlights]);
+
+  const handleBringToFront = useCallback((id: string) => {
+    setCardZIndexes(prevZIndexes => ({
+      ...prevZIndexes,
+      [id]: nextZIndex,
+    }));
+    setNextZIndex(prev => prev + 1);
+  }, [nextZIndex]);
+
+  const calculateInitialPosition = useCallback((index: number) => {
+    const offset = index * 15; // 15px offset for each card
+    // Simple centering logic, can be improved for more precise centering
+    const centerX = window.innerWidth / 2 - (672 / 2); // Assuming max-width of 672px
+    const centerY = window.innerHeight / 2 - (300 / 2); // Approximate height
+    return { x: centerX + offset, y: centerY + offset };
+  }, []);
 
   return (
     <main className="main-container">
-      <DraggableWindow>
-        <div className="window-content">
-          <h1 className="main-heading">Good morning, Vanya</h1>
-          <p className={`main-text ${capsuleContent.startsWith('Unable') ? 'text-red-500' : ''}`}>
-            {capsuleContent}
-          </p>
-        </div>
-      </DraggableWindow>
+      {capsuleContent === "" ? (
+        <p>Loading capsule content...</p>
+      ) : (
+        <>
+          <DraggableWindow
+            id="header"
+            onBringToFront={handleBringToFront}
+            initialZIndex={cardZIndexes['header'] || 1}
+            initialPosition={calculateInitialPosition(0)}
+          >
+            <div className="window-content">
+              <h1 className="main-heading">Good morning, Vanya</h1>
+              <p className={`main-text ${capsuleContent.startsWith('Unable') ? 'text-red-500' : ''}`}>
+                {capsuleContent.startsWith('Unable') ? capsuleContent : ""}
+              </p>
+            </div>
+          </DraggableWindow>
+
+          {highlightsData.map((highlight, index) => (
+            <DraggableWindow
+              key={`highlight-${index}`}
+              id={`highlight-${index}`}
+              onBringToFront={handleBringToFront}
+              initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
+              initialPosition={calculateInitialPosition(index + 1)}
+            >
+              <div className="window-content">
+                <h2 className="main-heading">{highlight.title}</h2>
+                <p className="main-text"><strong>Setup:</strong> {highlight.setup}</p>
+                <p className="main-text"><strong>Quote:</strong> {highlight.quote}</p>
+                <p className="main-text"><strong>Why it matters:</strong> {highlight.whyItMatters}</p>
+              </div>
+            </DraggableWindow>
+          ))}
+        </>
+      )}
     </main>
   );
 };

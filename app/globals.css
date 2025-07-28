@@ -52,6 +52,7 @@ body {
     min-height: 100vh;
     padding: 16px;
     box-sizing: border-box;
+    position: relative; /* Added for positioning context */
 }
 
 .main-container {
@@ -68,6 +69,7 @@ body {
         2px 2px 0px #808080,
         4px 4px 0px #404040;
     overflow: hidden;
+    /* Removed margin-bottom: 96px; as position is absolute */
 }
 
 .window-top-bar {
