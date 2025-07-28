@@ -20,16 +20,16 @@ const HomePage = () => {
     console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
-
+  
     console.log('[parseHighlights] Number of highlight blocks found:', highlightBlocks.length);
-
+  
     highlightBlocks.forEach((block, index) => {
       console.log(`[parseHighlights] Processing block ${index}:`, block);
       const subTitleMatch = block.match(/\*\*Title:\s*([\s\S]*?)\s*\*\*Setup:/);
-      const setupMatch = block.match(/\*\*Setup:\s*([\s\S]*?)\s*\*\*Quote:/);
-      const quoteMatch = block.match(/\*\*Quote:\s*([\s\S]*?)\s*\*\*Why it matters:/);
-      const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([\s\S]*?)(?:\n\n---\n\n|\s*$)/);
-
+      const setupMatch = block.match(/\*\*Setup:\s*([\s\S]*?)(?=\s*\*\*Quote:|$)/);
+      const quoteMatch = block.match(/\*\*Quote:\s*([\s\S]*?)(?=\s*\*\*Why it matters:|$)/);
+      const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([\s\S]*?)(?=\s*---|$)/);
+  
       if (subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
         const newHighlight = {
           title: subTitleMatch[1].trim().replace(/\*\*/g, ''),
