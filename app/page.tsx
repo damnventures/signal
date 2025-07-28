@@ -4,13 +4,24 @@ const HomePage = async () => {
   let capsuleContent = "";
   try {
     const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/capsule-signal`);
+    const apiUrl = `${baseUrl}/api/capsule-signal`;
+
+    console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
+
+    const response = await fetch(apiUrl);
+
+    console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch capsule signal: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
     }
     const data = await response.json();
     capsuleContent = data.highlights || JSON.stringify(data, null, 2);
+    console.log(`[HomePage] Successfully fetched capsule content.`);
   } catch (error: any) {
+    console.error(`[HomePage] Error fetching capsule content: ${error.message}`);
     capsuleContent = `Error fetching capsule content: ${error.message}`;
   }
 
