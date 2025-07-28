@@ -25,13 +25,12 @@ const HomePage = () => {
 
     highlightBlocks.forEach((block, index) => {
       console.log(`[parseHighlights] Processing block ${index}:`, block);
-      const titleMatch = block.match(/\*\*Highlight \d+: ([^*]+)\*\*/);
-      const subTitleMatch = block.match(/\*\*Title:\s*([^*]+)\*\*/);
-      const setupMatch = block.match(/\*\*Setup:\s*([^*]+)\*\*/);
-      const quoteMatch = block.match(/\*\*Quote:\s*([^*]+)\*\*/);
-      const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([^*]+)\*\*/);
+      const subTitleMatch = block.match(/\*\*Title:\s*([\s\S]*?)\s*\*\*Setup:/);
+      const setupMatch = block.match(/\*\*Setup:\s*([\s\S]*?)\s*\*\*Quote:/);
+      const quoteMatch = block.match(/\*\*Quote:\s*([\s\S]*?)\s*\*\*Why it matters:/);
+      const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([\s\S]*?)(?:\n\n---\n\n|\s*$)/);
 
-      if (titleMatch && subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
+      if (subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
         const newHighlight = {
           title: subTitleMatch[1].trim(),
           setup: setupMatch[1].trim(),
