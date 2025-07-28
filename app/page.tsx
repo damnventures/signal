@@ -3,16 +3,7 @@ import Image from "next/image";
 export default function Home() {
   return (
     <div className="font-sans flex items-center justify-center min-h-screen p-4 sm:p-8 md:p-20 bg-gray-100 dark:bg-gray-900">
-      <style jsx global>{`
-        @font-face {
-          font-family: 'ChicagoFLF';
-          src: url('/fonts/ChicagoFLF.woff2') format('woff2'),
-              url('/fonts/ChicagoFLF.woff') format('woff');
-          font-weight: 500;
-          font-style: normal;
-          font-display: swap;
-        }
-      `}</style>
+      
       <main className="flex flex-col gap-8 items-center w-full max-w-2xl">
         {/* Welcome Message with OS Window Style */}
         <div className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-md overflow-hidden mb-24">
