@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const API_KEY = process.env.SHRINKED_API_KEY;
   const CAPSULE_ID = '6887e02fa01e2f4073d3bb51';
-  const requestUrl = `https://api.shrinked.ai/capsules/${CAPSULE_ID}/context`;
+  const requestUrl = `https://api.shrinked.ai/capsules/${CAPSULE_ID}`;
 
   if (!API_KEY) {
     console.error('API Error: SHRINKED_API_KEY is not configured.');

@@ -9,7 +9,7 @@ const HomePage = async () => {
       throw new Error(`Failed to fetch capsule signal: ${response.statusText}`);
     }
     const data = await response.json();
-    capsuleContent = data.signal || JSON.stringify(data, null, 2);
+    capsuleContent = data.highlights || JSON.stringify(data, null, 2);
   } catch (error: any) {
     capsuleContent = `Error fetching capsule content: ${error.message}`;
   }
