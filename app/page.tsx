@@ -17,10 +17,14 @@ const HomePage = () => {
   const [nextZIndex, setNextZIndex] = useState(1);
 
   const parseHighlights = useCallback((text: string): Highlight[] => {
+    console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
 
-    highlightBlocks.forEach(block => {
+    console.log('[parseHighlights] Number of highlight blocks found:', highlightBlocks.length);
+
+    highlightBlocks.forEach((block, index) => {
+      console.log(`[parseHighlights] Processing block ${index}:`, block);
       const titleMatch = block.match(/\*\*Highlight \d+: ([^*]+)\*\*/);
       const subTitleMatch = block.match(/\*\*Title:\s*([^*]+)\*\*/);
       const setupMatch = block.match(/\*\*Setup:\s*([^*]+)\*\*/);
@@ -28,14 +32,19 @@ const HomePage = () => {
       const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([^*]+)\*\*/);
 
       if (titleMatch && subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
-        highlights.push({
+        const newHighlight = {
           title: subTitleMatch[1].trim(),
           setup: setupMatch[1].trim(),
           quote: quoteMatch[1].trim(),
           whyItMatters: whyItMattersMatch[1].trim(),
-        });
+        };
+        highlights.push(newHighlight);
+        console.log(`[parseHighlights] Successfully parsed highlight ${index}:`, newHighlight);
+      } else {
+        console.warn(`[parseHighlights] Failed to parse block ${index}. Missing matches.`);
       }
     });
+    console.log('[parseHighlights] Final parsed highlights:', highlights);
     return highlights;
   }, []);
 
@@ -67,6 +76,7 @@ const HomePage = () => {
         if (data.highlights) {
           const parsed = parseHighlights(data.highlights);
           setHighlightsData(parsed);
+          console.log('[HomePage] Highlights data set:', parsed);
           const initialZIndexes: Record<string, number> = {};
           initialZIndexes['header'] = 1;
           parsed.forEach((_, index) => {
@@ -117,10 +127,14 @@ const HomePage = () => {
             <div className="window-content">
               <h1 className="main-heading">Good morning, Vanya</h1>
               <p className={`main-text ${capsuleContent.startsWith('Unable') ? 'text-red-500' : ''}`}>
-                {capsuleContent.startsWith('Unable') ? capsuleContent : ""}
+                {capsuleContent}
               </p>
             </div>
           </DraggableWindow>
+
+          {highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
+            <p>No highlights found or parsing failed.</p>
+          )}
 
           {highlightsData.map((highlight, index) => (
             <DraggableWindow
