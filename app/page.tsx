@@ -33,9 +33,9 @@ const HomePage = () => {
       if (subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
         const newHighlight = {
           title: subTitleMatch[1].trim().replace(/\*\*/g, ''),
-          setup: setupMatch[1].trim(),
-          quote: quoteMatch[1].trim(),
-          whyItMatters: whyItMattersMatch[1].trim(),
+          setup: setupMatch[1].trim().replace(/\*\*/g, ''),
+          quote: quoteMatch[1].trim().replace(/\*\*/g, ''),
+          whyItMatters: whyItMattersMatch[1].trim().replace(/\*\*/g, ''),
         };
         highlights.push(newHighlight);
         console.log(`[parseHighlights] Successfully parsed highlight ${index}:`, newHighlight);
