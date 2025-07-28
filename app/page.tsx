@@ -111,6 +111,12 @@ const HomePage = () => {
     return { x: centerX + offset, y: centerY + offset };
   }, []);
 
+  const renderMarkdown = useCallback((text: string) => {
+    // Replace **text** or ***text*** with <strong>text</strong>
+    const boldedText = text.replace(/\*\*\*?([^*]+?)\*\*\*?/g, '<strong>$1</strong>');
+    return <span dangerouslySetInnerHTML={{ __html: boldedText }} />;
+  }, []);
+
   return (
     <main className="main-container">
       {capsuleContent === "" ? (
@@ -121,13 +127,10 @@ const HomePage = () => {
             id="header"
             onBringToFront={handleBringToFront}
             initialZIndex={cardZIndexes['header'] || 1}
-            initialPosition={calculateInitialPosition(0)}
+            initialPosition={{ x: 16, y: 16 }} // Top-left position
           >
             <div className="window-content">
-              <h1 className="main-heading">Good morning, Vanya</h1>
-              <p className={`main-text ${capsuleContent.startsWith('Unable') ? 'text-red-500' : ''}`}>
-                {capsuleContent}
-              </p>
+              <p className="main-text">Good morning, Vanya</p>
             </div>
           </DraggableWindow>
 
@@ -144,10 +147,10 @@ const HomePage = () => {
               initialPosition={calculateInitialPosition(index + 1)}
             >
               <div className="window-content">
-                <h2 className="main-heading">{highlight.title}</h2>
-                <p className="main-text"><strong>Setup:</strong> {highlight.setup}</p>
-                <p className="main-text"><strong>Quote:</strong> {highlight.quote}</p>
-                <p className="main-text"><strong>Why it matters:</strong> {highlight.whyItMatters}</p>
+                <h2 className="main-heading">{highlight.title.replace(/\*\*/g, '')}</h2>
+                <p className="main-text"><strong>Setup:</strong> {renderMarkdown(highlight.setup)}</p>
+                <p className="main-text"><strong>Quote:</strong> {renderMarkdown(highlight.quote)}</p>
+                <p className="main-text"><strong>Why it matters:</strong> {renderMarkdown(highlight.whyItMatters)}</p>
               </div>
             </DraggableWindow>
           ))}
