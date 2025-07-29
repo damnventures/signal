@@ -484,8 +484,8 @@ body {
 
 .status-window {
     position: fixed !important;
-    bottom: 15px !important; /* A few pixels lower */
-    right: 150px !important; /* 150px from right edge, starting after buttons */
+    bottom: 22px !important;
+    right: 110px !important;
     z-index: 999 !important;
     display: flex !important;
     align-items: center !important;
