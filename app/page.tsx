@@ -30,52 +30,73 @@ const HomePage = () => {
     setIsClient(true);
   }, []);
 
-  // Load YouTube IFrame API
+  const initializePlayers = useCallback(() => {
+    if (!fetchedOriginalLinks.length || !(window as any).YT) return;
+
+    fetchedOriginalLinks.forEach((link, index) => {
+      const videoId = getYouTubeVideoId(link);
+      if (videoId && !playerRefs.current[videoId]) {
+        const checkIframe = setInterval(() => {
+          const iframe = document.getElementById(`youtube-player-${videoId}`);
+          if (iframe) {
+            clearInterval(checkIframe);
+            try {
+              playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+                events: {
+                  'onReady': (event: any) => {
+                    console.log(`[YouTube] Player ready for videoId: ${videoId}`);
+                    if (index === 0) {
+                      event.target.playVideo();
+                      setIsPlaying(prev => ({ ...prev, [videoId]: true }));
+                      setActiveVideoId(videoId);
+                    }
+                  },
+                  'onStateChange': (event: any) => {
+                    const newState = event.data === (window as any).YT.PlayerState.PLAYING;
+                    setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
+                    if (newState) {
+                      setActiveVideoId(videoId);
+                    }
+                  },
+                  'onError': (event: any) => {
+                    console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
+                  },
+                },
+              });
+            } catch (error) {
+              console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
+            }
+          }
+        }, 100);
+
+        setTimeout(() => clearInterval(checkIframe), 10000);
+      }
+    });
+  }, [fetchedOriginalLinks]);
+
   useEffect(() => {
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
+    (window as any).onYouTubeIframeAPIReady = () => {
+      console.log('[YouTube] API is ready');
+      if (fetchedOriginalLinks.length > 0) {
+        initializePlayers();
+      }
+    };
+
     return () => {
       delete (window as any).onYouTubeIframeAPIReady;
     };
   }, []);
 
-  // Initialize YouTube players when links are fetched
   useEffect(() => {
-    if (fetchedOriginalLinks.length > 0 && (window as any).YT) {
-      fetchedOriginalLinks.forEach((link, index) => {
-        const videoId = getYouTubeVideoId(link);
-        if (videoId && !playerRefs.current[videoId]) {
-          try {
-            playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
-              events: {
-                'onReady': (event: any) => {
-                  console.log(`[YouTube] Player initialized for videoId: ${videoId}`);
-                  if (index === 0) {
-                    event.target.playVideo();
-                    setIsPlaying(prev => ({ ...prev, [videoId]: true }));
-                    setActiveVideoId(videoId);
-                  }
-                },
-                'onStateChange': (event: any) => {
-                  const newState = event.data === (window as any).YT.PlayerState.PLAYING;
-                  setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
-                  console.log(`[YouTube] State changed for videoId: ${videoId}, playing: ${newState}`);
-                },
-                'onError': (event: any) => {
-                  console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
-                },
-              },
-            });
-          } catch (error) {
-            console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
-          }
-        }
-      });
+    if (fetchedOriginalLinks.length > 0 && (window as any).YT && (window as any).YT.Player) {
+      setTimeout(initializePlayers, 100);
     }
-  }, [fetchedOriginalLinks]);
+  }, [fetchedOriginalLinks, initializePlayers]);
 
   const parseHighlights = useCallback((text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
@@ -250,6 +271,73 @@ const HomePage = () => {
     return (match && match[1].length === 11) ? match[1] : null;
   };
 
+  const getYouTubeEmbedUrl = (videoId: string) => {
+    const params = new URLSearchParams({
+      enablejsapi: '1',
+      controls: '0',
+      modestbranding: '1',
+      rel: '0',
+      disablekb: '1',
+      iv_load_policy: '3',
+      fs: '0',
+      playsinline: '1',
+      showinfo: '0',
+      autohide: '1',
+      wmode: 'transparent',
+      origin: window.location.origin,
+    });
+    
+    return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+  };
+
+  const handlePlayPause = () => {
+    if (activeVideoId && playerRefs.current[activeVideoId]) {
+      try {
+        const player = playerRefs.current[activeVideoId];
+        if (isPlaying[activeVideoId]) {
+          player.pauseVideo();
+        } else {
+          player.playVideo();
+        }
+      } catch (error) {
+        console.error('Error controlling playback:', error);
+      }
+    }
+  };
+
+  const handleSeek = (seconds: number) => {
+    if (activeVideoId && playerRefs.current[activeVideoId]) {
+      try {
+        const player = playerRefs.current[activeVideoId];
+        const currentTime = player.getCurrentTime();
+        player.seekTo(currentTime + seconds, true);
+      } catch (error) {
+        console.error('Error seeking video:', error);
+      }
+    }
+  };
+
+  const handleRestart = () => {
+    if (activeVideoId && playerRefs.current[activeVideoId]) {
+      try {
+        playerRefs.current[activeVideoId].seekTo(0, true);
+      } catch (error) {
+        console.error('Error restarting video:', error);
+      }
+    }
+  };
+
+  const handleSeekToEnd = () => {
+    if (activeVideoId && playerRefs.current[activeVideoId]) {
+      try {
+        const player = playerRefs.current[activeVideoId];
+        player.seekTo(player.getDuration(), true);
+      } catch (error) {
+        console.error('Error seeking to end:', error);
+      }
+    }
+  };
+
   return (
     <main className="main-container">
       {isClient && (
@@ -313,7 +401,7 @@ const HomePage = () => {
                                 id={`youtube-player-${videoId}`}
                                 width="100%"
                                 height="315"
-                                src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&playsinline=1`}
+                                src={getYouTubeEmbedUrl(videoId)}
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
@@ -337,41 +425,24 @@ const HomePage = () => {
                     {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
                   </div>
                   <div className="retro-controls">
-                    <div className="control-button" onClick={() => {
-                      if (activeVideoId && playerRefs.current[activeVideoId]) {
-                        playerRefs.current[activeVideoId].seekTo(0, true);
-                      }
-                    }}><span className="icon">&#9664;&#9664;</span></div>
-                    <div className="control-button" onClick={() => {
-                      if (activeVideoId && playerRefs.current[activeVideoId]) {
-                        playerRefs.current[activeVideoId].seekTo(playerRefs.current[activeVideoId].getCurrentTime() - 10, true);
-                      }
-                    }}><span className="icon">&#9664;</span></div>
+                    <div className="control-button" onClick={handleRestart}>
+                      <span className="icon">&#9664;&#9664;</span>
+                    </div>
+                    <div className="control-button" onClick={() => handleSeek(-10)}>
+                      <span className="icon">&#9664;</span>
+                    </div>
                     <div
                       className={`control-button play-pause ${isPlaying[activeVideoId || ''] ? 'pressed' : ''}`}
-                      onClick={() => {
-                        if (activeVideoId && playerRefs.current[activeVideoId]) {
-                          if (isPlaying[activeVideoId]) {
-                            playerRefs.current[activeVideoId].pauseVideo();
-                          } else {
-                            playerRefs.current[activeVideoId].playVideo();
-                          }
-                          setIsPlaying(prev => ({ ...prev, [activeVideoId]: !prev[activeVideoId] }));
-                        }
-                      }}
+                      onClick={handlePlayPause}
                     >
                       <span className="icon">{isPlaying[activeVideoId || ''] ? '||' : '▶'}</span>
                     </div>
-                    <div className="control-button" onClick={() => {
-                      if (activeVideoId && playerRefs.current[activeVideoId]) {
-                        playerRefs.current[activeVideoId].seekTo(playerRefs.current[activeVideoId].getCurrentTime() + 10, true);
-                      }
-                    }}><span className="icon">&#9654;</span></div>
-                    <div className="control-button" onClick={() => {
-                      if (activeVideoId && playerRefs.current[activeVideoId]) {
-                        playerRefs.current[activeVideoId].seekTo(playerRefs.current[activeVideoId].getDuration(), true);
-                      }
-                    }}><span className="icon">&#9654;&#9654;</span></div>
+                    <div className="control-button" onClick={() => handleSeek(10)}>
+                      <span className="icon">&#9654;</span>
+                    </div>
+                    <div className="control-button" onClick={handleSeekToEnd}>
+                      <span className="icon">&#9654;&#9654;</span>
+                    </div>
                   </div>
                   <div className="tv-speaker-grill">
                     {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
