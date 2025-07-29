@@ -485,30 +485,32 @@ body {
 .status-window {
     position: fixed;
     bottom: 20px;
-    right: 100px;
+    right: 80px; /* Adjusted to align right edge with left edge of buttons (20px + 2 buttons * 30px + 2 * 2px borders + 10px gap) */
     z-index: 999;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end; /* Ensure content is right-aligned */
     padding: 0;
     overflow: visible;
-    width: auto;
-    min-width: 200px;
-    max-width: 400px;
-    height: 24px; /* 24px content + 2px top border + 2px bottom border */
+    height: 34px; /* Matches action-button (30px + 2px top/bottom borders) */
     border: 2px solid #000000; /* Matches .window border */
+    box-shadow: 
+        2px 2px 0px #808080,
+        4px 4px 0px #404040;
 }
 
 .status-window .window-content {
-    padding: 8px 12px;
+    padding: 6px 12px;
     display: flex;
     align-items: center;
-    justify-content: center; /* Center text horizontally */
-    height: 30px; /* Match parent height */
-    width: auto; /* Allow width to adapt to content */
-    min-width: 180px; /* Minimum width slightly smaller than window */
-    max-width: 360px; /* Maximum width slightly smaller than window */
-    animation: shrinkExpand 0.5s ease-in-out forwards; /* Quick animation */
+    justify-content: center;
+    height: 30px; /* Inner height matches action-button content */
+    width: auto;
+    min-width: 180px;
+    max-width: 360px;
+    animation: shrinkExpand 0.5s ease-in-out forwards;
+    background: #ffffff;
+    box-sizing: border-box;
 }
 
 .status-message-text {
@@ -517,9 +519,9 @@ body {
     white-space: nowrap;
     font-family: 'Geneva', sans-serif;
     margin: 0;
-    line-height: 30px; /* Match container height for vertical centering */
-    text-align: center; /* Ensure text is centered */
-    width: 100%; /* Ensure text takes full width of container */
+    line-height: 30px; /* Matches content height for vertical centering */
+    text-align: center;
+    width: 100%;
 }
 
 /* Updated animation for message update */
