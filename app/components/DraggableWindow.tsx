@@ -36,6 +36,17 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (windowRef.current) {
+      setIsDragging(true);
+      onBringToFront(id);
+      offset.current = {
+        x: e.touches[0].clientX - windowRef.current.getBoundingClientRect().left,
+        y: e.touches[0].clientY - windowRef.current.getBoundingClientRect().top,
+      };
+    }
+  };
+
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging) return;
     setPosition({
@@ -44,17 +55,33 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
     });
   };
 
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.touches[0].clientX - offset.current.x,
+      y: e.touches[0].clientY - offset.current.y,
+    });
+  };
+
   const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging]);
 
@@ -76,6 +103,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
         ...style, // Apply the passed style prop
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       {children}
     </div>
