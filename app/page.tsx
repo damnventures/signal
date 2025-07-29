@@ -345,7 +345,7 @@ const HomePage = () => {
                           }
                         }}
                       >
-                        <span className="icon">{isPlaying ? '||' : '&#9654;'}</span>
+                        <span className="icon">{isPlaying ? '||' : '▶'}</span>
                       </div>
                       <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10, true)}><span className="icon">&#9654;</span></div>
                       <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getDuration(), true)}><span className="icon">&#9654;&#9654;</span></div>
