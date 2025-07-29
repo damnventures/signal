@@ -41,7 +41,10 @@ const HomePage = () => {
       if (videoIdRef.current) {
         playerRef.current = new (window as any).YT.Player(`youtube-player-${videoIdRef.current}`, {
           events: {
-            'onReady': (event: any) => event.target.playVideo(),
+            'onReady': (event: any) => {
+              event.target.playVideo();
+              setIsPlaying(true);
+            },
           },
         });
       }
@@ -331,8 +334,8 @@ const HomePage = () => {
                       {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
                     </div>
                     <div className="retro-controls">
-                      <div className="control-button" onClick={() => playerRef.current?.seekTo(0, true)}><span className="icon">&#9664;&#9664;</span></div>
-                      <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 10, true)}><span className="icon">&#9664;</span></div>
+                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(0, true); }}><span className="icon">&#9664;&#9664;</span></div>
+                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(playerRef.current.getCurrentTime() - 10, true); }}><span className="icon">&#9664;</span></div>
                       <div
                         className={`control-button play-pause ${isPlaying ? 'pressed' : ''}`}
                         onClick={() => {
@@ -348,8 +351,8 @@ const HomePage = () => {
                       >
                         <span className="icon">{isPlaying ? '||' : '▶'}</span>
                       </div>
-                      <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10, true)}><span className="icon">&#9654;</span></div>
-                      <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getDuration(), true)}><span className="icon">&#9654;&#9654;</span></div>
+                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(playerRef.current.getCurrentTime() + 10, true); }}><span className="icon">&#9654;</span></div>
+                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(playerRef.current.getDuration(), true); }}><span className="icon">&#9654;&#9654;</span></div>
                     </div>
                     <div className="tv-speaker-grill">
                       {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
