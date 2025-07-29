@@ -52,29 +52,27 @@ body {
     min-height: 100vh;
     padding: 16px;
     box-sizing: border-box;
-    position: relative; /* Added for positioning context */
+    position: relative;
 }
 
 .main-container {
     /* Removed centering styles as DraggableWindow handles positioning */
 }
 
-
 .window {
     width: 100%;
-    max-width: 320px; /* Mobile-first max-width */
+    max-width: 320px;
     background: #ffffff;
     border: 2px solid #000000;
     box-shadow: 
         2px 2px 0px #808080,
         4px 4px 0px #404040;
     overflow: hidden;
-    /* Removed margin-bottom: 96px; as position is absolute */
 }
 
 @media (min-width: 768px) {
     .window {
-        max-width: 480px; /* Wider for desktop */
+        max-width: 480px;
     }
 }
 
@@ -200,44 +198,36 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #c0c0c0; /* Match body background */
+    background: #c0c0c0;
     background-image: 
         radial-gradient(circle, #000 1px, transparent 1px);
     background-size: 4px 4px;
     background-position: 0 0, 2px 2px;
     display: flex;
-    justify-content: flex-start; /* Align to start (left) */
-    align-items: flex-start; /* Align to top */
+    justify-content: flex-start;
+    align-items: flex-start;
     z-index: 9999;
 }
 
 .loading-bar {
-    width: 0%; /* Start with 0 width */
-    height: 15px; /* Height of the bar */
-    background-color: #000; /* Solid black bar */
-    animation: fill-bar 3s forwards; /* Animate width over 3 seconds */
+    width: 0%;
+    height: 15px;
+    background-color: #000;
+    animation: fill-bar 3s forwards;
 }
 
 .loading-bar.speed-up {
-    animation: speed-up-fill 0.5s forwards; /* Speed up animation */
+    animation: speed-up-fill 0.5s forwards;
 }
 
 @keyframes fill-bar {
-    0% {
-        width: 0%;
-    }
-    100% {
-        width: 10%; /* Initial fill to 10% */
-    }
+    0% { width: 0%; }
+    100% { width: 10%; }
 }
 
 @keyframes speed-up-fill {
-    0% {
-        width: 10%; /* Start from where the initial animation left off */
-    }
-    100% {
-        width: 100%;
-    }
+    0% { width: 10%; }
+    100% { width: 100%; }
 }
 
 .video-embed-container {
@@ -247,7 +237,7 @@ body {
 
 .youtube-video-wrapper {
     position: relative;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    padding-bottom: 56.25%;
     height: 0;
     overflow: hidden;
     max-width: 100%;
@@ -268,7 +258,7 @@ body {
     gap: 8px;
     margin-top: 20px;
     padding: 10px;
-    background: #c0c0c0; /* Light gray background for controls */
+    background: #c0c0c0;
     border-top: 2px solid #808080;
     border-left: 2px solid #808080;
     border-right: 2px solid #ffffff;
@@ -288,27 +278,27 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-family: 'Press Start 2P', monospace; /* Retro font */
+    font-family: 'Press Start 2P', monospace;
     font-size: 12px;
     color: #000000;
     text-shadow: 1px 1px 0px #ffffff;
-    user-select: none; /* Prevent text selection */
+    user-select: none;
 }
 
 .control-button:active {
     box-shadow: 
         inset 1px 1px 0px #404040,
         inset -1px -1px 0px #808080;
-    transform: translate(1px, 1px); /* Simulate button press */
+    transform: translate(1px, 1px);
 }
 
 .control-button .icon {
-    font-size: 16px; /* Adjust icon size */
+    font-size: 16px;
     line-height: 1;
 }
 
 .control-button.play-pause {
-    width: 40px; /* Slightly wider for play/pause */
+    width: 40px;
 }
 
 .tv-bezel {
@@ -384,4 +374,50 @@ body {
     width: 2px;
     height: 30px;
     background: #4a4a4a;
+}
+
+/* New animations for cards and video */
+@keyframes fadeInCard {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes highlightCard {
+  0% { transform: scale(1); background-color: #00894933; }
+  100% { transform: scale(1.05); background-color: initial; }
+}
+
+@keyframes fadeInVideo {
+  0% { opacity: 0; transform: translateX(20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.animated-header-content {
+  border: 1px solid #00894933;
+  box-sizing: border-box;
+  padding: 8px;
+  position: relative;
+  transition: width 0.1s ease-out, height 0.1s ease-out;
+}
+
+.animated-header-content:hover {
+  border: 1px solid #00894980;
+}
+
+.header-text {
+  font-size: 24px;
+  line-height: 1.5em;
+  margin: 0;
+  font-family: 'Geneva', sans-serif;
+  color: #000000;
+}
+
+.diff-highlight {
+  animation: fadeHighlight 0.3s ease-out forwards;
+  background-color: #00894933;
+}
+
+@keyframes fadeHighlight {
+  0% { background-color: #00894933; }
+  to { background-color: initial; }
 }

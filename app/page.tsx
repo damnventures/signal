@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DraggableWindow from './components/DraggableWindow';
+import AnimatedHeader from './components/AnimatedHeader';
 
 interface Highlight {
   title: string;
@@ -19,6 +20,10 @@ const HomePage = () => {
   const playerRef = useRef<YT.Player | null>(null);
   const videoIdRef = useRef<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
+  const [showCards, setShowCards] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const [highlightCard, setHighlightCard] = useState<number | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -43,7 +48,7 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    if (fetchedOriginalLinks.length > 0 && videoIdRef.current && (window as any).YT && !(playerRef.current)) {
+    if (fetchedOriginalLinks.length > 0 && videoIdRef.current && (window as any).YT && !playerRef.current) {
       playerRef.current = new (window as any).YT.Player(`youtube-player-${videoIdRef.current}`, {
         events: {
           'onReady': (event: any) => event.target.playVideo(),
@@ -56,16 +61,16 @@ const HomePage = () => {
     console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
-  
+
     console.log('[parseHighlights] Number of highlight blocks found:', highlightBlocks.length);
-  
+
     highlightBlocks.forEach((block, index) => {
       console.log(`[parseHighlights] Processing block ${index}:`, block);
       const subTitleMatch = block.match(/\*\*Title:\s*([\s\S]*?)\s*\*\*Setup:/);
       const setupMatch = block.match(/\*\*Setup:\s*([\s\S]*?)(?=\s*\*\*Quote:|$)/);
       const quoteMatch = block.match(/\*\*Quote:\s*([\s\S]*?)(?=\s*\*\*Why it matters:|$)/);
       const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([\s\S]*?)(?=\s*---|$)/);
-  
+
       if (subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
         const newHighlight = {
           title: subTitleMatch[1].trim().replace(/\*\*/g, ''),
@@ -122,6 +127,8 @@ const HomePage = () => {
         }
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
+          const DELAY_BETWEEN_REQUESTS = 500; // 500ms delay
+
           for (const fileId of data.fileIds) {
             try {
               const jobDetailsResponse = await fetch(`/api/job-details?fileId=${fileId}`);
@@ -142,6 +149,9 @@ const HomePage = () => {
               console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
               setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
             }
+
+            // Wait for the specified delay before the next iteration
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
           }
         }
 
@@ -155,6 +165,13 @@ const HomePage = () => {
     fetchCapsuleContent();
   }, [parseHighlights]);
 
+  const handleHeaderLoadingComplete = useCallback(() => {
+    setShowCards(true);
+    setHighlightCard(0); // Highlight the first card
+    setTimeout(() => setHighlightCard(null), 300); // Remove highlight after 0.3s
+    setTimeout(() => setShowVideo(true), highlightsData.length * 300); // Show video after cards
+  }, [highlightsData.length]);
+
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
       ...prevZIndexes,
@@ -166,15 +183,16 @@ const HomePage = () => {
   const calculateInitialPosition = useCallback((index: number) => {
     const offset = index * 15; // 15px offset for each card
     const isDesktop = window.innerWidth >= 768;
+    const headerHeight = 100; // Approximate height of header
 
     if (isDesktop) {
-      // Desktop: stack on the left side
-      return { x: 100 + offset, y: 100 + offset };
+      // Desktop: stack on the left side, below header
+      return { x: 100 + offset, y: 100 + headerHeight + offset };
     } else {
-      // Mobile: centered
+      // Mobile: centered, below header
       const cardWidth = 320; // Assuming a card width of 320px
       const centerX = (window.innerWidth - cardWidth) / 2;
-      return { x: centerX + offset, y: 80 + offset };
+      return { x: centerX + offset, y: 80 + headerHeight + offset };
     }
   }, []);
 
@@ -195,7 +213,7 @@ const HomePage = () => {
       const cardsHeight = highlightsData.length * 50 + 100; // Approximate height of the card stack
       return { 
         x: centerX,
-        y: cardsHeight + 20 // Add some padding below the cards
+        y: cardsHeight + 20 // Add padding below the cards
       };
     }
   }, [highlightsData.length]);
@@ -213,7 +231,6 @@ const HomePage = () => {
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
-    // Replace **text** or ***text*** with <strong>text</strong>
     const boldedText = text.replace(/\*{2,3}(.*?)\*{2,3}/g, '<strong>$1</strong>');
     return <span dangerouslySetInnerHTML={{ __html: boldedText }} />;
   }, []);
@@ -229,23 +246,49 @@ const HomePage = () => {
       <>
         {isClient && (
           <>
-            <DraggableWindow
-              id="header"
-              onBringToFront={handleBringToFront}
-              initialZIndex={cardZIndexes['header'] || 1}
-              initialPosition={calculateHeaderPosition()} // Top-left on desktop, centered on mobile
-            >
-              <div className="window-content">
-                <p className="main-text">Good morning, Vanya</p>
-              </div>
-            </DraggableWindow>
+            {showHeader && (
+              <AnimatedHeader
+                id="header"
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes['header'] || 1}
+                initialPosition={calculateHeaderPosition()}
+                onLoadingComplete={handleHeaderLoadingComplete}
+              />
+            )}
 
-            {fetchedOriginalLinks.length > 0 && (
+            {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
+              <p>No highlights found or parsing failed.</p>
+            )}
+
+            {showCards && highlightsData.map((highlight, index) => (
+              <DraggableWindow
+                key={`highlight-${index}`}
+                id={`highlight-${index}`}
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
+                initialPosition={calculateInitialPosition(index + 1)}
+                style={{
+                  animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
+                  opacity: 0,
+                  ...(highlightCard === index && { animation: 'highlightCard 0.3s ease-out' }),
+                }}
+              >
+                <div className="window-content">
+                  <h2 className="main-heading">{highlight.title}</h2>
+                  <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
+                  <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
+                  <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
+                </div>
+              </DraggableWindow>
+            ))}
+
+            {showVideo && fetchedOriginalLinks.length > 0 && (
               <DraggableWindow
                 id="original-links"
                 onBringToFront={handleBringToFront}
                 initialZIndex={cardZIndexes['original-links'] || nextZIndex}
-                initialPosition={calculateVideoPosition()} // Position after highlights
+                initialPosition={calculateVideoPosition()}
+                style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
               >
                 <div className="tv-bezel">
                   <div className="tv-screen">
@@ -254,7 +297,7 @@ const HomePage = () => {
                         {fetchedOriginalLinks.map((link, index) => {
                           const videoId = getYouTubeVideoId(link);
                           if (videoId) {
-                            videoIdRef.current = videoId; // Store the videoId for player initialization
+                            videoIdRef.current = videoId;
                             return (
                               <div key={index} className="youtube-video-wrapper">
                                 <iframe
@@ -281,46 +324,25 @@ const HomePage = () => {
                     </div>
                   </div>
                   <div className="tv-controls">
-                      <div className="tv-speaker-grill">
-                          {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
-                      </div>
-                      <div className="tv-dial"></div>
-                      <div className="retro-controls">
-                        <div className="control-button" onClick={() => playerRef.current?.seekTo(0, true)}><span className="icon">&#9664;&#9664;</span></div>
-                        <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 10, true)}><span className="icon">&#9664;</span></div>
-                        <div className="control-button play-pause" onClick={() => playerRef.current?.getPlayerState() === YT.PlayerState.PLAYING ? playerRef.current?.pauseVideo() : playerRef.current?.playVideo()}><span className="icon">&#9654;</span></div>
-                        <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10, true)}><span className="icon">&#9654;</span></div>
-                        <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getDuration(), true)}><span className="icon">&#9654;&#9654;</span></div>
-                      </div>
-                      <div className="tv-dial"></div>
-                      <div className="tv-speaker-grill">
-                          {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
-                      </div>
+                    <div className="tv-speaker-grill">
+                      {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
+                    </div>
+                    <div className="tv-dial"></div>
+                    <div className="retro-controls">
+                      <div className="control-button" onClick={() => playerRef.current?.seekTo(0, true)}><span className="icon">&#9664;&#9664;</span></div>
+                      <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 10, true)}><span className="icon">&#9664;</span></div>
+                      <div className="control-button play-pause" onClick={() => playerRef.current?.getPlayerState() === YT.PlayerState.PLAYING ? playerRef.current?.pauseVideo() : playerRef.current?.playVideo()}><span className="icon">&#9654;</span></div>
+                      <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10, true)}><span className="icon">&#9654;</span></div>
+                      <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getDuration(), true)}><span className="icon">&#9654;&#9654;</span></div>
+                    </div>
+                    <div className="tv-dial"></div>
+                    <div className="tv-speaker-grill">
+                      {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
+                    </div>
                   </div>
                 </div>
               </DraggableWindow>
             )}
-
-            {highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
-              <p>No highlights found or parsing failed.</p>
-            )}
-
-            {highlightsData.map((highlight, index) => (
-              <DraggableWindow
-                key={`highlight-${index}`}
-                id={`highlight-${index}`}
-                onBringToFront={handleBringToFront}
-                initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
-                initialPosition={calculateInitialPosition(index + 1)}
-              >
-                <div className="window-content">
-                  <h2 className="main-heading">{highlight.title}</h2>
-                  <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
-                  <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
-                  <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
-                </div>
-              </DraggableWindow>
-            ))}
           </>
         )}
       </>
