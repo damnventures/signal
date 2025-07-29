@@ -489,7 +489,7 @@ body {
     object-fit: contain;
 }
 
-.text-update-window {
+.status-window {
     position: fixed;
     bottom: 20px;
     right: 100px; /* Positioned to the left of the fixed buttons */
@@ -498,19 +498,27 @@ body {
     align-items: center;
     justify-content: center;
     padding: 0; /* Remove default window-content padding */
-    overflow: hidden; /* Re-add overflow hidden for animation */
+    overflow: visible; /* Allow window to resize */
+    width: auto; /* Auto width to fit content */
+    min-width: 200px; /* Minimum width */
+    max-width: 400px; /* Maximum width */
 }
 
-.text-update-window .window-content {
-    padding: 0 10px; /* Add some horizontal padding */
+.status-window .window-content {
+    padding: 8px 12px; /* Compact padding */
     display: flex;
     align-items: center;
-    height: 100%;
+    height: auto; /* Auto height */
+    width: fit-content; /* Fit content width */
 }
 
-.update-message-text {
-    font-size: 14px; /* Smaller font size */
+.status-message-text {
+    font-size: 12px; /* Smaller font size */
     color: black; /* Ensure text is visible */
+    white-space: nowrap; /* Prevent text wrapping */
+    font-family: 'Geneva', sans-serif;
+    margin: 0;
+    line-height: 1.2;
     animation: shrinkExpand 0.5s ease-in-out; /* Apply the animation */
 }
 
@@ -536,4 +544,24 @@ body {
         transform-origin: left;
         opacity: 1;
     }
+}
+
+/* Blinking animation for the refresh button */
+ @keyframes blink {
+    0%, 50% { 
+        opacity: 1; 
+        box-shadow: 
+            2px 2px 0px #808080,
+            4px 4px 0px #404040;
+    }
+    51%, 100% { 
+        opacity: 0.3; 
+        box-shadow: 
+            1px 1px 0px #808080,
+            2px 2px 0px #404040;
+    }
+}
+
+.action-button.blinking {
+    animation: blink 1s infinite;
 }

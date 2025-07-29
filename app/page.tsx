@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DraggableWindow from './components/DraggableWindow';
 import AnimatedHeader from './components/AnimatedHeader';
+import Head from 'next/head';
 
 interface Highlight {
   title: string;
@@ -25,12 +26,78 @@ const HomePage = () => {
   const [highlightCard, setHighlightCard] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const [updateMessage, setUpdateMessage] = useState('Initializing...');
-  const [messageAnimationKey, setMessageAnimationKey] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingPhase, setLoadingPhase] = useState<'signal' | 'insights' | 'idle'>('signal');
+  const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const statusMessages = {
+    signal: [
+      "Fetching data sources and parsing context...",
+      "Loading signal data from API endpoints...",
+      "Retrieving file metadata and content links..."
+    ],
+    insights: [
+      "Extracting highlights from markdown content...",
+      "Processing text blocks and identifying key quotes...",
+      "Structuring insights into presentable format..."
+    ],
+    idle: [
+      "System ready - All components loaded",
+      "Monitoring user interactions...",
+      "Background processes: Caching optimized"
+    ]
+  };
+
+  const updateStatusMessage = useCallback((phase: 'signal' | 'insights' | 'idle') => {
+    const messages = statusMessages[phase];
+    let currentIndex = 0;
+    
+    // Set initial message immediately
+    setStatusMessage(messages[currentIndex]);
+    currentIndex = (currentIndex + 1) % messages.length;
+
+    // Clear any existing interval
+    if (statusIntervalRef.current) {
+      clearInterval(statusIntervalRef.current);
+    }
+
+    // For idle phase, show first message longer, then cycle through others
+    if (phase === 'idle') {
+      // Stay on "System ready" message for 10 seconds, then cycle
+      setTimeout(() => {
+        statusIntervalRef.current = setInterval(() => {
+          setStatusMessage(messages[currentIndex]);
+          currentIndex = (currentIndex + 1) % messages.length;
+        }, 8000); // Slower rotation for idle messages
+      }, 10000);
+    } else {
+      // Set up immediate interval for signal and insights phases
+      statusIntervalRef.current = setInterval(() => {
+        setStatusMessage(messages[currentIndex]);
+        currentIndex = (currentIndex + 1) % messages.length;
+      }, 3000);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Start with signal phase
+    updateStatusMessage('signal');
+    
+    return () => {
+      if (statusIntervalRef.current) {
+        clearInterval(statusIntervalRef.current);
+      }
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+    };
+  }, [updateStatusMessage]);
 
   const initializePlayers = useCallback(() => {
     if (!fetchedOriginalLinks.length || !(window as any).YT) return;
@@ -207,38 +274,25 @@ const HomePage = () => {
     fetchCapsuleContent();
   }, [parseHighlights]);
 
-  useEffect(() => {
-    const messages = [
-      "System idle: Awaiting user input...",
-      "Neural networks optimized: Ready for queries!",
-      "Quantum processors aligned: Maximum insight mode!",
-      "Synaptic circuits engaged: Ready to astound!"
-    ];
-
-    let currentIndex = 0;
-
-    // Set the initial message immediately
-    setUpdateMessage(messages[currentIndex]);
-    setMessageAnimationKey(prevKey => prevKey + 1);
-    currentIndex = (currentIndex + 1) % messages.length;
-
-    const interval = setInterval(() => {
-      setUpdateMessage(messages[currentIndex]);
-      setMessageAnimationKey(prevKey => prevKey + 1); // Trigger animation
-      currentIndex = (currentIndex + 1) % messages.length;
-    }, 5000); // Update message every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
     setHighlightCard(0);
+    setLoadingPhase('insights');
+    updateStatusMessage('insights');
+    
     setTimeout(() => setHighlightCard(null), 300);
     setTimeout(() => {
       setShowVideo(true);
+      setIsLoading(false);
+      setLoadingPhase('idle');
+      updateStatusMessage('idle');
+      
+      // Set up idle timeout for extended messages
+      idleTimeoutRef.current = setTimeout(() => {
+        updateStatusMessage('idle');
+      }, 10000);
     }, highlightsData.length * 300);
-  }, [highlightsData.length]);
+  }, [highlightsData.length, updateStatusMessage]);
 
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
@@ -288,10 +342,8 @@ const HomePage = () => {
     }
   }, []);
 
-  const calculateUpdateWindowPosition = useCallback(() => {
-    // Position is now primarily handled by CSS for fixed positioning
-    // This function provides a fallback initial position if needed
-    return { x: window.innerWidth - 350, y: window.innerHeight - 60 };
+  const calculateStatusWindowPosition = useCallback(() => {
+    return { x: window.innerWidth - 500, y: window.innerHeight - 60 };
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
@@ -373,147 +425,158 @@ const HomePage = () => {
   };
 
   return (
-    <main className="main-container">
-      {isClient && (
-        <>
-          {showHeader && (
-            <AnimatedHeader
-              id="header"
-              onBringToFront={handleBringToFront}
-              initialZIndex={cardZIndexes['header'] || 1}
-              initialPosition={calculateHeaderPosition()}
-              onLoadingComplete={handleHeaderLoadingComplete}
-              className="animated-header-window"
-            />
-          )}
+    <>
+      <Head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <meta name="msapplication-TileColor" content="#c0c0c0" />
+        <meta name="theme-color" content="#c0c0c0" />
+      </Head>
+      <main className="main-container">
+        {isClient && (
+          <>
+            {showHeader && (
+              <AnimatedHeader
+                id="header"
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes['header'] || 1}
+                initialPosition={calculateHeaderPosition()}
+                onLoadingComplete={handleHeaderLoadingComplete}
+                className="animated-header-window"
+              />
+            )}
 
-          {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
-            <p>No highlights found or parsing failed.</p>
-          )}
+            {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
+              <p>No highlights found or parsing failed.</p>
+            )}
 
-          {showCards && highlightsData.map((highlight, index) => (
+            {showCards && highlightsData.map((highlight, index) => (
+              <DraggableWindow
+                key={`highlight-${index}`}
+                id={`highlight-${index}`}
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
+                initialPosition={calculateInitialPosition(index + 1)}
+                style={{
+                  animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
+                  opacity: 0,
+                  ...(highlightCard === index && { animation: 'highlightCard 0.3s ease-out' }),
+                }}
+              >
+                <div className="window-content">
+                  <h2 className="main-heading">{highlight.title}</h2>
+                  <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
+                  <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
+                  <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
+                </div>
+              </DraggableWindow>
+            ))}
+
+            {showVideo && fetchedOriginalLinks.length > 0 && (
+              <DraggableWindow
+                id="original-links"
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes['original-links'] || nextZIndex}
+                initialPosition={calculateVideoPosition()}
+                style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
+                className="tv-player-window"
+              >
+                <div className="tv-bezel">
+                  <div className="tv-screen">
+                    <div className="window-content video-window-content">
+                      <div className="video-embed-container">
+                        {fetchedOriginalLinks.map((link, index) => {
+                          const videoId = getYouTubeVideoId(link);
+                          if (videoId) {
+                            return (
+                              <div key={index} className="youtube-video-wrapper">
+                                <iframe
+                                  id={`youtube-player-${videoId}`}
+                                  width="100%"
+                                  height="315"
+                                  src={getYouTubeEmbedUrl(videoId)}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  title={`YouTube video ${index}`}
+                                ></iframe>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <p key={index} className="main-text">
+                                <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                              </p>
+                            );
+                          }
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="tv-controls">
+                    <div className="tv-speaker-grill">
+                      {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
+                    </div>
+                    <div className="retro-controls">
+                      <div className="control-button" onClick={handleRestart}>
+                        <span className="icon">&#9664;&#9664;</span>
+                      </div>
+                      <div className="control-button" onClick={() => handleSeek(-10)}>
+                        <span className="icon">&#9664;</span>
+                      </div>
+                      <div
+                        className={`control-button play-pause ${isPlaying[activeVideoId || ''] ? 'pressed' : ''}`}
+                        onClick={handlePlayPause}
+                      >
+                        <span className="icon">{isPlaying[activeVideoId || ''] ? '❚❚' : '▶'}</span>
+                      </div>
+                      <div className="control-button" onClick={() => handleSeek(10)}>
+                        <span className="icon">&#9654;</span>
+                      </div>
+                      <div className="control-button" onClick={handleSeekToEnd}>
+                        <span className="icon">&#9654;&#9654;</span>
+                      </div>
+                    </div>
+                    <div className="tv-speaker-grill">
+                      {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
+                    </div>
+                  </div>
+                </div>
+              </DraggableWindow>
+            )}
+
             <DraggableWindow
-              key={`highlight-${index}`}
-              id={`highlight-${index}`}
+              id="status-window"
               onBringToFront={handleBringToFront}
-              initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
-              initialPosition={calculateInitialPosition(index + 1)}
-              style={{
-                animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
-                opacity: 0,
-                ...(highlightCard === index && { animation: 'highlightCard 0.3s ease-out' }),
-              }}
+              initialZIndex={cardZIndexes['status-window'] || nextZIndex + 1}
+              initialPosition={calculateStatusWindowPosition()}
+              isDraggable={false}
+              className="status-window"
             >
               <div className="window-content">
-                <h2 className="main-heading">{highlight.title}</h2>
-                <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
-                <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
-                <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
+                <p className="main-text status-message-text">{statusMessage}</p>
               </div>
             </DraggableWindow>
-          ))}
 
-          {showVideo && fetchedOriginalLinks.length > 0 && (
-            <DraggableWindow
-              id="original-links"
-              onBringToFront={handleBringToFront}
-              initialZIndex={cardZIndexes['original-links'] || nextZIndex}
-              initialPosition={calculateVideoPosition()}
-              style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
-              className="tv-player-window"
-            >
-              <div className="tv-bezel">
-                <div className="tv-screen">
-                  <div className="window-content video-window-content">
-                    <div className="video-embed-container">
-                      {fetchedOriginalLinks.map((link, index) => {
-                        const videoId = getYouTubeVideoId(link);
-                        if (videoId) {
-                          return (
-                            <div key={index} className="youtube-video-wrapper">
-                              <iframe
-                                id={`youtube-player-${videoId}`}
-                                width="100%"
-                                height="315"
-                                src={getYouTubeEmbedUrl(videoId)}
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                title={`YouTube video ${index}`}
-                              ></iframe>
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <p key={index} className="main-text">
-                              <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
-                            </p>
-                          );
-                        }
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <div className="tv-controls">
-                  <div className="tv-speaker-grill">
-                    {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
-                  </div>
-                  <div className="retro-controls">
-                    <div className="control-button" onClick={handleRestart}>
-                      <span className="icon">&#9664;&#9664;</span>
-                    </div>
-                    <div className="control-button" onClick={() => handleSeek(-10)}>
-                      <span className="icon">&#9664;</span>
-                    </div>
-                    <div
-                      className={`control-button play-pause ${isPlaying[activeVideoId || ''] ? 'pressed' : ''}`}
-                      onClick={handlePlayPause}
-                    >
-                      <span className="icon">{isPlaying[activeVideoId || ''] ? '❚❚' : '▶'}</span>
-                    </div>
-                    <div className="control-button" onClick={() => handleSeek(10)}>
-                      <span className="icon">&#9654;</span>
-                    </div>
-                    <div className="control-button" onClick={handleSeekToEnd}>
-                      <span className="icon">&#9654;&#9654;</span>
-                    </div>
-                  </div>
-                  <div className="tv-speaker-grill">
-                    {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
-                  </div>
-                </div>
-              </div>
-            </DraggableWindow>
-          )}
-
-          <DraggableWindow
-            id="text-update-window"
-            onBringToFront={handleBringToFront}
-            initialZIndex={cardZIndexes['text-update-window'] || nextZIndex + 1}
-            initialPosition={calculateUpdateWindowPosition()}
-            isDraggable={false} // Make it non-draggable
-            className="text-update-window"
-            key={messageAnimationKey} // Key to trigger re-render and animation
-          >
-            <div className="window-content">
-              <p className="main-text update-message-text">{updateMessage}</p>
+            <div className="fixed-buttons-container">
+              <button
+                className={`action-button ${isLoading ? 'blinking' : ''}`}
+                onClick={() => window.location.reload()}
+              >
+                <img src="/signal.png" alt="Refresh" />
+              </button>
+              <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
+                <img src="/shrinked.png" alt="Shrinked AI" />
+              </button>
             </div>
-          </DraggableWindow>
-
-          <div className="fixed-buttons-container">
-            <button
-              className={`action-button`}
-              onClick={() => window.location.reload()}
-            >
-              <img src="/signal.png" alt="Refresh" />
-            </button>
-            <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
-              <img src="/shrinked.png" alt="Shrinked AI" />
-            </button>
-          </div>
-        </>
-      )}
-    </main>
+          </>
+        )}
+      </main>
+    </>
   );
 };
 
