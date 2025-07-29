@@ -25,6 +25,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [loadingComplete, setLoadingComplete] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
+  const [firstReductoAISelected, setFirstReductoAISelected] = useState(false);
 
   const variants = [
     "Good morning, Vanya! Checking your signals...",
@@ -107,7 +108,6 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     // Reconstruct HTML with diff highlighting
     const renderHtml = () => {
       let resultHtml = newContent;
-      let firstReductoAI = true; // Flag to target only the first instance
 
       if (showDiff) {
         let currentHtmlIndex = 0;
@@ -138,10 +138,14 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
         });
       }
 
-      // Apply 'selected' class to the first 'Reducto AI' span
-      if (firstReductoAI) {
-        resultHtml = resultHtml.replace('<span class="clickable-tag">Reducto AI</span>', '<span class="clickable-tag selected">Reducto AI</span>');
-        firstReductoAI = false; // Ensure only the first is selected
+      // Apply 'selected' class to the first 'Reducto AI' span if not already selected
+      if (!firstReductoAISelected) {
+        const reductoAIRegex = /<span class="clickable-tag">(Reducto AI)<\/span>/;
+        const match = resultHtml.match(reductoAIRegex);
+        if (match) {
+          resultHtml = resultHtml.replace(reductoAIRegex, '<span class="clickable-tag selected">$1</span>');
+          setFirstReductoAISelected(true);
+        }
       }
 
       return <span dangerouslySetInnerHTML={{ __html: resultHtml }} />;

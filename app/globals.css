@@ -59,11 +59,11 @@ body {
 }
 
 .clickable-tag {
-    font-family: 'Apple Garamond', serif; /* Apply Apple Garamond */
-    font-style: italic; /* Default to italic */
+    font-family: 'ChicagoFLF', 'Press Start 2P', monospace; /* Apply header font */
+    font-style: normal; /* Remove italic */
     background: none; /* Default to no background */
     padding: 0; /* Default to no padding */
-    font-weight: 300; /* Light weight */
+    font-weight: normal; /* Reset font weight */
 }
 
 .clickable-tag.selected {
