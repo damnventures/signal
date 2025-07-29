@@ -8,41 +8,64 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
   }
 
-  const API_URL = process.env.BACKEND_API_URL || 'https://api.shrinked.ai'; // Fallback to ensure correct URL
+  const API_URL = process.env.BACKEND_API_URL || 'https://api.shrinked.ai';
   const API_KEY = process.env.SHRINKED_API_KEY;
-
-  if (!API_URL) {
-    console.error('API Error: BACKEND_API_URL is not configured.');
-    return NextResponse.json({ error: 'Backend API URL not configured' }, { status: 500 });
-  }
 
   if (!API_KEY) {
     console.error('API Error: SHRINKED_API_KEY is not configured.');
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
-  const requestUrl = `${API_URL}/jobs/by-result/${fileId}`;
-  console.log(`[Job Details API] Attempting to fetch from: ${requestUrl}`);
-  console.log(`[Job Details API] Using API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
+  console.log(`[Job Details API] Attempting to fetch jobId from: ${API_URL}/jobs/by-result/${fileId}`);
 
   try {
-    const response = await fetch(requestUrl, {
+    // Step 1: Fetch jobId using fileId
+    const jobIdResponse = await fetch(`${API_URL}/jobs/by-result/${fileId}`, {
       headers: {
         'x-api-key': API_KEY,
       },
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API Error: Failed to fetch job details for fileId ${fileId}. Status: ${response.status}, Body: ${errorText}`);
-      return NextResponse.json({ error: `Failed to fetch job details: ${response.statusText}` }, { status: response.status });
+    if (!jobIdResponse.ok) {
+      const errorText = await jobIdResponse.text();
+      console.error(`API Error: Failed to fetch jobId for fileId ${fileId}. Status: ${jobIdResponse.status}, Body: ${errorText}`);
+      return NextResponse.json({ error: `Failed to fetch jobId: ${jobIdResponse.statusText}` }, { status: jobIdResponse.status });
     }
 
-    const jobData = await response.json();
+    const jobIdData = await jobIdResponse.json();
+    const jobId = jobIdData._id;
 
-    if (jobData && jobData.originalLink) {
-      return NextResponse.json({ originalLink: jobData.originalLink });
+    if (!jobId) {
+      console.error(`API Error: No jobId found for fileId ${fileId}`);
+      return NextResponse.json({ error: 'No jobId found for this fileId' }, { status: 404 });
+    }
+
+    console.log(`[Job Details API] Fetched jobId: ${jobId} for fileId: ${fileId}`);
+
+    // Step 2: Fetch job details using jobId
+    const jobDetailsResponse = await fetch(`${API_URL}/jobs/${jobId}`, {
+      headers: {
+        'x-api-key': API_KEY,
+      },
+    });
+
+    if (!jobDetailsResponse.ok) {
+      const errorText = await jobDetailsResponse.text();
+      console.error(`API Error: Failed to fetch job details for jobId ${jobId}. Status: ${jobDetailsResponse.status}, Body: ${errorText}`);
+      return NextResponse.json({ error: `Failed to fetch job details: ${jobDetailsResponse.statusText}` }, { status: jobDetailsResponse.status });
+    }
+
+    const jobData = await jobDetailsResponse.json();
+
+    // Extract originalLink from steps where name is "UPLOAD_FILE"
+    const uploadStep = jobData.steps?.find((step: any) => step.name === 'UPLOAD_FILE');
+    const originalLink = uploadStep?.data?.originalLink;
+
+    if (originalLink) {
+      console.log(`[Job Details API] Fetched originalLink: ${originalLink} for jobId: ${jobId}`);
+      return NextResponse.json({ originalLink });
     } else {
+      console.error(`API Error: originalLink not found in UPLOAD_FILE step for jobId ${jobId}`);
       return NextResponse.json({ error: 'originalLink not found for this job' }, { status: 404 });
     }
   } catch (error: any) {
