@@ -25,6 +25,8 @@ const HomePage = () => {
   const [highlightCard, setHighlightCard] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>("RETRIEVING SIGNAL CONTEXT...");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
@@ -165,6 +167,7 @@ const HomePage = () => {
           });
           setCardZIndexes(initialZIndexes);
           setNextZIndex(parsed.length + 2);
+          setStatusMessage("EXTRACTING INSIGHTS FROM REDUCTO AI...");
         }
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
@@ -205,11 +208,41 @@ const HomePage = () => {
     fetchCapsuleContent();
   }, [parseHighlights]);
 
+  useEffect(() => {
+    const statusMessages = [
+      "SYSTEM IDLE: AWAITING USER INPUT...",
+      "NEURAL NETWORKS OPTIMIZED: READY FOR QUERIES!",
+      "QUANTUM PROCESSORS ALIGNED: MAXIMUM INSIGHT MODE!",
+      "SYNAPTIC CIRCUITS ENGAGED: READY TO ASTOUND!"
+    ];
+
+    let currentIndex = 0;
+
+    const updateStatus = () => {
+      if (showVideo && currentIndex < statusMessages.length) {
+        setStatusMessage(statusMessages[currentIndex]);
+        currentIndex++;
+      }
+    };
+
+    const timer = setInterval(() => {
+      if (showVideo) {
+        updateStatus();
+      }
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [showVideo]);
+
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
     setHighlightCard(0);
     setTimeout(() => setHighlightCard(null), 300);
-    setTimeout(() => setShowVideo(true), highlightsData.length * 300);
+    setTimeout(() => {
+      setShowVideo(true);
+      setIsLoading(false);
+      setStatusMessage("EXTRACTING INSIGHTS FROM REDUCTO AI...");
+    }, highlightsData.length * 300);
   }, [highlightsData.length]);
 
   const handleBringToFront = useCallback((id: string) => {
@@ -258,6 +291,12 @@ const HomePage = () => {
       const centerX = (window.innerWidth - cardWidth) / 2;
       return { x: centerX, y: 16 };
     }
+  }, []);
+
+  const calculateStatusWindowPosition = useCallback(() => {
+    const isDesktop = window.innerWidth >= 768;
+    const buttonHeight = 60; // Approximate height of buttons
+    return { x: 16, y: window.innerHeight - buttonHeight - 16 };
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
@@ -451,16 +490,44 @@ const HomePage = () => {
               </div>
             </DraggableWindow>
           )}
+
+          <DraggableWindow
+            id="status-window"
+            onBringToFront={handleBringToFront}
+            initialZIndex={nextZIndex + 1}
+            initialPosition={calculateStatusWindowPosition()}
+            style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <div className="window-content">
+              <p style={{ color: 'black', fontWeight: 'normal', textTransform: 'uppercase', margin: 0 }}>
+                {statusMessage}
+              </p>
+            </div>
+          </DraggableWindow>
+
+          <div className="fixed-buttons-container">
+            <button
+              className={`action-button ${isLoading ? 'blink' : ''}`}
+              onClick={() => window.location.reload()}
+            >
+              <img src="/signal.png" alt="Refresh" />
+            </button>
+            <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
+              <img src="/shrinked.png" alt="Shrinked AI" />
+            </button>
+          </div>
         </>
       )}
-      <div className="fixed-buttons-container">
-        <button className="action-button" onClick={() => window.location.reload()}>
-          <img src="/signal.png" alt="Refresh" />
-        </button>
-        <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
-          <img src="/shrinked.png" alt="Shrinked AI" />
-        </button>
-      </div>
+      <style jsx>{`
+        .blink {
+          animation: blink-animation 1s infinite;
+        }
+        @keyframes blink-animation {
+          0% { opacity: 1; }
+          50% { opacity: 0.3; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </main>
   );
 };
