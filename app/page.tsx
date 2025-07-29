@@ -24,6 +24,7 @@ const HomePage = () => {
   const [showVideo, setShowVideo] = useState(false);
   const [highlightCard, setHighlightCard] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -36,25 +37,44 @@ const HomePage = () => {
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
-    (window as any).onYouTubeIframeAPIReady = () => {
+    return () => {
+      delete (window as any).onYouTubeIframeAPIReady;
+    };
+  }, []);
+
+  // Initialize YouTube players when links are fetched
+  useEffect(() => {
+    if (fetchedOriginalLinks.length > 0 && (window as any).YT) {
       fetchedOriginalLinks.forEach((link, index) => {
         const videoId = getYouTubeVideoId(link);
         if (videoId && !playerRefs.current[videoId]) {
-          playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
-            events: {
-              'onReady': (event: any) => {
-                event.target.playVideo();
-                setIsPlaying(prev => ({ ...prev, [videoId]: true }));
+          try {
+            playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+              events: {
+                'onReady': (event: any) => {
+                  console.log(`[YouTube] Player initialized for videoId: ${videoId}`);
+                  if (index === 0) {
+                    event.target.playVideo();
+                    setIsPlaying(prev => ({ ...prev, [videoId]: true }));
+                    setActiveVideoId(videoId);
+                  }
+                },
+                'onStateChange': (event: any) => {
+                  const newState = event.data === (window as any).YT.PlayerState.PLAYING;
+                  setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
+                  console.log(`[YouTube] State changed for videoId: ${videoId}, playing: ${newState}`);
+                },
+                'onError': (event: any) => {
+                  console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
+                },
               },
-              'onStateChange': (event: any) => {
-                const newState = event.data === (window as any).YT.PlayerState.PLAYING;
-                setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
-              },
-            },
-          });
+            });
+          } catch (error) {
+            console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
+          }
         }
       });
-    };
+    }
   }, [fetchedOriginalLinks]);
 
   const parseHighlights = useCallback((text: string): Highlight[] => {
@@ -127,7 +147,7 @@ const HomePage = () => {
         }
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
-          const DELAY_BETWEEN_REQUESTS = 500; // 500ms delay
+          const DELAY_BETWEEN_REQUESTS = 500;
 
           for (const fileId of data.fileIds) {
             try {
@@ -293,7 +313,7 @@ const HomePage = () => {
                                 id={`youtube-player-${videoId}`}
                                 width="100%"
                                 height="315"
-                                src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&autohide=1&showinfo=0&playsinline=1`}
+                                src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&playsinline=1`}
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
@@ -318,43 +338,38 @@ const HomePage = () => {
                   </div>
                   <div className="retro-controls">
                     <div className="control-button" onClick={() => {
-                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
-                      if (videoId && playerRefs.current[videoId]) {
-                        playerRefs.current[videoId].seekTo(0, true);
+                      if (activeVideoId && playerRefs.current[activeVideoId]) {
+                        playerRefs.current[activeVideoId].seekTo(0, true);
                       }
                     }}><span className="icon">&#9664;&#9664;</span></div>
                     <div className="control-button" onClick={() => {
-                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
-                      if (videoId && playerRefs.current[videoId]) {
-                        playerRefs.current[videoId].seekTo(playerRefs.current[videoId].getCurrentTime() - 10, true);
+                      if (activeVideoId && playerRefs.current[activeVideoId]) {
+                        playerRefs.current[activeVideoId].seekTo(playerRefs.current[activeVideoId].getCurrentTime() - 10, true);
                       }
                     }}><span className="icon">&#9664;</span></div>
                     <div
-                      className={`control-button play-pause ${isPlaying[getYouTubeVideoId(fetchedOriginalLinks[0]) || ''] ? 'pressed' : ''}`}
+                      className={`control-button play-pause ${isPlaying[activeVideoId || ''] ? 'pressed' : ''}`}
                       onClick={() => {
-                        const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
-                        if (videoId && playerRefs.current[videoId]) {
-                          if (isPlaying[videoId]) {
-                            playerRefs.current[videoId].pauseVideo();
+                        if (activeVideoId && playerRefs.current[activeVideoId]) {
+                          if (isPlaying[activeVideoId]) {
+                            playerRefs.current[activeVideoId].pauseVideo();
                           } else {
-                            playerRefs.current[videoId].playVideo();
+                            playerRefs.current[activeVideoId].playVideo();
                           }
-                          setIsPlaying(prev => ({ ...prev, [videoId]: !prev[videoId] }));
+                          setIsPlaying(prev => ({ ...prev, [activeVideoId]: !prev[activeVideoId] }));
                         }
                       }}
                     >
-                      <span className="icon">{isPlaying[getYouTubeVideoId(fetchedOriginalLinks[0]) || ''] ? '||' : '▶'}</span>
+                      <span className="icon">{isPlaying[activeVideoId || ''] ? '||' : '▶'}</span>
                     </div>
                     <div className="control-button" onClick={() => {
-                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
-                      if (videoId && playerRefs.current[videoId]) {
-                        playerRefs.current[videoId].seekTo(playerRefs.current[videoId].getCurrentTime() + 10, true);
+                      if (activeVideoId && playerRefs.current[activeVideoId]) {
+                        playerRefs.current[activeVideoId].seekTo(playerRefs.current[activeVideoId].getCurrentTime() + 10, true);
                       }
                     }}><span className="icon">&#9654;</span></div>
                     <div className="control-button" onClick={() => {
-                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
-                      if (videoId && playerRefs.current[videoId]) {
-                        playerRefs.current[videoId].seekTo(playerRefs.current[videoId].getDuration(), true);
+                      if (activeVideoId && playerRefs.current[activeVideoId]) {
+                        playerRefs.current[activeVideoId].seekTo(playerRefs.current[activeVideoId].getDuration(), true);
                       }
                     }}><span className="icon">&#9654;&#9654;</span></div>
                   </div>
