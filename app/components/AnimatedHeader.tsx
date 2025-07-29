@@ -25,7 +25,6 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [loadingComplete, setLoadingComplete] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
-  const [firstReductoAISelected, setFirstReductoAISelected] = useState(false);
 
   const variants = [
     "Good morning, Vanya! Checking your signals...",
@@ -36,19 +35,17 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
   // Cycle through variants with pause
   useEffect(() => {
-    const delay = variantIndex === 0 ? 2000 : 1500; // 2s initial delay, 1.5s (0.5s pause + 1s diff) for subsequent
-
+    const delay = variantIndex === 0 ? 2000 : 1500;
     const timer = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
         setShowDiff(true);
         setVariantIndex(prev => prev + 1);
-        setTimeout(() => setShowDiff(false), 1000); // Diff highlight for 1 second
+        setTimeout(() => setShowDiff(false), 1000);
       } else {
         setLoadingComplete(true);
         onLoadingComplete();
       }
     }, delay);
-
     return () => clearTimeout(timer);
   }, [variantIndex, onLoadingComplete, variants.length]);
 
@@ -118,9 +115,9 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
           if (plainTextIndex !== -1 && segment.isDiff) {
             let tempPlain = '';
             let htmlIdx = 0;
-            while(tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
+            while (tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
               if (newContent[htmlIdx] === '<') {
-                while(newContent[htmlIdx] !== '>' && htmlIdx < newContent.length) {
+                while (newContent[htmlIdx] !== '>' && htmlIdx < newContent.length) {
                   htmlIdx++;
                 }
               } else {
@@ -128,7 +125,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
               }
               htmlIdx++;
             }
-            const actualHtmlIndex = htmlIdx - 1; 
+            const actualHtmlIndex = htmlIdx - 1;
 
             const segmentHtml = newContent.substring(actualHtmlIndex, actualHtmlIndex + plainTextSegment.length + (newContent.substring(actualHtmlIndex + plainTextSegment.length).match(/^<[^>]+>/) || [''])[0].length);
 
@@ -138,13 +135,12 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
         });
       }
 
-      // Apply 'selected' class to the first 'Reducto AI' span if not already selected
-      if (!firstReductoAISelected) {
+      // Apply 'selected' class to the first 'Reducto AI' span only on the final variant
+      if (variantIndex === variants.length - 1 && loadingComplete) {
         const reductoAIRegex = /<span class="clickable-tag">(Reducto AI)<\/span>/;
         const match = resultHtml.match(reductoAIRegex);
         if (match) {
           resultHtml = resultHtml.replace(reductoAIRegex, '<span class="clickable-tag selected">$1</span>');
-          setFirstReductoAISelected(true);
         }
       }
 
