@@ -137,17 +137,29 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
       // Apply 'selected' class to the first 'Reducto AI' span only on the final variant
       if (variantIndex === variants.length - 1 && loadingComplete) {
-        const reductoAIRegex = /<span class="clickable-tag">(Reducto AI)<\/span>/;
-        const match = resultHtml.match(reductoAIRegex);
-        if (match) {
-          resultHtml = resultHtml.replace(reductoAIRegex, '<span class="clickable-tag selected">$1</span>');
-        }
+        // More specific regex that matches the exact structure
+        resultHtml = resultHtml.replace(
+          /<span class=['"]clickable-tag['"]>Reducto AI<\/span>/,
+          '<span class="clickable-tag selected">Reducto AI</span>'
+        );
       }
 
       return <span dangerouslySetInnerHTML={{ __html: resultHtml }} />;
     };
 
     return renderHtml();
+  };
+
+  // For the final variant when loading is complete, apply selected class directly
+  const getFinalContent = () => {
+    if (variantIndex === variants.length - 1 && loadingComplete) {
+      const finalContent = variants[variantIndex].replace(
+        /<span class=['"]clickable-tag['"]>Reducto AI<\/span>/,
+        '<span class="clickable-tag selected">Reducto AI</span>'
+      );
+      return <span dangerouslySetInnerHTML={{ __html: finalContent }} />;
+    }
+    return null;
   };
 
   return (
@@ -160,13 +172,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       className={className}
     >
       <div className="window-content">
-        <div
-          style={{
-            // width: dimensions.width ? `${dimensions.width}px` : 'auto',
-            // height: dimensions.height ? `${dimensions.height}px` : 'auto',
-            // transition: 'width 0.1s ease-out, height 0.1s ease-out',
-          }}
-        >
+        <div>
           <div
             ref={measureRef}
             style={{
@@ -178,7 +184,9 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
             }}
           />
           <p className="main-text">
-            {variantIndex > 0 ? (
+            {loadingComplete && variantIndex === variants.length - 1 ? (
+              getFinalContent()
+            ) : variantIndex > 0 ? (
               <Diff
                 oldContent={variants[Math.max(0, variantIndex - 1)]}
                 newContent={variants[variantIndex]}
