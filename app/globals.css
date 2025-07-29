@@ -436,3 +436,41 @@ body {
   0% { background-color: #00894933; }
   to { background-color: initial; }
 }
+
+.fixed-buttons-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.action-button {
+    width: 30px;
+    height: 30px;
+    background-color: #c0c0c0; /* Retro button background */
+    border: 2px solid #000000;
+    box-shadow: 
+        2px 2px 0px #808080,
+        4px 4px 0px #404040;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    transition: all 0.1s ease-in-out;
+}
+
+.action-button:hover {
+    box-shadow: 
+        1px 1px 0px #404040,
+        2px 2px 0px #808080;
+    transform: translate(1px, 1px); /* Simulate button press */
+}
+
+.action-button img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
