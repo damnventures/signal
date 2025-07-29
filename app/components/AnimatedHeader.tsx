@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import './AnimatedHeader.css';
 import DraggableWindow from './DraggableWindow';
 
 interface AnimatedHeaderProps {
@@ -8,7 +9,7 @@ interface AnimatedHeaderProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   initialPosition: { x: number; y: number };
-  onLoadingComplete: () => void; // Callback when loading finishes
+  onLoadingComplete: () => void;
 }
 
 const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
@@ -25,37 +26,44 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const measureRef = useRef<HTMLDivElement | null>(null);
 
   const variants = [
-    "Good morning, Vanya! Checking the updates / context",
-    "Good morning, Vanya! You confirmed the account issue is resolved.",
-    "Good morning, Vanya! You confirmed the account issue is resolved, you can now test the Sunflower Mail 1.0 (233) build on iOS.",
-    "Good morning, Vanya! You confirmed the account issue is resolved, you can now test the Sunflower Mail 1.0 (233) build on iOS, and you sent your resignation."
+    "Good morning, Vanya! Checking your signals...",
+    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
+    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
+    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
   ];
 
-  // Cycle through variants
+  // Cycle through variants with pause
   useEffect(() => {
     const initialDelay = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
         const timer = setTimeout(() => {
           setShowDiff(true);
           setVariantIndex(prev => prev + 1);
-          setTimeout(() => setShowDiff(false), 1000); // Highlight for 1 second
-        }, 2000); // 2-second delay between updates
+          setTimeout(() => setShowDiff(false), 1000); // Diff highlight for 1 second
+        }, 500); // 0.5-second pause before text update
         return () => clearTimeout(timer);
       } else {
         setLoadingComplete(true);
-        onLoadingComplete(); // Notify parent when loading is complete
+        onLoadingComplete();
       }
-    }, 2000); // Initial 2-second delay before starting the animation
-
+    }, variantIndex === 0 ? 2000 : 1500); // 2s initial delay, 1.5s (0.5s pause + 1s diff) for subsequent
     return () => clearTimeout(initialDelay);
-  }, [variantIndex, onLoadingComplete, variants.length]);
+  }, [variantIndex, onLoadingComplete]);
 
   // Measure dimensions of current variant
   useEffect(() => {
     if (measureRef.current) {
-      measureRef.current.textContent = variants[variantIndex];
-      const width = Math.ceil(measureRef.current.scrollWidth);
-      const height = Math.ceil(measureRef.current.scrollHeight);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = variants[variantIndex];
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.visibility = 'hidden';
+      tempDiv.style.padding = '0 8px';
+      tempDiv.style.fontSize = '24px';
+      tempDiv.style.fontFamily = "'Geneva', sans-serif";
+      document.body.appendChild(tempDiv);
+      const width = Math.ceil(tempDiv.scrollWidth);
+      const height = Math.ceil(tempDiv.scrollHeight);
+      document.body.removeChild(tempDiv);
       setDimensions({ width, height });
     }
   }, [variantIndex]);
@@ -63,8 +71,8 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   // Diff component for highlighting changes
   const Diff = ({ oldContent, newContent, showDiff }: { oldContent: string; newContent: string; showDiff: boolean }) => {
     const segments = [];
-    const oldText = oldContent || "";
-    const newText = newContent || "";
+    const oldText = oldContent.replace(/<[^>]+>/g, '') || "";
+    const newText = newContent.replace(/<[^>]+>/g, '') || "";
     const maxLength = Math.max(oldText.length, newText.length);
     let currentSegment = { text: "", isDiff: false };
 
@@ -90,15 +98,32 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       segments.push(currentSegment);
     }
 
-    return (
-      <>
-        {segments.map((segment, index) => (
-          <span key={index} className={showDiff && segment.isDiff ? "diff-highlight" : ""}>
-            {segment.text}
-          </span>
-        ))}
-      </>
-    );
+    // Reconstruct HTML with diff highlighting
+    const renderHtml = () => {
+      let result = newContent;
+      if (showDiff) {
+        let offset = 0;
+        segments.forEach(segment => {
+          if (segment.isDiff) {
+            const start = newText.indexOf(segment.text, offset);
+            if (start !== -1) {
+              const htmlStart = newContent.indexOf(segment.text, offset);
+              result = (
+                result.slice(0, htmlStart) +
+                `<span class="diff-highlight">${segment.text}</span>` +
+                result.slice(htmlStart + segment.text.length)
+              );
+              offset = start + segment.text.length;
+            }
+          } else {
+            offset += segment.text.length;
+          }
+        });
+      }
+      return <span dangerouslySetInnerHTML={{ __html: result }} />;
+    };
+
+    return renderHtml();
   };
 
   return (
@@ -107,7 +132,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       onBringToFront={onBringToFront}
       initialZIndex={initialZIndex}
       initialPosition={initialPosition}
-      style={{ pointerEvents: loadingComplete ? 'auto' : 'none' }} // Disable dragging until loading complete
+      style={{ pointerEvents: loadingComplete ? 'auto' : 'none' }}
     >
       <div className="window-content">
         <div
@@ -135,7 +160,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
                 showDiff={showDiff}
               />
             ) : (
-              variants[0]
+              <span dangerouslySetInnerHTML={{ __html: variants[0] }} />
             )}
           </p>
         </div>
