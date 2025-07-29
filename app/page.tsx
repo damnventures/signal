@@ -289,15 +289,9 @@ const HomePage = () => {
   }, []);
 
   const calculateUpdateWindowPosition = useCallback(() => {
-    const buttonWidth = 30; // Width of the action buttons
-    const buttonMargin = 10; // Gap between buttons
-    const windowWidth = 200; // Approximate width of the update window
-    const rightOffset = 20; // Margin from the right edge
-
-    const x = window.innerWidth - rightOffset - (buttonWidth * 2) - buttonMargin - windowWidth - 10; // 10px for extra spacing
-    const y = window.innerHeight - 20 - 30; // Align with bottom of buttons
-
-    return { x, y };
+    // Position is now primarily handled by CSS for fixed positioning
+    // This function provides a fallback initial position if needed
+    return { x: window.innerWidth - 350, y: window.innerHeight - 60 };
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
