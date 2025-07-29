@@ -8,17 +8,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
   }
 
-  const API_URL = process.env.BACKEND_API_URL; // Your backend API URL
+  const API_URL = process.env.BACKEND_API_URL || 'https://api.shrinked.ai'; // Fallback to ensure correct URL
+  const API_KEY = process.env.SHRINKED_API_KEY;
 
   if (!API_URL) {
     console.error('API Error: BACKEND_API_URL is not configured.');
     return NextResponse.json({ error: 'Backend API URL not configured' }, { status: 500 });
   }
 
-  console.log(`[Job Details API] Attempting to fetch from: ${API_URL}/jobs/by-result/${fileId}`);
+  if (!API_KEY) {
+    console.error('API Error: SHRINKED_API_KEY is not configured.');
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+  }
+
+  const requestUrl = `${API_URL}/jobs/by-result/${fileId}`;
+  console.log(`[Job Details API] Attempting to fetch from: ${requestUrl}`);
+  console.log(`[Job Details API] Using API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
 
   try {
-    const response = await fetch(`${API_URL}/jobs/by-result/${fileId}`);
+    const response = await fetch(requestUrl, {
+      headers: {
+        'x-api-key': API_KEY,
+      },
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
