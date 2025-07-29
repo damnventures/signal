@@ -63,12 +63,12 @@ body {
     font-style: normal; /* Remove italic */
     background: none; /* Default to no background */
     padding: 0; /* Default to no padding */
-    font-weight: normal; /* Reset font weight */
+    font-weight: normal; /* Explicitly normal weight */
 }
 
 .clickable-tag.selected {
     background: #FDFF92;
-    font-weight: 700;
+    font-weight: bold; /* Explicitly bold */
     padding: 0 2px;
     font-style: normal; /* Not italic when selected */
 }

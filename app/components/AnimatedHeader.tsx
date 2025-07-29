@@ -106,6 +106,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     const renderHtml = () => {
       let resultHtml = newContent;
 
+      // Apply diff highlighting first
       if (showDiff) {
         let currentHtmlIndex = 0;
         segments.forEach(segment => {
@@ -115,9 +116,9 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
           if (plainTextIndex !== -1 && segment.isDiff) {
             let tempPlain = '';
             let htmlIdx = 0;
-            while (tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
+            while(tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
               if (newContent[htmlIdx] === '<') {
-                while (newContent[htmlIdx] !== '>' && htmlIdx < newContent.length) {
+                while(newContent[htmlIdx] !== '>' && htmlIdx < newContent.length) {
                   htmlIdx++;
                 }
               } else {
@@ -125,7 +126,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
               }
               htmlIdx++;
             }
-            const actualHtmlIndex = htmlIdx - 1;
+            const actualHtmlIndex = htmlIdx - 1; 
 
             const segmentHtml = newContent.substring(actualHtmlIndex, actualHtmlIndex + plainTextSegment.length + (newContent.substring(actualHtmlIndex + plainTextSegment.length).match(/^<[^>]+>/) || [''])[0].length);
 
@@ -135,16 +136,21 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
         });
       }
 
-      // Apply 'selected' class to the first 'Reducto AI' span only on the final variant
-      if (variantIndex === variants.length - 1 && loadingComplete) {
-        // More specific regex that matches the exact structure
-        resultHtml = resultHtml.replace(
-          /<span class=['"]clickable-tag['"]>Reducto AI<\/span>/,
-          '<span class="clickable-tag selected">Reducto AI</span>'
-        );
-      }
+      // Now, apply 'selected' class to the first 'Reducto AI' span
+      // This needs to be done carefully to avoid re-highlighting diffs
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = resultHtml;
+      const clickableTags = tempElement.querySelectorAll('.clickable-tag');
+      let reductoAIFound = false;
 
-      return <span dangerouslySetInnerHTML={{ __html: resultHtml }} />;
+      clickableTags.forEach(tag => {
+        if (tag.textContent === 'Reducto AI' && !reductoAIFound) {
+          tag.classList.add('selected');
+          reductoAIFound = true;
+        }
+      });
+
+      return <span dangerouslySetInnerHTML={{ __html: tempElement.innerHTML }} />;
     };
 
     return renderHtml();

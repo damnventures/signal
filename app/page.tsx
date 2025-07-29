@@ -435,7 +435,7 @@ const HomePage = () => {
                       className={`control-button play-pause ${isPlaying[activeVideoId || ''] ? 'pressed' : ''}`}
                       onClick={handlePlayPause}
                     >
-                      <span className="icon">{isPlaying[activeVideoId || ''] ? '||' : '▶'}</span>
+                      <span className="icon">{isPlaying[activeVideoId || ''] ? '❚❚' : '▶'}</span>
                     </div>
                     <div className="control-button" onClick={() => handleSeek(10)}>
                       <span className="icon">&#9654;</span>
@@ -453,6 +453,14 @@ const HomePage = () => {
           )}
         </>
       )}
+      <div className="fixed-buttons-container">
+        <button className="action-button" onClick={() => window.location.reload()}>
+          <img src="/signal.png" alt="Refresh" />
+        </button>
+        <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
+          <img src="/shrinked.png" alt="Shrinked AI" />
+        </button>
+      </div>
     </main>
   );
 };
