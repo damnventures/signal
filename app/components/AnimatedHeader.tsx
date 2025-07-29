@@ -33,18 +33,22 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
   // Cycle through variants
   useEffect(() => {
-    if (variantIndex < variants.length - 1) {
-      const timer = setTimeout(() => {
-        setShowDiff(true);
-        setVariantIndex(prev => prev + 1);
-        setTimeout(() => setShowDiff(false), 300); // Match fadeHighlight duration
-      }, 2000); // 2-second delay between updates
-      return () => clearTimeout(timer);
-    } else {
-      setLoadingComplete(true);
-      onLoadingComplete(); // Notify parent when loading is complete
-    }
-  }, [variantIndex, onLoadingComplete]);
+    const initialDelay = setTimeout(() => {
+      if (variantIndex < variants.length - 1) {
+        const timer = setTimeout(() => {
+          setShowDiff(true);
+          setVariantIndex(prev => prev + 1);
+          setTimeout(() => setShowDiff(false), 1000); // Highlight for 1 second
+        }, 2000); // 2-second delay between updates
+        return () => clearTimeout(timer);
+      } else {
+        setLoadingComplete(true);
+        onLoadingComplete(); // Notify parent when loading is complete
+      }
+    }, 2000); // Initial 2-second delay before starting the animation
+
+    return () => clearTimeout(initialDelay);
+  }, [variantIndex, onLoadingComplete, variants.length]);
 
   // Measure dimensions of current variant
   useEffect(() => {
@@ -105,35 +109,36 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       initialPosition={initialPosition}
       style={{ pointerEvents: loadingComplete ? 'auto' : 'none' }} // Disable dragging until loading complete
     >
-      <div
-        className="animated-header-content"
-        style={{
-          width: dimensions.width ? `${dimensions.width}px` : 'auto',
-          height: dimensions.height ? `${dimensions.height}px` : 'auto',
-          transition: 'width 0.1s ease-out, height 0.1s ease-out',
-        }}
-      >
+      <div className="window-content">
         <div
-          ref={measureRef}
           style={{
-            position: 'absolute',
-            visibility: 'hidden',
-            padding: '0 8px',
-            fontSize: '24px',
-            fontFamily: "'Geneva', sans-serif",
+            width: dimensions.width ? `${dimensions.width}px` : 'auto',
+            height: dimensions.height ? `${dimensions.height}px` : 'auto',
+            transition: 'width 0.1s ease-out, height 0.1s ease-out',
           }}
-        />
-        <p className="header-text">
-          {variantIndex > 0 ? (
-            <Diff
-              oldContent={variants[Math.max(0, variantIndex - 1)]}
-              newContent={variants[variantIndex]}
-              showDiff={showDiff}
-            />
-          ) : (
-            variants[0]
-          )}
-        </p>
+        >
+          <div
+            ref={measureRef}
+            style={{
+              position: 'absolute',
+              visibility: 'hidden',
+              padding: '0 8px',
+              fontSize: '24px',
+              fontFamily: "'Geneva', sans-serif",
+            }}
+          />
+          <p className="main-text">
+            {variantIndex > 0 ? (
+              <Diff
+                oldContent={variants[Math.max(0, variantIndex - 1)]}
+                newContent={variants[variantIndex]}
+                showDiff={showDiff}
+              />
+            ) : (
+              variants[0]
+            )}
+          </p>
+        </div>
       </div>
     </DraggableWindow>
   );
