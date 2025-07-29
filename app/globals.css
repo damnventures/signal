@@ -484,15 +484,15 @@ body {
 
 .status-window {
     position: fixed !important;
-    bottom: 20px !important;
-    /* Right positioning will be handled by DraggableWindow component */
+    bottom: 15px !important; /* A few pixels lower */
+    right: 150px !important; /* 150px from right edge, starting after buttons */
     z-index: 999 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important;
     padding: 0 !important;
     overflow: visible !important;
-    height: 34px !important; /* Matches action-button height */
+    height: 28px !important; /* A few pixels smaller in height */
     border: 2px solid #000000 !important;
     box-shadow: 
         2px 2px 0px #808080,
@@ -505,11 +505,11 @@ body {
 }
 
 .status-window .window-content {
-    padding: 6px 12px !important;
+    padding: 4px 10px !important; /* Slightly smaller padding to match smaller height */
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important; /* Right-align the text */
-    height: 30px !important;
+    height: 24px !important; /* Adjusted to match smaller window height */
     width: auto !important;
     min-width: fit-content !important;
     max-width: 400px !important;
