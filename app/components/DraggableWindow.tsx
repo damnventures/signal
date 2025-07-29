@@ -8,6 +8,7 @@ interface DraggableWindowProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   initialPosition: { x: number; y: number };
+  style?: React.CSSProperties; // Add this line
 }
 
 const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -16,6 +17,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   onBringToFront,
   initialZIndex,
   initialPosition,
+  style, // Destructure the style prop
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(initialPosition);
@@ -71,6 +73,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
         top: position.y,
         cursor: isDragging ? 'grabbing' : 'grab',
         zIndex: zIndex,
+        ...style, // Apply the passed style prop
       }}
       onMouseDown={handleMouseDown}
     >
