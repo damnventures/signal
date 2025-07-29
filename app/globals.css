@@ -483,38 +483,39 @@ body {
 }
 
 .status-window {
-    position: fixed;
-    bottom: 20px;
-    right: 80px; /* Position next to the buttons */
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0;
-    overflow: visible;
-    height: 34px; /* Matches action-button height */
-    border: 2px solid #000000;
+    position: fixed !important;
+    bottom: 20px !important;
+    /* Right positioning will be handled by DraggableWindow component */
+    z-index: 999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: 34px !important; /* Matches action-button height */
+    border: 2px solid #000000 !important;
     box-shadow: 
         2px 2px 0px #808080,
-        4px 4px 0px #404040;
-    /* Override .window class styles */
+        4px 4px 0px #404040 !important;
+    /* Override .window class styles completely */
     width: auto !important;
     max-width: none !important;
-    background: #ffffff;
+    min-width: auto !important;
+    background: #ffffff !important;
 }
 
 .status-window .window-content {
-    padding: 6px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end; /* Right-align the text */
-    height: 30px;
-    width: auto;
-    min-width: fit-content;
-    max-width: 400px;
-    background: #ffffff;
-    box-sizing: border-box;
-    white-space: nowrap;
+    padding: 6px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important; /* Right-align the text */
+    height: 30px !important;
+    width: auto !important;
+    min-width: fit-content !important;
+    max-width: 400px !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
 }
 
 .status-message-text {

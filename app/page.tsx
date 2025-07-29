@@ -343,8 +343,11 @@ const HomePage = () => {
   }, []);
 
   const calculateStatusWindowPosition = useCallback(() => {
-    // Position it right next to the buttons (left of them)
-    return { x: window.innerWidth - 490, y: window.innerHeight - 60 };
+    // Position it right next to the buttons (left of them) with proper spacing
+    // Buttons are at right: 20px, so we need to account for button width + gap
+    // 2 buttons * 30px width + 2 * 2px borders each + 10px gap between buttons = 74px total button width
+    // Add 10px gap between status window and buttons
+    return { x: window.innerWidth - 20 - 74 - 10, y: window.innerHeight - 60 };
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
