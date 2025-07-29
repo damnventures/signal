@@ -303,7 +303,7 @@ body {
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 20px;
+    margin: 10px;
     padding: 10px;
     background: #c0c0c0;
     border-top: 2px solid #808080;
@@ -397,8 +397,8 @@ body {
 
 .tv-speaker-grill {
     display: grid;
-    grid-template-columns: repeat(10, 2px); /* Revert to original desktop style */
-    gap: 3px; /* Original gap */
+    grid-template-columns: repeat(auto-fit, minmax(2px, 1fr));
+    gap: 10px;
     margin: 0 10px;
     flex-grow: 1; 
     height: 30px; 
@@ -490,9 +490,8 @@ body {
 }
 
 .text-update-window {
-    height: 30px; /* Same height as buttons */
-    width: 200px; /* Fixed width */
-    overflow: hidden; /* Hide overflowing text during animation */
+    /* Removed fixed height and width to allow content to dictate size */
+    /* Removed overflow: hidden to allow text to wrap */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -508,9 +507,7 @@ body {
 
 .update-message-text {
     font-size: 14px; /* Smaller font size */
-    white-space: nowrap; /* Prevent text wrapping */
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* Removed white-space: nowrap and text-overflow: ellipsis to allow text to wrap */
     color: black; /* Ensure text is visible */
 }
 

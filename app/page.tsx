@@ -209,13 +209,18 @@ const HomePage = () => {
 
   useEffect(() => {
     const messages = [
-      "SYSTEM IDLE: AWAITING USER INPUT...",
-      "NEURAL NETWORKS OPTIMIZED: READY FOR QUERIES!",
-      "QUANTUM PROCESSORS ALIGNED: MAXIMUM INSIGHT MODE!",
-      "SYNAPTIC CIRCUITS ENGAGED: READY TO ASTOUND!"
+      "System idle: Awaiting user input...",
+      "Neural networks optimized: Ready for queries!",
+      "Quantum processors aligned: Maximum insight mode!",
+      "Synaptic circuits engaged: Ready to astound!"
     ];
 
     let currentIndex = 0;
+
+    // Set the initial message immediately
+    setUpdateMessage(messages[currentIndex]);
+    setMessageAnimationKey(prevKey => prevKey + 1);
+    currentIndex = (currentIndex + 1) % messages.length;
 
     const interval = setInterval(() => {
       setUpdateMessage(messages[currentIndex]);
