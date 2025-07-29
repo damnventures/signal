@@ -42,13 +42,27 @@ const HomePage = () => {
             clearInterval(checkIframe);
             try {
               playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
-          events: {
-            'onReady': (event: any) => {
-              event.target.playVideo();
-              setIsPlaying(prev => ({ ...prev, [videoId]: true }));
-            },
-          },
-        });
+                events: {
+                  'onReady': (event: any) => {
+                    console.log(`[YouTube] Player ready for videoId: ${videoId}`);
+                    if (index === 0) {
+                      event.target.playVideo();
+                      setIsPlaying(prev => ({ ...prev, [videoId]: true }));
+                      setActiveVideoId(videoId);
+                    }
+                  },
+                  'onStateChange': (event: any) => {
+                    const newState = event.data === (window as any).YT.PlayerState.PLAYING;
+                    setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
+                    if (newState) {
+                      setActiveVideoId(videoId);
+                    }
+                  },
+                  'onError': (event: any) => {
+                    console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
+                  },
+                },
+              });
             } catch (error) {
               console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
             }
@@ -439,14 +453,6 @@ const HomePage = () => {
           )}
         </>
       )}
-    <div className="fixed-buttons-container">
-        <button className="action-button" onClick={() => window.location.reload()}>
-          <img src="/signal.png" alt="Refresh" />
-        </button>
-        <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
-          <img src="/shrinked.png" alt="Shrinked AI" />
-        </button>
-      </div>
     </main>
   );
 };
