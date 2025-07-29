@@ -198,7 +198,6 @@ const HomePage = () => {
               initialPosition={calculateInitialPosition(highlightsData.length + 2)} // Position after highlights
             >
               <div className="window-content">
-                <h2 className="main-heading">YouTube Video</h2>
                 <div className="video-embed-container">
                   {fetchedOriginalLinks.map((link, index) => {
                     const videoId = getYouTubeVideoId(link);
