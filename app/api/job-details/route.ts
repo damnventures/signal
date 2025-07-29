@@ -42,20 +42,37 @@ export async function GET(request: Request) {
 
     console.log(`[Job Details API] Fetched jobId: ${jobId} for fileId: ${fileId}`);
 
-    // Step 2: Fetch job details using jobId
-    const jobDetailsResponse = await fetch(`${API_URL}/jobs/${jobId}`, {
-      headers: {
-        'x-api-key': API_KEY,
-      },
-    });
+    // Step 2: Fetch job details using jobId, with retry logic
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 second
+    let jobDetailsResponse;
+    let jobData;
 
-    if (!jobDetailsResponse.ok) {
-      const errorText = await jobDetailsResponse.text();
-      console.error(`API Error: Failed to fetch job details for jobId ${jobId}. Status: ${jobDetailsResponse.status}, Body: ${errorText}`);
-      return NextResponse.json({ error: `Failed to fetch job details: ${jobDetailsResponse.statusText}` }, { status: jobDetailsResponse.status });
+    for (let i = 0; i < MAX_RETRIES; i++) {
+      console.log(`[Job Details API] Attempting to fetch job details for jobId ${jobId} (Attempt ${i + 1})`);
+      jobDetailsResponse = await fetch(`${API_URL}/jobs/${jobId}`, {
+        headers: {
+          'x-api-key': API_KEY,
+        },
+      });
+
+      if (jobDetailsResponse.ok) {
+        jobData = await jobDetailsResponse.json();
+        break; // Success, exit loop
+      }
+
+      console.warn(`[Job Details API] Attempt ${i + 1} failed with status ${jobDetailsResponse.status}. Retrying in ${RETRY_DELAY}ms...`);
+      
+      if (i < MAX_RETRIES - 1) {
+          await new Promise(res => setTimeout(res, RETRY_DELAY));
+      }
     }
 
-    const jobData = await jobDetailsResponse.json();
+    if (!jobDetailsResponse || !jobDetailsResponse.ok) {
+      const errorText = jobDetailsResponse ? await jobDetailsResponse.text() : 'No response from server.';
+      console.error(`API Error: Failed to fetch job details for jobId ${jobId} after ${MAX_RETRIES} attempts. Last status: ${jobDetailsResponse?.status}, Body: ${errorText}`);
+      return NextResponse.json({ error: `Failed to fetch job details: ${jobDetailsResponse?.statusText}` }, { status: jobDetailsResponse?.status || 500 });
+    }
 
     // Extract originalLink from steps where name is "UPLOAD_FILE"
     const uploadStep = jobData.steps?.find((step: any) => step.name === 'UPLOAD_FILE');

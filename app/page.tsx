@@ -136,9 +136,11 @@ const HomePage = () => {
               } else {
                 const errorText = await jobDetailsResponse.text();
                 console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+                setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
               }
             } catch (error: any) {
               console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
+              setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
             }
           }
         }
