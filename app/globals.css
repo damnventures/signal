@@ -363,6 +363,12 @@ body {
     box-shadow: inset 0 0 10px #000000, 5px 5px 10px rgba(0,0,0,0.5);
 }
 
+@media (max-width: 767px) {
+    .tv-bezel {
+        padding: 10px; /* Reduced padding for mobile */
+    }
+}
+
 .tv-screen {
     background: #000;
     padding: 10px;
@@ -372,16 +378,10 @@ body {
     overflow: hidden;
 }
 
-.tv-screen::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 5%, rgba(0,0,0,0.1) 95%, rgba(0,0,0,0.5) 100%);
-    pointer-events: none;
-    z-index: 2;
+@media (max-width: 767px) {
+    .tv-screen {
+        padding: 5px; /* Reduced padding for mobile */
+    }
 }
 
 .tv-controls {
@@ -397,7 +397,7 @@ body {
 
 .tv-speaker-grill {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(2px, 1fr)); /* Adjust to fill space */
+    grid-template-columns: repeat(2, 1fr); /* Show only a few grills */
     gap: 5px; /* Increased gap */
     margin: 0 10px;
     flex-grow: 1; /* Allow grills to take available space */
@@ -473,4 +473,53 @@ body {
     width: 24px;
     height: 24px;
     object-fit: contain;
+}
+
+.text-update-window {
+    height: 30px; /* Same height as buttons */
+    width: 200px; /* Fixed width */
+    overflow: hidden; /* Hide overflowing text during animation */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove default window-content padding */
+}
+
+.text-update-window .window-content {
+    padding: 0 10px; /* Add some horizontal padding */
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.update-message-text {
+    font-size: 14px; /* Smaller font size */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: black; /* Ensure text is visible */
+}
+
+/* Animation for message update */
+@keyframes shrinkExpand {
+    0% {
+        transform: scaleX(1); /* Full width */
+        transform-origin: right; /* Shrink from right */
+        opacity: 1;
+    }
+    50% {
+        transform: scaleX(0); /* Shrink to zero width */
+        transform-origin: right;
+        opacity: 0;
+    }
+    51% {
+        transform: scaleX(0); /* Stay at zero width */
+        transform-origin: left; /* Expand from left */
+        opacity: 0;
+    }
+    100% {
+        transform: scaleX(1); /* Expand to full width */
+        transform-origin: left;
+        opacity: 1;
+    }
 }

@@ -9,7 +9,8 @@ interface DraggableWindowProps {
   initialZIndex: number;
   initialPosition: { x: number; y: number };
   style?: React.CSSProperties;
-  className?: string; // Add this line
+  className?: string;
+  isDraggable?: boolean; // New prop
 }
 
 const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -19,7 +20,8 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   initialZIndex,
   initialPosition,
   style,
-  className, // Destructure the className prop
+  className,
+  isDraggable = true, // Default to true
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(initialPosition);
@@ -28,6 +30,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isDraggable) return; // Prevent dragging if not draggable
     if (windowRef.current) {
       setIsDragging(true);
       onBringToFront(id); // Bring this window to front on click/drag start
@@ -39,6 +42,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isDraggable) return; // Prevent dragging if not draggable
     if (windowRef.current) {
       setIsDragging(true);
       onBringToFront(id);
@@ -100,7 +104,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
         position: 'absolute',
         left: position.x,
         top: position.y,
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: isDragging ? 'grabbing' : (isDraggable ? 'grab' : 'default'), // Change cursor based on isDraggable
         zIndex: zIndex,
         ...style,
       }}
