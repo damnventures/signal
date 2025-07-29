@@ -166,7 +166,7 @@ const HomePage = () => {
     } else {
       // Mobile: centered
       const centerX = Math.max(10, (window.innerWidth - 320) / 2);
-      return { x: centerX + offset, y: 100 + offset };
+      return { x: centerX + offset, y: 80 + offset };
     }
   }, []);
 
@@ -183,10 +183,10 @@ const HomePage = () => {
     } else {
       // Mobile: below cards
       const centerX = Math.max(10, (window.innerWidth - 320) / 2);
-      const cardsHeight = highlightsData.length * 200 + 300;
+      const cardsHeight = highlightsData.length * 50 + 100;
       return { 
         x: centerX, 
-        y: Math.max(cardsHeight, 600)
+        y: cardsHeight
       };
     }
   }, [highlightsData.length]);
