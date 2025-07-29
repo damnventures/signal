@@ -70,13 +70,18 @@ body {
     overflow: hidden;
 }
 
+.animated-header-window {
+    overflow: visible; /* Allow content to expand */
+}
+
 .tv-player-window {
     border: none; /* Remove border */
     background: none; /* Remove background */
     box-shadow: 
-        2px 2px 0px #808080,
-        4px 4px 0px #404040;
+        8px 8px 0px #808080,
+        16px 16px 0px #404040;
     border-radius: 20px; /* Rounded corners for TV shape */
+    overflow: visible; /* Allow content to expand */
 }
 
 @media (min-width: 768px) {

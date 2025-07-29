@@ -254,6 +254,7 @@ const HomePage = () => {
                 initialZIndex={cardZIndexes['header'] || 1}
                 initialPosition={calculateHeaderPosition()}
                 onLoadingComplete={handleHeaderLoadingComplete}
+                className="animated-header-window"
               />
             )}
 

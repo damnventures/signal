@@ -9,6 +9,7 @@ interface AnimatedHeaderProps {
   initialZIndex: number;
   initialPosition: { x: number; y: number };
   onLoadingComplete: () => void;
+  className?: string;
 }
 
 const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
@@ -17,6 +18,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   initialZIndex,
   initialPosition,
   onLoadingComplete,
+  className,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
@@ -33,21 +35,21 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
   // Cycle through variants with pause
   useEffect(() => {
-    const initialDelay = setTimeout(() => {
+    const delay = variantIndex === 0 ? 2000 : 1500; // 2s initial delay, 1.5s (0.5s pause + 1s diff) for subsequent
+
+    const timer = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
-        const timer = setTimeout(() => {
-          setShowDiff(true);
-          setVariantIndex(prev => prev + 1);
-          setTimeout(() => setShowDiff(false), 1000); // Diff highlight for 1 second
-        }, 500); // 0.5-second pause before text update
-        return () => clearTimeout(timer);
+        setShowDiff(true);
+        setVariantIndex(prev => prev + 1);
+        setTimeout(() => setShowDiff(false), 1000); // Diff highlight for 1 second
       } else {
         setLoadingComplete(true);
         onLoadingComplete();
       }
-    }, variantIndex === 0 ? 2000 : 1500); // 2s initial delay, 1.5s (0.5s pause + 1s diff) for subsequent
-    return () => clearTimeout(initialDelay);
-  }, [variantIndex, onLoadingComplete]);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [variantIndex, onLoadingComplete, variants.length]);
 
   // Measure dimensions of current variant
   useEffect(() => {
@@ -152,13 +154,14 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       initialZIndex={initialZIndex}
       initialPosition={initialPosition}
       style={{ pointerEvents: loadingComplete ? 'auto' : 'none' }}
+      className={className}
     >
       <div className="window-content">
         <div
           style={{
-            width: dimensions.width ? `${dimensions.width}px` : 'auto',
-            height: dimensions.height ? `${dimensions.height}px` : 'auto',
-            transition: 'width 0.1s ease-out, height 0.1s ease-out',
+            // width: dimensions.width ? `${dimensions.width}px` : 'auto',
+            // height: dimensions.height ? `${dimensions.height}px` : 'auto',
+            // transition: 'width 0.1s ease-out, height 0.1s ease-out',
           }}
         >
           <div
