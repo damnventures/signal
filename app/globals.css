@@ -397,12 +397,26 @@ body {
 
 .tv-speaker-grill {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Show only a few grills */
-    gap: 5px; /* Increased gap */
+    grid-template-columns: repeat(10, 2px); /* Revert to original desktop style */
+    gap: 3px; /* Original gap */
     margin: 0 10px;
-    flex-grow: 1; /* Allow grills to take available space */
-    height: 30px; /* Ensure consistent height */
-    align-items: center; /* Vertically align grill lines */
+    flex-grow: 1; 
+    height: 30px; 
+    align-items: center; 
+}
+
+@media (max-width: 767px) {
+    .tv-speaker-grill {
+        grid-template-columns: repeat(2, 1fr); /* Two grills on each side for mobile */
+        gap: 5px; /* Adjusted gap for mobile */
+    }
+}
+
+@media (max-width: 767px) {
+    .tv-speaker-grill {
+        grid-template-columns: repeat(2, 1fr); /* Two grills on each side for mobile */
+        gap: 5px; /* Adjusted gap for mobile */
+    }
 }
 
 .tv-speaker-grill span {

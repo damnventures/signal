@@ -207,6 +207,25 @@ const HomePage = () => {
     fetchCapsuleContent();
   }, [parseHighlights]);
 
+  useEffect(() => {
+    const messages = [
+      "SYSTEM IDLE: AWAITING USER INPUT...",
+      "NEURAL NETWORKS OPTIMIZED: READY FOR QUERIES!",
+      "QUANTUM PROCESSORS ALIGNED: MAXIMUM INSIGHT MODE!",
+      "SYNAPTIC CIRCUITS ENGAGED: READY TO ASTOUND!"
+    ];
+
+    let currentIndex = 0;
+
+    const interval = setInterval(() => {
+      setUpdateMessage(messages[currentIndex]);
+      setMessageAnimationKey(prevKey => prevKey + 1); // Trigger animation
+      currentIndex = (currentIndex + 1) % messages.length;
+    }, 5000); // Update message every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
     setHighlightCard(0);
