@@ -17,14 +17,13 @@ const HomePage = () => {
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
   const [nextZIndex, setNextZIndex] = useState(1);
   const [fetchedOriginalLinks, setFetchedOriginalLinks] = useState<string[]>([]);
-  const playerRef = useRef<YT.Player | null>(null);
-  const videoIdRef = useRef<string | null>(null);
+  const playerRefs = useRef<Record<string, YT.Player | null>>({});
   const [isClient, setIsClient] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [showCards, setShowCards] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const [highlightCard, setHighlightCard] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setIsClient(true);
@@ -38,27 +37,24 @@ const HomePage = () => {
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
     (window as any).onYouTubeIframeAPIReady = () => {
-      if (videoIdRef.current) {
-        playerRef.current = new (window as any).YT.Player(`youtube-player-${videoIdRef.current}`, {
-          events: {
-            'onReady': (event: any) => {
-              event.target.playVideo();
-              setIsPlaying(true);
+      fetchedOriginalLinks.forEach((link, index) => {
+        const videoId = getYouTubeVideoId(link);
+        if (videoId && !playerRefs.current[videoId]) {
+          playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+            events: {
+              'onReady': (event: any) => {
+                event.target.playVideo();
+                setIsPlaying(prev => ({ ...prev, [videoId]: true }));
+              },
+              'onStateChange': (event: any) => {
+                const newState = event.data === (window as any).YT.PlayerState.PLAYING;
+                setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
+              },
             },
-          },
-        });
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (fetchedOriginalLinks.length > 0 && videoIdRef.current && (window as any).YT && !playerRef.current) {
-      playerRef.current = new (window as any).YT.Player(`youtube-player-${videoIdRef.current}`, {
-        events: {
-          'onReady': (event: any) => event.target.playVideo(),
-        },
+          });
+        }
       });
-    }
+    };
   }, [fetchedOriginalLinks]);
 
   const parseHighlights = useCallback((text: string): Highlight[] => {
@@ -154,14 +150,13 @@ const HomePage = () => {
               setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
             }
 
-            // Wait for the specified delay before the next iteration
             await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
           }
         }
 
         console.log(`[HomePage] Successfully fetched capsule content.`);
       } catch (error: any) {
-        console.error(`[HomePage] Error fetching capsule content: ${error.message}`);
+        console.error(`[HomePage] Error fetching capsule content:`, error.message);
         setCapsuleContent('Unable to load capsule content. Please try again later.');
       }
     };
@@ -171,9 +166,9 @@ const HomePage = () => {
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
-    setHighlightCard(0); // Highlight the first card
-    setTimeout(() => setHighlightCard(null), 300); // Remove highlight after 0.3s
-    setTimeout(() => setShowVideo(true), highlightsData.length * 300); // Show video after cards
+    setHighlightCard(0);
+    setTimeout(() => setHighlightCard(null), 300);
+    setTimeout(() => setShowVideo(true), highlightsData.length * 300);
   }, [highlightsData.length]);
 
   const handleBringToFront = useCallback((id: string) => {
@@ -185,16 +180,14 @@ const HomePage = () => {
   }, [nextZIndex]);
 
   const calculateInitialPosition = useCallback((index: number) => {
-    const offset = index * 15; // 15px offset for each card
+    const offset = index * 15;
     const isDesktop = window.innerWidth >= 768;
-    const headerHeight = 100; // Approximate height of header
+    const headerHeight = 100;
 
     if (isDesktop) {
-      // Desktop: stack on the left side, below header
       return { x: 100 + offset, y: 100 + headerHeight + offset };
     } else {
-      // Mobile: centered, below header
-      const cardWidth = 320; // Assuming a card width of 320px
+      const cardWidth = 320;
       const centerX = (window.innerWidth - cardWidth) / 2;
       return { x: centerX + offset, y: 80 + headerHeight + offset };
     }
@@ -204,21 +197,13 @@ const HomePage = () => {
     const isDesktop = window.innerWidth >= 768;
     
     if (isDesktop) {
-      // Desktop: right side area
       const leftAreaWidth = window.innerWidth * 0.62;
-      return { 
-        x: leftAreaWidth, 
-        y: 100 
-      };
+      return { x: leftAreaWidth, y: 100 };
     } else {
-      // Mobile: below cards
-      const cardWidth = 320; // Assuming a card width of 320px
+      const cardWidth = 320;
       const centerX = (window.innerWidth - cardWidth) / 2;
-      const cardsHeight = highlightsData.length * 50 + 100; // Approximate height of the card stack
-      return { 
-        x: centerX,
-        y: cardsHeight + 20 // Add padding below the cards
-      };
+      const cardsHeight = highlightsData.length * 50 + 100;
+      return { x: centerX, y: cardsHeight + 20 };
     }
   }, [highlightsData.length]);
 
@@ -228,7 +213,7 @@ const HomePage = () => {
     if (isDesktop) {
       return { x: 16, y: 16 };
     } else {
-      const cardWidth = 320; // Assuming a card width of 320px
+      const cardWidth = 320;
       const centerX = (window.innerWidth - cardWidth) / 2;
       return { x: centerX, y: 16 };
     }
@@ -247,123 +232,141 @@ const HomePage = () => {
 
   return (
     <main className="main-container">
-      <>
-        {isClient && (
-          <>
-            {showHeader && (
-              <AnimatedHeader
-                id="header"
-                onBringToFront={handleBringToFront}
-                initialZIndex={cardZIndexes['header'] || 1}
-                initialPosition={calculateHeaderPosition()}
-                onLoadingComplete={handleHeaderLoadingComplete}
-                className="animated-header-window"
-              />
-            )}
+      {isClient && (
+        <>
+          {showHeader && (
+            <AnimatedHeader
+              id="header"
+              onBringToFront={handleBringToFront}
+              initialZIndex={cardZIndexes['header'] || 1}
+              initialPosition={calculateHeaderPosition()}
+              onLoadingComplete={handleHeaderLoadingComplete}
+              className="animated-header-window"
+            />
+          )}
 
-            {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
-              <p>No highlights found or parsing failed.</p>
-            )}
+          {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
+            <p>No highlights found or parsing failed.</p>
+          )}
 
-            {showCards && highlightsData.map((highlight, index) => (
-              <DraggableWindow
-                key={`highlight-${index}`}
-                id={`highlight-${index}`}
-                onBringToFront={handleBringToFront}
-                initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
-                initialPosition={calculateInitialPosition(index + 1)}
-                style={{
-                  animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
-                  opacity: 0,
-                  ...(highlightCard === index && { animation: 'highlightCard 0.3s ease-out' }),
-                }}
-              >
-                <div className="window-content">
-                  <h2 className="main-heading">{highlight.title}</h2>
-                  <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
-                  <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
-                  <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
+          {showCards && highlightsData.map((highlight, index) => (
+            <DraggableWindow
+              key={`highlight-${index}`}
+              id={`highlight-${index}`}
+              onBringToFront={handleBringToFront}
+              initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
+              initialPosition={calculateInitialPosition(index + 1)}
+              style={{
+                animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
+                opacity: 0,
+                ...(highlightCard === index && { animation: 'highlightCard 0.3s ease-out' }),
+              }}
+            >
+              <div className="window-content">
+                <h2 className="main-heading">{highlight.title}</h2>
+                <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
+                <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
+                <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
+              </div>
+            </DraggableWindow>
+          ))}
+
+          {showVideo && fetchedOriginalLinks.length > 0 && (
+            <DraggableWindow
+              id="original-links"
+              onBringToFront={handleBringToFront}
+              initialZIndex={cardZIndexes['original-links'] || nextZIndex}
+              initialPosition={calculateVideoPosition()}
+              style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
+              className="tv-player-window"
+            >
+              <div className="tv-bezel">
+                <div className="tv-screen">
+                  <div className="window-content video-window-content">
+                    <div className="video-embed-container">
+                      {fetchedOriginalLinks.map((link, index) => {
+                        const videoId = getYouTubeVideoId(link);
+                        if (videoId) {
+                          return (
+                            <div key={index} className="youtube-video-wrapper">
+                              <iframe
+                                id={`youtube-player-${videoId}`}
+                                width="100%"
+                                height="315"
+                                src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&autohide=1&showinfo=0&playsinline=1`}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                title={`YouTube video ${index}`}
+                              ></iframe>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <p key={index} className="main-text">
+                              <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                            </p>
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </DraggableWindow>
-            ))}
-
-            {showVideo && fetchedOriginalLinks.length > 0 && (
-              <DraggableWindow
-                id="original-links"
-                onBringToFront={handleBringToFront}
-                initialZIndex={cardZIndexes['original-links'] || nextZIndex}
-                initialPosition={calculateVideoPosition()}
-                style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
-                className="tv-player-window"
-              >
-                <div className="tv-bezel">
-                  <div className="tv-screen">
-                    <div className="window-content video-window-content">
-                      <div className="video-embed-container">
-                        {fetchedOriginalLinks.map((link, index) => {
-                          const videoId = getYouTubeVideoId(link);
-                          if (videoId) {
-                            videoIdRef.current = videoId;
-                            return (
-                              <div key={index} className="youtube-video-wrapper">
-                                <iframe
-                                  id={`youtube-player-${videoId}`}
-                                  width="100%"
-                                  height="315"
-                                  src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&autohide=1&showinfo=0&playsinline=1`}
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  title={`YouTube video ${index}`}
-                                ></iframe>
-                              </div>
-                            );
+                <div className="tv-controls">
+                  <div className="tv-speaker-grill">
+                    {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
+                  </div>
+                  <div className="retro-controls">
+                    <div className="control-button" onClick={() => {
+                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
+                      if (videoId && playerRefs.current[videoId]) {
+                        playerRefs.current[videoId].seekTo(0, true);
+                      }
+                    }}><span className="icon">&#9664;&#9664;</span></div>
+                    <div className="control-button" onClick={() => {
+                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
+                      if (videoId && playerRefs.current[videoId]) {
+                        playerRefs.current[videoId].seekTo(playerRefs.current[videoId].getCurrentTime() - 10, true);
+                      }
+                    }}><span className="icon">&#9664;</span></div>
+                    <div
+                      className={`control-button play-pause ${isPlaying[getYouTubeVideoId(fetchedOriginalLinks[0]) || ''] ? 'pressed' : ''}`}
+                      onClick={() => {
+                        const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
+                        if (videoId && playerRefs.current[videoId]) {
+                          if (isPlaying[videoId]) {
+                            playerRefs.current[videoId].pauseVideo();
                           } else {
-                            return (
-                              <p key={index} className="main-text">
-                                <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
-                              </p>
-                            );
+                            playerRefs.current[videoId].playVideo();
                           }
-                        })}
-                      </div>
+                          setIsPlaying(prev => ({ ...prev, [videoId]: !prev[videoId] }));
+                        }
+                      }}
+                    >
+                      <span className="icon">{isPlaying[getYouTubeVideoId(fetchedOriginalLinks[0]) || ''] ? '||' : '▶'}</span>
                     </div>
+                    <div className="control-button" onClick={() => {
+                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
+                      if (videoId && playerRefs.current[videoId]) {
+                        playerRefs.current[videoId].seekTo(playerRefs.current[videoId].getCurrentTime() + 10, true);
+                      }
+                    }}><span className="icon">&#9654;</span></div>
+                    <div className="control-button" onClick={() => {
+                      const videoId = getYouTubeVideoId(fetchedOriginalLinks[0]);
+                      if (videoId && playerRefs.current[videoId]) {
+                        playerRefs.current[videoId].seekTo(playerRefs.current[videoId].getDuration(), true);
+                      }
+                    }}><span className="icon">&#9654;&#9654;</span></div>
                   </div>
-                  <div className="tv-controls">
-                    <div className="tv-speaker-grill">
-                      {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
-                    </div>
-                    <div className="retro-controls">
-                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(0, true); }}><span className="icon">&#9664;&#9664;</span></div>
-                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(playerRef.current.getCurrentTime() - 10, true); }}><span className="icon">&#9664;</span></div>
-                      <div
-                        className={`control-button play-pause ${isPlaying ? 'pressed' : ''}`}
-                        onClick={() => {
-                          if (playerRef.current) {
-                            if (isPlaying) {
-                              playerRef.current.pauseVideo();
-                            } else {
-                              playerRef.current.playVideo();
-                            }
-                            setIsPlaying(!isPlaying);
-                          }
-                        }}
-                      >
-                        <span className="icon">{isPlaying ? '||' : '▶'}</span>
-                      </div>
-                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(playerRef.current.getCurrentTime() + 10, true); }}><span className="icon">&#9654;</span></div>
-                      <div className="control-button" onClick={() => { if (playerRef.current) playerRef.current.seekTo(playerRef.current.getDuration(), true); }}><span className="icon">&#9654;&#9654;</span></div>
-                    </div>
-                    <div className="tv-speaker-grill">
-                      {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
-                    </div>
+                  <div className="tv-speaker-grill">
+                    {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
                   </div>
                 </div>
-              </DraggableWindow>
-            )}
-          </>
-        )}
-      </>
+              </div>
+            </DraggableWindow>
+          )}
+        </>
+      )}
     </main>
   );
 };
