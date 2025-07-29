@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DraggableWindow from './components/DraggableWindow';
 
 interface Highlight {
@@ -16,6 +16,36 @@ const HomePage = () => {
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
   const [nextZIndex, setNextZIndex] = useState(1);
   const [fetchedOriginalLinks, setFetchedOriginalLinks] = useState<string[]>([]);
+  const playerRef = useRef<YT.Player | null>(null);
+  const videoIdRef = useRef<string | null>(null);
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      if (videoIdRef.current) {
+        playerRef.current = new (window as any).YT.Player(`youtube-player-${videoIdRef.current}`, {
+          events: {
+            'onReady': (event: any) => event.target.playVideo(),
+          },
+        });
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (fetchedOriginalLinks.length > 0 && videoIdRef.current && (window as any).YT && !(playerRef.current)) {
+      playerRef.current = new (window as any).YT.Player(`youtube-player-${videoIdRef.current}`, {
+        events: {
+          'onReady': (event: any) => event.target.playVideo(),
+        },
+      });
+    }
+  }, [fetchedOriginalLinks]);
 
   const parseHighlights = useCallback((text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
@@ -168,17 +198,19 @@ const HomePage = () => {
               initialPosition={calculateInitialPosition(highlightsData.length + 2)} // Position after highlights
             >
               <div className="window-content">
-                <h2 className="main-heading">Original Links</h2>
+                <h2 className="main-heading">YouTube Video</h2>
                 <div className="video-embed-container">
                   {fetchedOriginalLinks.map((link, index) => {
                     const videoId = getYouTubeVideoId(link);
                     if (videoId) {
+                      videoIdRef.current = videoId; // Store the videoId for player initialization
                       return (
                         <div key={index} className="youtube-video-wrapper">
                           <iframe
+                            id={`youtube-player-${videoId}`}
                             width="100%"
                             height="315"
-                            src={`https://www.youtube.com/embed/${videoId}`}
+                            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0`}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -196,11 +228,11 @@ const HomePage = () => {
                   })}
                 </div>
                 <div className="retro-controls">
-                  <div className="control-button"><span className="icon">&#9664;&#9664;</span></div>
-                  <div className="control-button"><span className="icon">&#9664;</span></div>
-                  <div className="control-button play-pause"><span className="icon">&#9654;</span></div>
-                  <div className="control-button"><span className="icon">&#9654;</span></div>
-                  <div className="control-button"><span className="icon">&#9654;&#9654;</span></div>
+                  <div className="control-button" onClick={() => playerRef.current?.seekTo(0, true)}><span className="icon">&#9664;&#9664;</span></div>
+                  <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 10, true)}><span className="icon">&#9664;</span></div>
+                  <div className="control-button play-pause" onClick={() => playerRef.current?.getPlayerState() === YT.PlayerState.PLAYING ? playerRef.current?.pauseVideo() : playerRef.current?.playVideo()}><span className="icon">&#9654;</span></div>
+                  <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10, true)}><span className="icon">&#9654;</span></div>
+                  <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getDuration(), true)}><span className="icon">&#9654;&#9654;</span></div>
                 </div>
               </div>
             </DraggableWindow>
