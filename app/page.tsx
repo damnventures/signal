@@ -140,6 +140,12 @@ const HomePage = () => {
     return <span dangerouslySetInnerHTML={{ __html: boldedText }} />;
   }, []);
 
+  const getYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?$/;
+    const match = url.match(regExp);
+    return (match && match[1].length === 11) ? match[1] : null;
+  };
+
   return (
     <main className="main-container">
       <>
@@ -163,13 +169,39 @@ const HomePage = () => {
             >
               <div className="window-content">
                 <h2 className="main-heading">Original Links</h2>
-                <ul>
-                  {fetchedOriginalLinks.map((link, index) => (
-                    <li key={index} className="main-text">
-                      <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
-                    </li>
-                  ))}
-                </ul>
+                <div className="video-embed-container">
+                  {fetchedOriginalLinks.map((link, index) => {
+                    const videoId = getYouTubeVideoId(link);
+                    if (videoId) {
+                      return (
+                        <div key={index} className="youtube-video-wrapper">
+                          <iframe
+                            width="100%"
+                            height="315"
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={`YouTube video ${index}`}
+                          ></iframe>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <p key={index} className="main-text">
+                          <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                        </p>
+                      );
+                    }
+                  })}
+                </div>
+                <div className="retro-controls">
+                  <div className="control-button"><span className="icon">&#9664;&#9664;</span></div>
+                  <div className="control-button"><span className="icon">&#9664;</span></div>
+                  <div className="control-button play-pause"><span className="icon">&#9654;</span></div>
+                  <div className="control-button"><span className="icon">&#9654;</span></div>
+                  <div className="control-button"><span className="icon">&#9654;&#9654;</span></div>
+                </div>
               </div>
             </DraggableWindow>
           )}
