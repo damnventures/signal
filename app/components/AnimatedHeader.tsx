@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import './AnimatedHeader.css';
 import DraggableWindow from './DraggableWindow';
 
 interface AnimatedHeaderProps {
@@ -69,12 +68,17 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   }, [variantIndex]);
 
   // Diff component for highlighting changes
+  interface Segment {
+    text: string;
+    isDiff: boolean;
+  }
+
   const Diff = ({ oldContent, newContent, showDiff }: { oldContent: string; newContent: string; showDiff: boolean }) => {
-    const segments = [];
+    const segments: Segment[] = [];
     const oldText = oldContent.replace(/<[^>]+>/g, '') || "";
     const newText = newContent.replace(/<[^>]+>/g, '') || "";
     const maxLength = Math.max(oldText.length, newText.length);
-    let currentSegment = { text: "", isDiff: false };
+    let currentSegment: Segment = { text: "", isDiff: false };
 
     for (let i = 0; i < maxLength; i++) {
       const oldChar = oldText[i] || "";
@@ -100,27 +104,42 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
     // Reconstruct HTML with diff highlighting
     const renderHtml = () => {
-      let result = newContent;
+      let resultHtml = newContent;
       if (showDiff) {
-        let offset = 0;
+        let currentHtmlIndex = 0;
         segments.forEach(segment => {
-          if (segment.isDiff) {
-            const start = newText.indexOf(segment.text, offset);
-            if (start !== -1) {
-              const htmlStart = newContent.indexOf(segment.text, offset);
-              result = (
-                result.slice(0, htmlStart) +
-                `<span class="diff-highlight">${segment.text}</span>` +
-                result.slice(htmlStart + segment.text.length)
-              );
-              offset = start + segment.text.length;
+          const plainTextSegment = segment.text;
+          const plainTextIndex = newText.indexOf(plainTextSegment, currentHtmlIndex);
+
+          if (plainTextIndex !== -1 && segment.isDiff) {
+            // Find the corresponding position in the original HTML string
+            let tempHtml = newContent.substring(0, plainTextIndex);
+            let htmlTagCount = (tempHtml.match(/<[^>]+>/g) || []).length;
+            let actualHtmlIndex = plainTextIndex + htmlTagCount * 2; // Rough estimate, might need refinement
+
+            // More robust way to find the actual HTML index
+            let tempPlain = '';
+            let htmlIdx = 0;
+            while(tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
+              if (newContent[htmlIdx] === '<') {
+                while(newContent[htmlIdx] !== '>' && htmlIdx < newContent.length) {
+                  htmlIdx++;
+                }
+              } else {
+                tempPlain += newContent[htmlIdx];
+              }
+              htmlIdx++;
             }
-          } else {
-            offset += segment.text.length;
+            actualHtmlIndex = htmlIdx - 1; // Adjust for the last character
+
+            const segmentHtml = newContent.substring(actualHtmlIndex, actualHtmlIndex + plainTextSegment.length + (newContent.substring(actualHtmlIndex + plainTextSegment.length).match(/^<[^>]+>/) || [''])[0].length);
+
+            resultHtml = resultHtml.replace(segmentHtml, `<span class="diff-highlight">${segmentHtml}</span>`);
           }
+          currentHtmlIndex = plainTextIndex + plainTextSegment.length;
         });
       }
-      return <span dangerouslySetInnerHTML={{ __html: result }} />;
+      return <span dangerouslySetInnerHTML={{ __html: resultHtml }} />;
     };
 
     return renderHtml();
