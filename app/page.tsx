@@ -343,7 +343,8 @@ const HomePage = () => {
   }, []);
 
   const calculateStatusWindowPosition = useCallback(() => {
-    return { x: window.innerWidth - 500, y: window.innerHeight - 60 };
+    // Position it right next to the buttons (left of them)
+    return { x: window.innerWidth - 490, y: window.innerHeight - 60 };
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {

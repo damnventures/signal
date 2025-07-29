@@ -485,32 +485,36 @@ body {
 .status-window {
     position: fixed;
     bottom: 20px;
-    right: 80px; /* Adjusted to align right edge with left edge of buttons (20px + 2 buttons * 30px + 2 * 2px borders + 10px gap) */
+    right: 80px; /* Position next to the buttons */
     z-index: 999;
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Ensure content is right-aligned */
+    justify-content: flex-end;
     padding: 0;
     overflow: visible;
-    height: 34px; /* Matches action-button (30px + 2px top/bottom borders) */
-    border: 2px solid #000000; /* Matches .window border */
+    height: 34px; /* Matches action-button height */
+    border: 2px solid #000000;
     box-shadow: 
         2px 2px 0px #808080,
         4px 4px 0px #404040;
+    /* Override .window class styles */
+    width: auto !important;
+    max-width: none !important;
+    background: #ffffff;
 }
 
 .status-window .window-content {
     padding: 6px 12px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 30px; /* Inner height matches action-button content */
+    justify-content: flex-end; /* Right-align the text */
+    height: 30px;
     width: auto;
-    min-width: 180px;
-    max-width: 360px;
-    animation: shrinkExpand 0.5s ease-in-out forwards;
+    min-width: fit-content;
+    max-width: 400px;
     background: #ffffff;
     box-sizing: border-box;
+    white-space: nowrap;
 }
 
 .status-message-text {
