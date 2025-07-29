@@ -50,122 +50,49 @@ body {
     background-size: 4px 4px;
     background-position: 0 0, 2px 2px;
     min-height: 100vh;
-    padding: 8px;
+    padding: 16px;
     box-sizing: border-box;
-    position: relative;
-    overflow-x: hidden;
+    position: relative; /* Added for positioning context */
 }
 
 .main-container {
-    width: 100%;
-    height: 100vh;
-    position: relative;
+    /* Removed centering styles as DraggableWindow handles positioning */
 }
 
-/* Desktop layout containers */
-@media (min-width: 768px) {
-    body {
-        padding: 12px;
-    }
-    
-    .main-container {
-        display: flex;
-        gap: 20px;
-    }
-    
-    .cards-area {
-        flex: 0 0 60%;
-        position: relative;
-        min-height: 100vh;
-    }
-    
-    .video-area {
-        flex: 0 0 35%;
-        position: relative;
-        padding-top: 80px;
-    }
-}
 
 .window {
     width: 100%;
-    max-width: 380px;
+    max-width: 320px; /* Mobile-first max-width */
     background: #ffffff;
     border: 2px solid #000000;
     box-shadow: 
         2px 2px 0px #808080,
         4px 4px 0px #404040;
     overflow: hidden;
-    position: relative;
+    /* Removed margin-bottom: 96px; as position is absolute */
 }
 
-/* Header window specific styles */
-.header-window {
-    max-width: 280px;
-    position: fixed;
-    top: 8px;
-    left: 8px;
-    z-index: 1000;
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    padding: 6px 10px !important;
-    gap: 8px;
-    background: #ffffff;
-}
-
-.header-logo {
-    width: 16px;
-    height: 16px;
-    background: #000000;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: bold;
-    border: 1px solid #000000;
-}
-
-.header-text {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.time-display {
-    font-size: 9px;
-    font-family: 'ChicagoFLF', 'Press Start 2P', monospace;
-    color: #666666;
-    margin: 0;
-    line-height: 1;
-}
-
-.header-text .main-text {
-    font-size: 11px;
-    margin: 0;
-    font-weight: bold;
-    font-family: 'ChicagoFLF', 'Press Start 2P', monospace;
-    line-height: 1;
+@media (min-width: 768px) {
+    .window {
+        max-width: 480px; /* Wider for desktop */
+    }
 }
 
 .window-top-bar {
     display: flex;
     align-items: center;
     background: #e5e5e5;
-    padding: 6px 12px;
-    min-height: 20px;
+    padding: 8px 16px;
 }
 
 .window-controls {
     display: flex;
-    gap: 6px;
+    gap: 8px;
 }
 
 .window-control {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
 }
 
@@ -176,66 +103,155 @@ body {
 .window-title-bar {
     flex: 1;
     text-align: center;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 500;
     color: #374151;
     font-family: 'ChicagoFLF', 'Press Start 2P', monospace;
 }
 
 .window-content {
-    padding: 16px 14px 14px 14px;
+    padding: 40px 30px 30px 30px;
     background: #ffffff;
 }
 
-/* Video window specific styles */
-.video-window {
-    max-width: 320px;
-}
-
-.video-window-content {
-    padding: 12px !important;
-}
-
 .main-heading {
-    font-size: 13px;
+    font-size: 18px;
     font-weight: bold;
     font-family: 'ChicagoFLF', 'Press Start 2P', monospace;
-    text-align: left;
+    text-align: center;
     color: #000000;
-    margin: 0 0 10px 0;
+    margin: 0 0 15px 0;
     line-height: 1.2;
 }
 
 .main-text {
-    font-size: 11px;
+    font-size: 14px;
     font-family: 'Geneva', sans-serif;
     color: #000000;
-    text-align: left;
-    margin: 0 0 6px 0;
-    line-height: 1.3;
+    text-align: center;
+    margin: 0;
+    line-height: 1.4;
 }
 
 .app-name {
-    font-size: 9px;
+    font-size: 12px;
     color: #000000;
-    margin: 6px 0 0 0;
+    margin: 10px 0 0 0;
     font-weight: normal;
     font-family: 'Geneva', sans-serif;
 }
 
+/* Responsive styles */
+@media (min-width: 640px) {
+    body {
+        padding: 32px;
+    }
+    
+    .window-content {
+        padding: 32px;
+    }
+    
+    .main-heading {
+        font-size: 24px;
+        text-align: left;
+    }
+    
+    .main-text {
+        font-size: 16px;
+        text-align: left;
+    }
+}
+
+@media (min-width: 768px) {
+    body {
+        padding: 80px;
+    }
+    
+    .main-heading {
+        font-size: 30px;
+    }
+    
+    .main-text {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 600px) {
+    .window {
+        margin: 10px;
+    }
+    
+    .window-content {
+        padding: 30px 20px 20px 20px;
+    }
+    
+    .main-heading {
+        font-size: 16px;
+    }
+    
+    .main-text {
+        font-size: 13px;
+    }
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #c0c0c0; /* Match body background */
+    background-image: 
+        radial-gradient(circle, #000 1px, transparent 1px);
+    background-size: 4px 4px;
+    background-position: 0 0, 2px 2px;
+    display: flex;
+    justify-content: flex-start; /* Align to start (left) */
+    align-items: flex-start; /* Align to top */
+    z-index: 9999;
+}
+
+.loading-bar {
+    width: 0%; /* Start with 0 width */
+    height: 15px; /* Height of the bar */
+    background-color: #000; /* Solid black bar */
+    animation: fill-bar 3s forwards; /* Animate width over 3 seconds */
+}
+
+.loading-bar.speed-up {
+    animation: speed-up-fill 0.5s forwards; /* Speed up animation */
+}
+
+@keyframes fill-bar {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 10%; /* Initial fill to 10% */
+    }
+}
+
+@keyframes speed-up-fill {
+    0% {
+        width: 10%; /* Start from where the initial animation left off */
+    }
+    100% {
+        width: 100%;
+    }
+}
+
 .video-embed-container {
-    margin-top: 0;
-    margin-bottom: 8px;
+    margin-top: 15px;
+    margin-bottom: 15px;
 }
 
 .youtube-video-wrapper {
     position: relative;
-    padding-bottom: 50%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
     height: 0;
     overflow: hidden;
     max-width: 100%;
     background: #000;
-    border: 1px solid #808080;
 }
 
 .youtube-video-wrapper iframe {
@@ -249,252 +265,48 @@ body {
 .retro-controls {
     display: flex;
     justify-content: center;
-    gap: 3px;
-    margin-top: 8px;
-    padding: 5px;
-    background: #c0c0c0;
-    border: 1px inset #c0c0c0;
-    border-radius: 2px;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 10px;
+    background: #c0c0c0; /* Light gray background for controls */
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    box-shadow: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080;
 }
 
 .control-button {
-    width: 22px;
-    height: 18px;
-    background: #e0e0e0;
-    border: 1px outset #e0e0e0;
+    width: 30px;
+    height: 30px;
+    background: #ffffff;
+    border: 2px solid #000000;
+    box-shadow: 
+        1px 1px 0px #808080,
+        2px 2px 0px #404040;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-family: 'Geneva', sans-serif;
-    font-size: 9px;
+    font-family: 'Press Start 2P', monospace; /* Retro font */
+    font-size: 12px;
     color: #000000;
-    user-select: none;
-    border-radius: 1px;
+    text-shadow: 1px 1px 0px #ffffff;
+    user-select: none; /* Prevent text selection */
 }
 
 .control-button:active {
-    border: 1px inset #e0e0e0;
-    background: #d0d0d0;
+    box-shadow: 
+        inset 1px 1px 0px #404040,
+        inset -1px -1px 0px #808080;
+    transform: translate(1px, 1px); /* Simulate button press */
 }
 
 .control-button .icon {
-    font-size: 9px;
+    font-size: 16px; /* Adjust icon size */
     line-height: 1;
 }
 
 .control-button.play-pause {
-    width: 26px;
-}
-
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #c0c0c0;
-    background-image: 
-        radial-gradient(circle, #000 1px, transparent 1px);
-    background-size: 4px 4px;
-    background-position: 0 0, 2px 2px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    z-index: 9999;
-}
-
-.loading-bar {
-    width: 0%;
-    height: 15px;
-    background-color: #000;
-    animation: fill-bar 3s forwards;
-}
-
-.loading-bar.speed-up {
-    animation: speed-up-fill 0.5s forwards;
-}
-
-@keyframes fill-bar {
-    0% {
-        width: 0%;
-    }
-    100% {
-        width: 10%;
-    }
-}
-
-@keyframes speed-up-fill {
-    0% {
-        width: 10%;
-    }
-    100% {
-        width: 100%;
-    }
-}
-
-/* Desktop responsive styles */
-@media (min-width: 768px) {
-    .window {
-        max-width: 400px;
-    }
-    
-    .video-window {
-        max-width: 340px;
-    }
-    
-    .main-heading {
-        font-size: 14px;
-    }
-    
-    .main-text {
-        font-size: 12px;
-    }
-    
-    .youtube-video-wrapper {
-        padding-bottom: 45%;
-    }
-    
-    .header-window {
-        top: 12px;
-        left: 12px;
-        max-width: 300px;
-    }
-    
-    .header-content {
-        padding: 8px 12px !important;
-    }
-    
-    .header-logo {
-        width: 18px;
-        height: 18px;
-        font-size: 11px;
-    }
-    
-    .time-display {
-        font-size: 10px;
-    }
-    
-    .header-text .main-text {
-        font-size: 12px;
-    }
-}
-
-/* Tablet styles */
-@media (min-width: 1024px) {
-    body {
-        padding: 16px;
-    }
-    
-    .window {
-        max-width: 420px;
-    }
-    
-    .video-window {
-        max-width: 360px;
-    }
-    
-    .main-heading {
-        font-size: 15px;
-    }
-    
-    .main-text {
-        font-size: 13px;
-    }
-    
-    .window-content {
-        padding: 18px 16px 16px 16px;
-    }
-}
-
-/* Mobile styles */
-@media (max-width: 767px) {
-    .window {
-        max-width: calc(100vw - 20px);
-    }
-    
-    .header-window {
-        max-width: 260px;
-    }
-    
-    .video-window {
-        max-width: calc(100vw - 20px);
-    }
-    
-    .window-content {
-        padding: 14px 12px 12px 12px;
-    }
-    
-    .main-heading {
-        font-size: 12px;
-    }
-    
-    .main-text {
-        font-size: 10px;
-    }
-    
-    .video-window-content {
-        padding: 10px !important;
-    }
-    
-    .retro-controls {
-        gap: 2px;
-        padding: 4px;
-    }
-    
-    .control-button {
-        width: 20px;
-        height: 16px;
-        font-size: 8px;
-    }
-    
-    .control-button.play-pause {
-        width: 24px;
-    }
-    
-    .header-content {
-        padding: 5px 8px !important;
-    }
-    
-    .header-logo {
-        width: 14px;
-        height: 14px;
-        font-size: 9px;
-    }
-    
-    .time-display {
-        font-size: 8px;
-    }
-    
-    .header-text .main-text {
-        font-size: 10px;
-    }
-}
-
-/* Touch-friendly dragging for mobile */
-@media (max-width: 768px) {
-    .window {
-        touch-action: none;
-    }
-}
-
-/* Extra small screens */
-@media (max-width: 480px) {
-    body {
-        padding: 6px;
-    }
-    
-    .header-window {
-        top: 6px;
-        left: 6px;
-        max-width: 240px;
-    }
-    
-    .window {
-        max-width: calc(100vw - 16px);
-    }
-    
-    .video-window {
-        max-width: calc(100vw - 16px);
-    }
+    width: 40px; /* Slightly wider for play/pause */
 }
