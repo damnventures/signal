@@ -49,7 +49,7 @@ body {
     font-display: swap;
 }
 
- @font-face {
+@font-face {
     font-family: 'Apple Garamond';
     src: url('/fonts/AppleGaramondLight-Italic.woff2') format('woff2'),
         url('/fonts/AppleGaramondLight-Italic.woff') format('woff');
@@ -59,18 +59,18 @@ body {
 }
 
 .clickable-tag {
-    font-family: 'ChicagoFLF', 'Press Start 2P', monospace; /* Apply header font */
-    font-style: normal; /* Remove italic */
-    background: none; /* Default to no background */
-    padding: 0; /* Default to no padding */
-    font-weight: normal; /* Explicitly normal weight */
+    font-family: 'ChicagoFLF', 'Press Start 2P', monospace;
+    font-style: normal;
+    background: none;
+    padding: 0;
+    font-weight: normal;
 }
 
 .clickable-tag.selected {
     background: #FDFF92;
-    font-weight: bold; /* Explicitly bold */
+    font-weight: bold;
     padding: 0 2px;
-    font-style: normal; /* Not italic when selected */
+    font-style: normal;
 }
 
 body {
@@ -104,17 +104,17 @@ body {
 }
 
 .animated-header-window {
-    overflow: visible; /* Allow content to expand */
+    overflow: visible;
 }
 
 .tv-player-window {
-    border: none; /* Remove border */
-    background: none; /* Remove background */
+    border: none;
+    background: none;
     box-shadow: 
         8px 8px 0px #808080,
         16px 16px 0px #404040;
-    border-radius: 20px; /* Rounded corners for TV shape */
-    overflow: visible; /* Allow content to expand */
+    border-radius: 20px;
+    overflow: visible;
 }
 
 @media (min-width: 768px) {
@@ -336,14 +336,14 @@ body {
     box-shadow: 
         inset 1px 1px 0px #404040,
         inset -1px -1px 0px #808080;
-    transform: translate(1px, 1px); /* Simulate button press */
+    transform: translate(1px, 1px);
 }
 
 .control-button.pressed {
     box-shadow: 
         inset 1px 1px 0px #404040,
         inset -1px -1px 0px #808080;
-    transform: translate(1px, 1px); /* Simulate button press */
+    transform: translate(1px, 1px);
 }
 
 .control-button .icon {
@@ -365,7 +365,7 @@ body {
 
 @media (max-width: 767px) {
     .tv-bezel {
-        padding: 10px; /* Reduced padding for mobile */
+        padding: 10px;
     }
 }
 
@@ -380,13 +380,13 @@ body {
 
 @media (max-width: 767px) {
     .tv-screen {
-        padding: 5px; /* Reduced padding for mobile */
+        padding: 5px;
     }
 }
 
 .tv-controls {
     display: flex;
-    justify-content: space-around; /* Distribute space evenly */
+    justify-content: space-around;
     align-items: center;
     margin-top: 15px;
     padding: 10px;
@@ -407,21 +407,14 @@ body {
 
 @media (max-width: 767px) {
     .tv-speaker-grill {
-        grid-template-columns: repeat(2, 1fr); /* Two grills on each side for mobile */
-        gap: 5px; /* Adjusted gap for mobile */
-    }
-}
-
-@media (max-width: 767px) {
-    .tv-speaker-grill {
-        grid-template-columns: repeat(2, 1fr); /* Two grills on each side for mobile */
-        gap: 5px; /* Adjusted gap for mobile */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
     }
 }
 
 .tv-speaker-grill span {
     width: 2px;
-    height: 100%; /* Fill parent height */
+    height: 100%;
     background: #4a4a4a;
 }
 
@@ -463,7 +456,7 @@ body {
 .action-button {
     width: 30px;
     height: 30px;
-    background-color: #c0c0c0; /* Retro button background */
+    background-color: #c0c0c0;
     border: 2px solid #000000;
     box-shadow: 
         2px 2px 0px #808080,
@@ -480,7 +473,7 @@ body {
     box-shadow: 
         1px 1px 0px #404040,
         2px 2px 0px #808080;
-    transform: translate(1px, 1px); /* Simulate button press */
+    transform: translate(1px, 1px);
 }
 
 .action-button img {
@@ -492,62 +485,69 @@ body {
 .status-window {
     position: fixed;
     bottom: 20px;
-    right: 100px; /* Positioned to the left of the fixed buttons */
-    z-index: 999; /* Ensure it's above other content but below the buttons */
+    right: 100px;
+    z-index: 999;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0; /* Remove default window-content padding */
-    overflow: visible; /* Allow window to resize */
-    width: auto; /* Auto width to fit content */
-    min-width: 200px; /* Minimum width */
-    max-width: 400px; /* Maximum width */
+    padding: 0;
+    overflow: visible;
+    width: auto;
+    min-width: 200px;
+    max-width: 400px;
+    height: 24px; /* 24px content + 2px top border + 2px bottom border */
+    border: 2px solid #000000; /* Matches .window border */
 }
 
 .status-window .window-content {
-    padding: 8px 12px; /* Compact padding */
+    padding: 8px 12px;
     display: flex;
     align-items: center;
-    height: auto; /* Auto height */
-    width: fit-content; /* Fit content width */
+    justify-content: center; /* Center text horizontally */
+    height: 30px; /* Match parent height */
+    width: auto; /* Allow width to adapt to content */
+    min-width: 180px; /* Minimum width slightly smaller than window */
+    max-width: 360px; /* Maximum width slightly smaller than window */
+    animation: shrinkExpand 0.5s ease-in-out forwards; /* Quick animation */
 }
 
 .status-message-text {
-    font-size: 12px; /* Smaller font size */
-    color: black; /* Ensure text is visible */
-    white-space: nowrap; /* Prevent text wrapping */
+    font-size: 12px;
+    color: black;
+    white-space: nowrap;
     font-family: 'Geneva', sans-serif;
     margin: 0;
-    line-height: 1.2;
-    animation: shrinkExpand 0.5s ease-in-out; /* Apply the animation */
+    line-height: 30px; /* Match container height for vertical centering */
+    text-align: center; /* Ensure text is centered */
+    width: 100%; /* Ensure text takes full width of container */
 }
 
-/* Animation for message update */
+/* Updated animation for message update */
 @keyframes shrinkExpand {
     0% {
-        transform: scaleX(1); /* Full width */
-        transform-origin: right; /* Shrink from right */
+        transform: scaleX(1);
+        transform-origin: right;
         opacity: 1;
     }
-    50% {
-        transform: scaleX(0); /* Shrink to zero width */
+    45% {
+        transform: scaleX(0);
         transform-origin: right;
         opacity: 0;
     }
-    51% {
-        transform: scaleX(0); /* Stay at zero width */
-        transform-origin: left; /* Expand from left */
+    55% {
+        transform: scaleX(0);
+        transform-origin: left;
         opacity: 0;
     }
     100% {
-        transform: scaleX(1); /* Expand to full width */
+        transform: scaleX(1);
         transform-origin: left;
         opacity: 1;
     }
 }
 
 /* Blinking animation for the refresh button */
- @keyframes blink {
+@keyframes blink {
     0%, 50% { 
         opacity: 1; 
         box-shadow: 
