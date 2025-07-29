@@ -107,6 +107,8 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     // Reconstruct HTML with diff highlighting
     const renderHtml = () => {
       let resultHtml = newContent;
+      let firstReductoAI = true; // Flag to target only the first instance
+
       if (showDiff) {
         let currentHtmlIndex = 0;
         segments.forEach(segment => {
@@ -114,12 +116,6 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
           const plainTextIndex = newText.indexOf(plainTextSegment, currentHtmlIndex);
 
           if (plainTextIndex !== -1 && segment.isDiff) {
-            // Find the corresponding position in the original HTML string
-            let tempHtml = newContent.substring(0, plainTextIndex);
-            let htmlTagCount = (tempHtml.match(/<[^>]+>/g) || []).length;
-            let actualHtmlIndex = plainTextIndex + htmlTagCount * 2; // Rough estimate, might need refinement
-
-            // More robust way to find the actual HTML index
             let tempPlain = '';
             let htmlIdx = 0;
             while(tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
@@ -132,7 +128,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
               }
               htmlIdx++;
             }
-            actualHtmlIndex = htmlIdx - 1; // Adjust for the last character
+            const actualHtmlIndex = htmlIdx - 1; 
 
             const segmentHtml = newContent.substring(actualHtmlIndex, actualHtmlIndex + plainTextSegment.length + (newContent.substring(actualHtmlIndex + plainTextSegment.length).match(/^<[^>]+>/) || [''])[0].length);
 
@@ -141,6 +137,13 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
           currentHtmlIndex = plainTextIndex + plainTextSegment.length;
         });
       }
+
+      // Apply 'selected' class to the first 'Reducto AI' span
+      if (firstReductoAI) {
+        resultHtml = resultHtml.replace('<span class="clickable-tag">Reducto AI</span>', '<span class="clickable-tag selected">Reducto AI</span>');
+        firstReductoAI = false; // Ensure only the first is selected
+      }
+
       return <span dangerouslySetInnerHTML={{ __html: resultHtml }} />;
     };
 

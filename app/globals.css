@@ -40,6 +40,39 @@ body {
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'Apple Garamond';
+    src: url('/fonts/AppleGaramondLight.woff2') format('woff2'),
+        url('/fonts/AppleGaramondLight.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+ @font-face {
+    font-family: 'Apple Garamond';
+    src: url('/fonts/AppleGaramondLight-Italic.woff2') format('woff2'),
+        url('/fonts/AppleGaramondLight-Italic.woff') format('woff');
+    font-weight: 300;
+    font-style: italic;
+    font-display: swap;
+}
+
+.clickable-tag {
+    font-family: 'Apple Garamond', serif; /* Apply Apple Garamond */
+    font-style: italic; /* Default to italic */
+    background: none; /* Default to no background */
+    padding: 0; /* Default to no padding */
+    font-weight: 300; /* Light weight */
+}
+
+.clickable-tag.selected {
+    background: #FDFF92;
+    font-weight: 700;
+    padding: 0 2px;
+    font-style: normal; /* Not italic when selected */
+}
+
 body {
     margin: 0;
     padding: 0;
