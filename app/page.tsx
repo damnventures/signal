@@ -24,6 +24,7 @@ const HomePage = () => {
   const [showCards, setShowCards] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const [highlightCard, setHighlightCard] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -289,10 +290,11 @@ const HomePage = () => {
                 initialZIndex={cardZIndexes['original-links'] || nextZIndex}
                 initialPosition={calculateVideoPosition()}
                 style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
+                className="tv-player-window"
               >
                 <div className="tv-bezel">
                   <div className="tv-screen">
-                    <div className="window-content">
+                    <div className="window-content video-window-content">
                       <div className="video-embed-container">
                         {fetchedOriginalLinks.map((link, index) => {
                           const videoId = getYouTubeVideoId(link);
@@ -304,7 +306,7 @@ const HomePage = () => {
                                   id={`youtube-player-${videoId}`}
                                   width="100%"
                                   height="315"
-                                  src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&autohide=1&showinfo=0`}
+                                  src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&autohide=1&showinfo=0&playsinline=1`}
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
@@ -327,15 +329,27 @@ const HomePage = () => {
                     <div className="tv-speaker-grill">
                       {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
                     </div>
-                    <div className="tv-dial"></div>
                     <div className="retro-controls">
                       <div className="control-button" onClick={() => playerRef.current?.seekTo(0, true)}><span className="icon">&#9664;&#9664;</span></div>
                       <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 10, true)}><span className="icon">&#9664;</span></div>
-                      <div className="control-button play-pause" onClick={() => playerRef.current?.getPlayerState() === YT.PlayerState.PLAYING ? playerRef.current?.pauseVideo() : playerRef.current?.playVideo()}><span className="icon">&#9654;</span></div>
+                      <div
+                        className={`control-button play-pause ${isPlaying ? 'pressed' : ''}`}
+                        onClick={() => {
+                          if (playerRef.current) {
+                            if (isPlaying) {
+                              playerRef.current.pauseVideo();
+                            } else {
+                              playerRef.current.playVideo();
+                            }
+                            setIsPlaying(!isPlaying);
+                          }
+                        }}
+                      >
+                        <span className="icon">{isPlaying ? '||' : '&#9654;'}</span>
+                      </div>
                       <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10, true)}><span className="icon">&#9654;</span></div>
                       <div className="control-button" onClick={() => playerRef.current?.seekTo(playerRef.current.getDuration(), true)}><span className="icon">&#9654;&#9654;</span></div>
                     </div>
-                    <div className="tv-dial"></div>
                     <div className="tv-speaker-grill">
                       {Array.from({ length: 10 }).map((_, i) => <span key={i}></span>)}
                     </div>

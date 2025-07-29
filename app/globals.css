@@ -70,6 +70,15 @@ body {
     overflow: hidden;
 }
 
+.tv-player-window {
+    border: none; /* Remove border */
+    background: none; /* Remove background */
+    box-shadow: 
+        0px 0px 15px rgba(0,0,0,0.7), /* Larger, softer shadow */
+        0px 0px 0px 5px rgba(0,0,0,0.3); /* Outer glow */
+    border-radius: 20px; /* Rounded corners for TV shape */
+}
+
 @media (min-width: 768px) {
     .window {
         max-width: 480px;
@@ -110,6 +119,10 @@ body {
 .window-content {
     padding: 40px 30px 30px 30px;
     background: #ffffff;
+}
+
+.video-window-content {
+    padding: 0;
 }
 
 .main-heading {
@@ -289,7 +302,14 @@ body {
     box-shadow: 
         inset 1px 1px 0px #404040,
         inset -1px -1px 0px #808080;
-    transform: translate(1px, 1px);
+    transform: translate(1px, 1px); /* Simulate button press */
+}
+
+.control-button.pressed {
+    box-shadow: 
+        inset 1px 1px 0px #404040,
+        inset -1px -1px 0px #808080;
+    transform: translate(1px, 1px); /* Simulate button press */
 }
 
 .control-button .icon {
@@ -332,7 +352,7 @@ body {
 
 .tv-controls {
     display: flex;
-    justify-content: center;
+    justify-content: space-around; /* Distribute space evenly */
     align-items: center;
     margin-top: 15px;
     padding: 10px;
@@ -341,38 +361,19 @@ body {
     border-radius: 0 0 8px 8px;
 }
 
-.tv-dial {
-    width: 40px;
-    height: 40px;
-    background: #808080;
-    border: 2px solid #4a4a4a;
-    border-radius: 50%;
-    margin: 0 10px;
-    box-shadow: inset 2px 2px 2px #4a4a4a, inset -2px -2px 2px #c0c0c0;
-    position: relative;
-}
-
-.tv-dial::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 10%;
-    width: 80%;
-    height: 2px;
-    background: #4a4a4a;
-    transform: translateY(-50%);
-}
-
 .tv-speaker-grill {
     display: grid;
-    grid-template-columns: repeat(10, 2px);
-    gap: 3px;
+    grid-template-columns: repeat(auto-fit, minmax(2px, 1fr)); /* Adjust to fill space */
+    gap: 5px; /* Increased gap */
     margin: 0 10px;
+    flex-grow: 1; /* Allow grills to take available space */
+    height: 30px; /* Ensure consistent height */
+    align-items: center; /* Vertically align grill lines */
 }
 
 .tv-speaker-grill span {
     width: 2px;
-    height: 30px;
+    height: 100%; /* Fill parent height */
     background: #4a4a4a;
 }
 
