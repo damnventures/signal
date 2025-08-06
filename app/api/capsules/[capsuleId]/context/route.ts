@@ -32,9 +32,9 @@ export async function GET(request: Request, { params }: any) {
       throw new Error(`Failed to fetch capsule context: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    console.log('[Capsule Context] API Success: Capsule context fetched successfully.');
-    return NextResponse.json(data);
+    const textData = await response.text();
+    console.log('[Capsule Context] API Success: Capsule context fetched successfully as text.');
+    return NextResponse.json({ context: textData });
   } catch (error: any) {
     console.error(`[Capsule Context] API Error: An exception occurred: ${error.message}`);
     return NextResponse.json({ error: error.message }, { status: 500 });
