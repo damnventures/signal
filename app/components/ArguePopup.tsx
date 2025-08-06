@@ -13,7 +13,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [chatResponse, setChatResponse] = useState('');
-  const [reasoningResponse, setReasoningResponse] = useState('');
+  const [filteredContext, setFilteredContext] = useState('');
   const [error, setError] = useState('');
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
 
@@ -28,7 +28,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setIsLoading(true);
     setError('');
     setChatResponse('');
-    setReasoningResponse('');
+    setFilteredContext('');
     setIsReasoningExpanded(false);
 
     try {
@@ -65,24 +65,42 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
 
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
-      let done = false;
+      let buf = '';
 
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        const chunk = decoder.decode(value, { stream: true });
-        try {
-          const lines = chunk.split('\n').filter(line => line.trim());
-          for (const line of lines) {
-            const parsed = JSON.parse(line);
-            if (parsed.type === 'chat') {
-              setChatResponse(prev => prev + parsed.content);
-            } else if (parsed.type === 'reasoning') {
-              setReasoningResponse(prev => prev + parsed.content);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          if (buf.trim()) {
+            try {
+              const parsed = JSON.parse(buf);
+              if (parsed.type === 'chat') {
+                setChatResponse(prev => prev + parsed.content);
+              } else if (parsed.type === 'filtered') {
+                setFilteredContext(prev => prev + parsed.content);
+              }
+            } catch (e) {
+              console.error('Failed to parse final chunk:', buf, e);
             }
           }
-        } catch (parseError) {
-          console.error('Error parsing stream chunk:', parseError);
+          break;
+        }
+
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop()!;
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.type === 'chat') {
+                setChatResponse(prev => prev + parsed.content);
+              } else if (parsed.type === 'filtered') {
+                setFilteredContext(prev => prev + parsed.content);
+              }
+          } catch (e) {
+            console.error('Failed to parse line:', line, e);
+          }
         }
       }
     } catch (err) {
@@ -96,7 +114,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   const handleClear = useCallback(() => {
     setQuestion('');
     setChatResponse('');
-    setReasoningResponse('');
+    setFilteredContext('');
     setError('');
     setIsReasoningExpanded(false);
   }, []);
@@ -188,7 +206,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
               </button>
             </form>
 
-            {(chatResponse || reasoningResponse) && (
+            {(chatResponse || filteredContext) && (
               <div className="mt-6">
                 <h3 className="font-bold text-lg mb-3 text-black">Generated Argument:</h3>
                 <div 
@@ -200,7 +218,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                     {chatResponse}
                   </div>
-                  {reasoningResponse && (
+                  {filteredContext && (
                     <div className="mt-4">
                       <button
                         onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
@@ -209,11 +227,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                           boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
                         }}
                       >
-                        {isReasoningExpanded ? 'Hide Extended Reasoning' : 'Show Extended Reasoning'}
+                        {isReasoningExpanded ? 'Hide Filtered Context' : 'Show Filtered Context'}
                       </button>
                       {isReasoningExpanded && (
                         <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-black">
-                          {reasoningResponse}
+                          {filteredContext}
                         </div>
                       )}
                     </div>
@@ -222,7 +240,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={() => navigator.clipboard.writeText(chatResponse + (isReasoningExpanded ? '\n\n' + reasoningResponse : ''))}
+                    onClick={() => navigator.clipboard.writeText(chatResponse + (isReasoningExpanded ? '\n\n' + filteredContext : ''))}
                     className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                     style={{
                       boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
