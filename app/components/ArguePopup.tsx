@@ -24,22 +24,20 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
       setError('Please enter a question');
       return;
     }
-
+  
     setIsLoading(true);
     setError('');
     setChatResponse('');
     setReasoningResponse('');
     setIsReasoningExpanded(false);
-
+  
     try {
       const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
-      
       if (!contextResponse.ok) {
         throw new Error('Failed to fetch context');
       }
-
+  
       const contextData = await contextResponse.json();
-      
       const workerUrl = 'https://craig-argue-machine.shrinked.workers.dev';
       
       const argumentResponse = await fetch(workerUrl, {
@@ -53,20 +51,20 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
           systemPrompt: getArguePrompt(),
         }),
       });
-
+  
       if (!argumentResponse.ok) {
         const errorData = await argumentResponse.text();
         throw new Error(errorData || 'Failed to generate argument');
       }
-
+  
       if (!argumentResponse.body) {
         throw new Error('Response body is empty');
       }
-
+  
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-
+  
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
@@ -79,29 +77,29 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 if (parsed.content.reasoning) {
                   setReasoningResponse(prev => prev + parsed.content.reasoning);
                 }
+              } else if (parsed.type === 'error') {
+                setError(parsed.content);
               }
             } catch (e) {
-              console.error('Failed to parse final chunk:', buffer, e);
+              console.error('Failed to parse final buffer:', buffer, e);
             }
           }
           break;
         }
-      
+  
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-      
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          
+        // Process complete JSON objects
+        let index;
+        while ((index = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, index).trim();
+          buffer = buffer.slice(index + 1);
+          if (!line) continue;
+  
           try {
             const parsed = JSON.parse(line);
-            console.log('Parsed response:', parsed);
-            
             if (parsed.type === 'filtered') {
               console.log('[Filtered context]', parsed.content);
             } else if (parsed.type === 'response') {
-              // Append new content for streaming effect
               if (parsed.content.chat) {
                 setChatResponse(prev => prev + parsed.content.chat);
               }
@@ -113,7 +111,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
               break;
             }
           } catch (e) {
-            console.error('Failed to parse line:', line, e);
+            console.warn('Failed to parse line, buffering:', line, e);
+            buffer = line + '\n' + buffer; // Re-add to buffer for next iteration
           }
         }
       }
