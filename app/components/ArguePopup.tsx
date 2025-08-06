@@ -65,38 +65,52 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
 
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
-      let buf = '';
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          if (buf.trim()) {
+          // Handle any remaining buffer
+          if (buffer.trim()) {
             try {
-              const parsed = JSON.parse(buf);
+              const parsed = JSON.parse(buffer);
               if (parsed.type === 'response') {
-                setChatResponse(prev => prev + parsed.content.chat);
-                setReasoningResponse(prev => prev + parsed.content.reasoning);
+                setChatResponse(prev => prev + (parsed.content.chat || ''));
+                if (parsed.content.reasoning) {
+                  setReasoningResponse(prev => prev + parsed.content.reasoning);
+                }
               }
             } catch (e) {
-              console.error('Failed to parse final chunk:', buf, e);
+              console.error('Failed to parse final chunk:', buffer, e);
             }
           }
           break;
         }
       
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop()!;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
       
         for (const line of lines) {
           if (!line.trim()) continue;
+          
           try {
             const parsed = JSON.parse(line);
+            console.log('Parsed response:', parsed);
+            
             if (parsed.type === 'filtered') {
               console.log('[Filtered context]', parsed.content);
             } else if (parsed.type === 'response') {
-              setChatResponse(prev => prev + parsed.content.chat);
-              setReasoningResponse(prev => prev + parsed.content.reasoning);
+              // Append new content for streaming effect
+              if (parsed.content.chat) {
+                setChatResponse(prev => prev + parsed.content.chat);
+              }
+              if (parsed.content.reasoning) {
+                setReasoningResponse(prev => prev + parsed.content.reasoning);
+              }
+            } else if (parsed.type === 'error') {
+              setError(parsed.content);
+              break;
             }
           } catch (e) {
             console.error('Failed to parse line:', line, e);
@@ -206,6 +220,18 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
               </button>
             </form>
 
+            {/* Show loading indicator */}
+            {isLoading && !chatResponse && (
+              <div className="mt-6">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  <span className="text-gray-600 text-sm">Generating argument...</span>
+                </div>
+              </div>
+            )}
+
             {chatResponse && (
               <div className="mt-6">
                 <h3 className="font-bold text-lg mb-3 text-black">Generated Argument:</h3>
@@ -217,6 +243,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 >
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                     {chatResponse}
+                    {isLoading && <span className="animate-pulse">|</span>}
                   </div>
                   {reasoningResponse && (
                     <div className="mt-4">
