@@ -35,7 +35,6 @@ const HomePage = () => {
   const [showArguePopup, setShowArguePopup] = useState(false);
 
   const CAPSULE_ID = '6887e02fa01e2f4073d3bb51';
-  const [showArguePopup, setShowArguePopup] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
