@@ -28,7 +28,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setResponse('');
 
     try {
-      const contextResponse = await fetch(`/api/capsule-context?capsuleId=${capsuleId}`);
+      const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
       
       if (!contextResponse.ok) {
         throw new Error('Failed to fetch context');
@@ -102,12 +102,12 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b border-gray-400">
-            <h2 className="font-bold text-lg">🎯 Argue Tool</h2>
+          <div className="flex items-center justify-between p-3 border-b border-gray-400 bg-gray-200">
+            <h2 className="font-bold text-lg text-black">🎯 Argue Tool</h2>
             <div className="flex gap-2">
               <button
                 onClick={handleClear}
-                className="px-3 py-1 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300"
+                className="px-3 py-1 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                 style={{
                   boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
                 }}
@@ -116,7 +116,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
               </button>
               <button
                 onClick={onClose}
-                className="px-3 py-1 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300"
+                className="px-3 py-1 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                 style={{
                   boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
                 }}
@@ -127,10 +127,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
           </div>
 
           {/* Content */}
-          <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)] bg-white">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="question" className="block text-sm font-bold mb-2">
+                <label htmlFor="question" className="block text-sm font-bold mb-2 text-black">
                   Ask a question or state a position to argue about:
                 </label>
                 <textarea
@@ -138,7 +138,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="e.g., 'Remote work is more productive than office work' or 'What are the strongest arguments for this approach?'"
-                  className="w-full h-24 p-3 border-2 border-gray-400 resize-none"
+                  className="w-full h-24 p-3 border-2 border-gray-400 resize-none text-black"
                   style={{
                     background: 'white',
                     boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.1)'
@@ -156,7 +156,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
               <button
                 type="submit"
                 disabled={isLoading || !question.trim()}
-                className={`px-6 py-2 font-bold border-2 border-gray-400 ${
+                className={`px-6 py-2 font-bold border-2 border-gray-400 text-black ${
                   isLoading || !question.trim() 
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                     : 'bg-gray-200 hover:bg-gray-300 cursor-pointer'
@@ -173,14 +173,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
 
             {response && (
               <div className="mt-6">
-                <h3 className="font-bold text-lg mb-3">Generated Argument:</h3>
+                <h3 className="font-bold text-lg mb-3 text-black">Generated Argument:</h3>
                 <div 
                   className="p-4 bg-white border-2 border-gray-400 max-h-96 overflow-y-auto"
                   style={{
                     boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.1)'
                   }}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                     {response}
                   </div>
                 </div>
@@ -188,7 +188,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => navigator.clipboard.writeText(response)}
-                    className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300"
+                    className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                     style={{
                       boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
                     }}
