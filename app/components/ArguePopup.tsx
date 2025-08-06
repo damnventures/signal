@@ -67,57 +67,28 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          // Handle any remaining buffer
-          if (buffer.trim()) {
-            try {
-              const parsed = JSON.parse(buffer);
-              if (parsed.type === 'response') {
-                setChatResponse(prev => prev + (parsed.content.chat || ''));
-                if (parsed.content.reasoning) {
-                  setReasoningResponse(prev => prev + parsed.content.reasoning);
-                }
-              } else if (parsed.type === 'error') {
-                setError(parsed.content);
-              }
-            } catch (e) {
-              console.error('Failed to parse final buffer:', buffer, e);
-            }
-          }
-          break;
-        }
+        if (done) break;
   
         buffer += decoder.decode(value, { stream: true });
-        // Process complete JSON objects
-        let index;
-        while ((index = buffer.indexOf('\n')) !== -1) {
-          const line = buffer.slice(0, index).trim();
-          buffer = buffer.slice(index + 1);
-          if (!line) continue;
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
   
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
           try {
             const parsed = JSON.parse(line);
-            if (parsed.type === 'filtered') {
-              console.log('[Filtered context]', parsed.content);
-            } else if (parsed.type === 'response') {
-              if (parsed.content.chat) {
-                setChatResponse(prev => prev + parsed.content.chat);
-              }
-              if (parsed.content.reasoning) {
-                setReasoningResponse(prev => prev + parsed.content.reasoning);
-              }
+            if (parsed.type === 'response' && parsed.content.chat) {
+              setChatResponse(prev => prev + parsed.content.chat);
             } else if (parsed.type === 'error') {
               setError(parsed.content);
-              break;
             }
           } catch (e) {
-            console.warn('Failed to parse line, buffering:', line, e);
-            buffer = line + '\n' + buffer; // Re-add to buffer for next iteration
+            console.warn('Failed to parse line:', line);
           }
         }
       }
     } catch (err) {
-      console.error('Error generating argument:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
