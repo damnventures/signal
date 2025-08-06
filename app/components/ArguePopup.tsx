@@ -83,16 +83,18 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
           }
           break;
         }
-
+      
         buf += decoder.decode(value, { stream: true });
         const lines = buf.split('\n');
         buf = lines.pop()!;
-
+      
         for (const line of lines) {
           if (!line.trim()) continue;
           try {
             const parsed = JSON.parse(line);
-            if (parsed.type === 'response') {
+            if (parsed.type === 'filtered') {
+              console.log('[Filtered context]', parsed.content);
+            } else if (parsed.type === 'response') {
               setChatResponse(prev => prev + parsed.content.chat);
               setReasoningResponse(prev => prev + parsed.content.reasoning);
             }
