@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { getArguePrompt } from './ArguePrompt';
 
 interface ArguePopupProps {
@@ -12,8 +12,10 @@ interface ArguePopupProps {
 const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) => {
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [response, setResponse] = useState('');
+  const [chatResponse, setChatResponse] = useState('');
+  const [reasoningResponse, setReasoningResponse] = useState('');
   const [error, setError] = useState('');
+  const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
 
     setIsLoading(true);
     setError('');
-    setResponse('');
+    setChatResponse('');
+    setReasoningResponse('');
+    setIsReasoningExpanded(false);
 
     try {
       const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
@@ -67,9 +71,20 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         const chunk = decoder.decode(value, { stream: true });
-        setResponse(prev => prev + chunk);
+        try {
+          const lines = chunk.split('\n').filter(line => line.trim());
+          for (const line of lines) {
+            const parsed = JSON.parse(line);
+            if (parsed.type === 'chat') {
+              setChatResponse(prev => prev + parsed.content);
+            } else if (parsed.type === 'reasoning') {
+              setReasoningResponse(prev => prev + parsed.content);
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing stream chunk:', parseError);
+        }
       }
-
     } catch (err) {
       console.error('Error generating argument:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -80,8 +95,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
 
   const handleClear = useCallback(() => {
     setQuestion('');
-    setResponse('');
+    setChatResponse('');
+    setReasoningResponse('');
     setError('');
+    setIsReasoningExpanded(false);
   }, []);
 
   if (!isOpen) return null;
@@ -171,7 +188,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
               </button>
             </form>
 
-            {response && (
+            {(chatResponse || reasoningResponse) && (
               <div className="mt-6">
                 <h3 className="font-bold text-lg mb-3 text-black">Generated Argument:</h3>
                 <div 
@@ -181,13 +198,31 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   }}
                 >
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
-                    {response}
+                    {chatResponse}
                   </div>
+                  {reasoningResponse && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
+                        className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
+                        style={{
+                          boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        {isReasoningExpanded ? 'Hide Extended Reasoning' : 'Show Extended Reasoning'}
+                      </button>
+                      {isReasoningExpanded && (
+                        <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-black">
+                          {reasoningResponse}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={() => navigator.clipboard.writeText(response)}
+                    onClick={() => navigator.clipboard.writeText(chatResponse + (isReasoningExpanded ? '\n\n' + reasoningResponse : ''))}
                     className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                     style={{
                       boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
