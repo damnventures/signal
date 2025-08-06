@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DraggableWindow from './components/DraggableWindow';
 import AnimatedHeader from './components/AnimatedHeader';
 import Head from 'next/head';
+import ArguePopup from './components/ArguePopup';
 
 interface Highlight {
   title: string;
@@ -31,6 +32,10 @@ const HomePage = () => {
   const [loadingPhase, setLoadingPhase] = useState<'signal' | 'insights' | 'idle'>('signal');
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showArguePopup, setShowArguePopup] = useState(false);
+
+  const CAPSULE_ID = '6887e02fa01e2f4073d3bb51';
+  const [showArguePopup, setShowArguePopup] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -573,10 +578,26 @@ const HomePage = () => {
               >
                 <img src="/signal.png" alt="Refresh" />
               </button>
+              
+              {/* New Argue button */}
+              <button 
+                className="action-button argue-button" 
+                onClick={() => setShowArguePopup(true)}
+                title="Open Argue Tool"
+              >
+                <span>🎯</span>
+              </button>
+              
               <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
                 <img src="/shrinked.png" alt="Shrinked AI" />
               </button>
             </div>
+
+            <ArguePopup 
+              isOpen={showArguePopup}
+              onClose={() => setShowArguePopup(false)}
+              capsuleId={CAPSULE_ID}
+            />
           </>
         )}
       </main>

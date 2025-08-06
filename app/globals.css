@@ -572,3 +572,14 @@ body {
 .action-button.blinking {
     animation: blink 1s infinite;
 }
+
+.argue-button {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.argue-button:hover {
+  transform: scale(1.1);
+}
