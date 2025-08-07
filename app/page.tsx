@@ -233,11 +233,12 @@ const HomePage = () => {
           console.log('[HomePage] Highlights data set:', parsed);
           const initialZIndexes: Record<string, number> = {};
           initialZIndexes['header'] = 1;
+          initialZIndexes['argue-popup'] = parsed.length + 10; // Add argue popup with high z-index
           parsed.forEach((_, index) => {
             initialZIndexes[`highlight-${index}`] = index + 2;
           });
           setCardZIndexes(initialZIndexes);
-          setNextZIndex(parsed.length + 2);
+          setNextZIndex(parsed.length + 11); // Update next z-index accordingly
         }
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
@@ -596,6 +597,8 @@ const HomePage = () => {
               isOpen={showArguePopup}
               onClose={() => setShowArguePopup(false)}
               capsuleId={CAPSULE_ID}
+              onBringToFront={handleBringToFront}
+              initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
             />
           </>
         )}
