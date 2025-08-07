@@ -96,7 +96,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 setChatResponse(prev => prev + parsed.content.chat);
               }
               if (parsed.content.reasoning) {
-                setReasoningResponse(prev => prev + parsed.content.reasoning);
+                setReasoningResponse(parsed.content.reasoning); // Set complete reasoning, don't append
               }
             } else if (parsed.type === 'error') {
               setError(parsed.content);
