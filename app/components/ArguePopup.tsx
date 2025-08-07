@@ -36,20 +36,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   // Calculate initial position (below video, centered)
   useEffect(() => {
     if (isOpen && position.x === 0 && position.y === 0) {
-      const isDesktop = window.innerWidth >= 768;
-      if (isDesktop) {
-        // Position it in the center-right area, below where video typically is
-        setPosition({ 
-          x: window.innerWidth * 0.65, 
-          y: 450 
-        });
-      } else {
-        // Mobile: center horizontally
-        setPosition({ 
-          x: (window.innerWidth - 500) / 2, 
-          y: 200 
-        });
-      }
+      // Position it more centrally, similar to other windows
+      const initialX = (window.innerWidth - 500) / 2; // Center horizontally for a 500px wide window
+      const initialY = Math.max(50, (window.innerHeight - 600) / 2); // Center vertically, but at least 50px from top
+      setPosition({ x: initialX, y: initialY });
     }
   }, [isOpen, position.x, position.y]);
 
@@ -217,88 +207,67 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       }}
       onClick={handleWindowClick}
     >
-      {/* Title Bar */}
-      <div 
-        className="window-header"
-        onMouseDown={handleMouseDown}
+      {/* Close Button */}
+      <button
+        onClick={onClose}
         style={{
-          padding: '4px 8px',
-          background: 'linear-gradient(90deg, #0066cc 0%, #4080ff 100%)',
-          color: 'white',
-          fontSize: '11px',
+          position: 'absolute',
+          top: '4px',
+          right: '4px',
+          width: '20px',
+          height: '20px',
+          background: '#c0c0c0',
+          border: '2px outset #c0c0c0',
+          fontSize: '14px',
           fontWeight: 'bold',
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: 'pointer',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          userSelect: 'none',
-          borderBottom: '1px solid #808080'
+          justifyContent: 'center',
+          color: 'black',
+          zIndex: 10,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px' }}>🎯</span>
-          <span>Craig's Argue Machine</span>
-        </div>
-        <div style={{ display: 'flex', gap: '2px' }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClear();
-            }}
-            style={{
-              width: '16px',
-              height: '14px',
-              background: '#c0c0c0',
-              border: '1px solid #808080',
-              fontSize: '10px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'black'
-            }}
-            title="Clear"
-          >
-            C
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            style={{
-              width: '16px',
-              height: '14px',
-              background: '#c0c0c0',
-              border: '1px solid #808080',
-              fontSize: '12px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'black'
-            }}
-          >
-            ×
-          </button>
-        </div>
-      </div>
+        ×
+      </button>
 
       {/* Content */}
-      <div style={{ 
-        padding: '8px', 
-        background: '#c0c0c0',
-        maxHeight: '540px',
-        overflowY: 'auto',
-        fontSize: '11px'
-      }}>
+      <div 
+        style={{ 
+          padding: '8px', 
+          background: '#c0c0c0',
+          maxHeight: 'calc(100% - 16px)', // Adjust max height to account for padding
+          overflowY: 'auto',
+          fontSize: '13px', // Slightly larger font size
+          fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+          color: 'black', // Ensure dark text on light background
+        }}
+      >
+        {/* New Header */}
+        <div 
+          style={{
+            background: 'linear-gradient(90deg, #0066cc 0%, #4080ff 100%)',
+            color: 'white',
+            padding: '6px 8px',
+            marginBottom: '12px',
+            fontWeight: 'bold',
+            fontSize: '14px', // Slightly larger for header
+            fontFamily: '"ChicagoFLF", monospace', // Use ChicagoFLF for header
+            userSelect: 'none',
+            cursor: isDragging ? 'grabbing' : 'grab',
+          }}
+          onMouseDown={handleMouseDown}
+        >
+          Argue with this container's data
+        </div>
+
         <form onSubmit={handleSubmit} style={{ marginBottom: '12px' }}>
           <div style={{ marginBottom: '8px' }}>
             <label style={{ 
               display: 'block', 
               marginBottom: '4px', 
               fontWeight: 'bold',
-              fontSize: '11px'
+              fontSize: '13px', // Slightly larger font size
             }}>
               Question or Position:
             </label>
@@ -312,9 +281,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 padding: '4px',
                 border: '2px inset #c0c0c0',
                 background: 'white',
-                fontSize: '11px',
-                fontFamily: 'MS Sans Serif, sans-serif',
-                resize: 'none'
+                fontSize: '13px', // Slightly larger font size
+                fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                resize: 'none',
+                color: 'black', // Ensure dark text
               }}
               disabled={isLoading}
             />
@@ -326,28 +296,47 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               background: '#ffeeee',
               border: '1px solid #cc0000',
               color: '#cc0000',
-              fontSize: '10px',
+              fontSize: '12px', // Slightly larger font size
               marginBottom: '8px'
             }}>
               <strong>Error:</strong> {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading || !question.trim()}
-            style={{
-              padding: '4px 8px',
-              background: isLoading || !question.trim() ? '#d0d0d0' : '#c0c0c0',
-              border: '2px outset #c0c0c0',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              cursor: isLoading || !question.trim() ? 'default' : 'pointer',
-              color: isLoading || !question.trim() ? '#808080' : 'black'
-            }}
-          >
-            {isLoading ? 'Generating...' : 'Generate Argument'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="submit"
+              disabled={isLoading || !question.trim()}
+              style={{
+                padding: '4px 8px',
+                background: isLoading || !question.trim() ? '#d0d0d0' : '#c0c0c0',
+                border: '2px outset #c0c0c0',
+                fontSize: '13px', // Slightly larger font size
+                fontWeight: 'bold',
+                cursor: isLoading || !question.trim() ? 'default' : 'pointer',
+                color: isLoading || !question.trim() ? '#808080' : 'black', // Ensure dark text
+                fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+              }}
+            >
+              {isLoading ? 'Generating...' : 'Generate Argument'}
+            </button>
+            <button
+              onClick={handleClear}
+              disabled={isLoading}
+              style={{
+                padding: '4px 8px',
+                background: isLoading ? '#d0d0d0' : '#c0c0c0',
+                border: '2px outset #c0c0c0',
+                fontSize: '13px', // Slightly larger font size
+                fontWeight: 'bold',
+                cursor: isLoading ? 'default' : 'pointer',
+                color: isLoading ? '#808080' : 'black', // Ensure dark text
+                fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </form>
 
         {/* Loading indicator */}
@@ -356,10 +345,12 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             padding: '8px',
             background: '#f0f0f0',
             border: '1px inset #c0c0c0',
-            fontSize: '10px',
+            fontSize: '12px', // Slightly larger font size
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            color: 'black', // Ensure dark text
+            fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
           }}>
             <div style={{ display: 'flex', gap: '2px' }}>
               <div style={{ 
@@ -397,10 +388,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             <div style={{
               marginBottom: '6px',
               fontWeight: 'bold',
-              fontSize: '11px',
+              fontSize: '13px', // Slightly larger font size
               background: '#0066cc',
               color: 'white',
-              padding: '2px 6px'
+              padding: '2px 6px',
+              fontFamily: '"ChicagoFLF", monospace', // Use ChicagoFLF
             }}>
               Craig's Argument:
             </div>
@@ -411,8 +403,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               padding: '6px',
               maxHeight: '200px',
               overflowY: 'auto',
-              fontSize: '11px',
-              lineHeight: '1.3'
+              fontSize: '13px', // Slightly larger font size
+              lineHeight: '1.3',
+              color: 'black', // Ensure dark text
+              fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
             }}>
               {chatResponse}
               {isLoading && !isStreamingComplete && 
@@ -429,15 +423,17 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                     padding: '2px 6px',
                     background: '#c0c0c0',
                     border: '1px outset #c0c0c0',
-                    fontSize: '10px',
+                    fontSize: '12px', // Slightly larger font size
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '4px',
+                    color: 'black', // Ensure dark text
+                    fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
                   }}
                 >
                   <span style={{ 
-                    fontSize: '8px',
+                    fontSize: '10px', // Slightly larger for arrow
                     transform: isReasoningExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                     transition: 'transform 0.2s'
                   }}>
@@ -453,9 +449,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                     padding: '6px',
                     maxHeight: '150px',
                     overflowY: 'auto',
-                    fontSize: '10px',
+                    fontSize: '12px', // Slightly larger font size
                     lineHeight: '1.3',
-                    whiteSpace: 'pre-wrap'
+                    whiteSpace: 'pre-wrap',
+                    color: 'black', // Ensure dark text
+                    fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
                   }}>
                     {reasoningResponse}
                   </div>
@@ -471,8 +469,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   padding: '2px 6px',
                   background: '#c0c0c0',
                   border: '1px outset #c0c0c0',
-                  fontSize: '10px',
-                  cursor: 'pointer'
+                  fontSize: '12px', // Slightly larger font size
+                  cursor: 'pointer',
+                  color: 'black', // Ensure dark text
+                  fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
                 }}
               >
                 📋 Copy
