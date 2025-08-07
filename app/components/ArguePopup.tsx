@@ -105,7 +105,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 
                 // Check if this delta contains the transition to reasoning
                 if (deltaText.includes('## Full Analysis') || deltaText.includes('**Extended Reasoning**')) {
-                  const parts = accumulatedChat.split(/## Full Analysis|**Extended Reasoning**/);
+                  const parts = accumulatedChat.split(/## Full Analysis|\*\*Extended Reasoning\*\*/);
                   if (parts.length > 1) {
                     setChatResponse(parts[0].trim());
                     accumulatedReasoning = '## Full Analysis' + parts[1];
