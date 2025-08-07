@@ -203,7 +203,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         cursor: isDragging ? 'grabbing' : 'default',
         background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
         border: '2px solid #808080',
-        boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.8), inset -2px -2px 4px rgba(0,0,0,0.3), 4px 4px 8px rgba(0,0,0,0.3)',
+        boxShadow: '8px 8px 0px #808080, 16px 16px 0px #404040', // Flat, offset shadow like TV window
+        borderRadius: '20px', // Rounded corners like TV window
       }}
       onClick={handleWindowClick}
     >
@@ -238,21 +239,21 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           background: '#c0c0c0',
           maxHeight: 'calc(100% - 16px)', // Adjust max height to account for padding
           overflowY: 'auto',
-          fontSize: '13px', // Slightly larger font size
-          fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+          fontSize: '12px', // Match status line font size
+          fontFamily: 'Geneva, sans-serif', // Match status line font
           color: 'black', // Ensure dark text on light background
         }}
       >
         {/* New Header */}
         <div 
           style={{
-            background: 'linear-gradient(90deg, #0066cc 0%, #4080ff 100%)',
-            color: 'white',
+            background: 'linear-gradient(90deg, #e0e0e0 0%, #f0f8ff 100%)', // White to light blue gradient
+            color: 'black', // Black text
             padding: '6px 8px',
             marginBottom: '12px',
             fontWeight: 'bold',
-            fontSize: '14px', // Slightly larger for header
-            fontFamily: '"ChicagoFLF", monospace', // Use ChicagoFLF for header
+            fontSize: '13px', // Slightly larger for header
+            fontFamily: 'Geneva, sans-serif', // Use Geneva for header
             userSelect: 'none',
             cursor: isDragging ? 'grabbing' : 'grab',
           }}
@@ -267,7 +268,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               display: 'block', 
               marginBottom: '4px', 
               fontWeight: 'bold',
-              fontSize: '13px', // Slightly larger font size
+              fontSize: '12px', // Match status line font size
             }}>
               Question or Position:
             </label>
@@ -281,8 +282,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 padding: '4px',
                 border: '2px inset #c0c0c0',
                 background: 'white',
-                fontSize: '13px', // Slightly larger font size
-                fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                fontSize: '12px', // Match status line font size
+                fontFamily: 'Geneva, sans-serif', // Match status line font
                 resize: 'none',
                 color: 'black', // Ensure dark text
               }}
@@ -296,7 +297,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               background: '#ffeeee',
               border: '1px solid #cc0000',
               color: '#cc0000',
-              fontSize: '12px', // Slightly larger font size
+              fontSize: '12px', // Match status line font size
               marginBottom: '8px'
             }}>
               <strong>Error:</strong> {error}
@@ -310,12 +311,13 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               style={{
                 padding: '4px 8px',
                 background: isLoading || !question.trim() ? '#d0d0d0' : '#c0c0c0',
-                border: '2px outset #c0c0c0',
-                fontSize: '13px', // Slightly larger font size
+                border: '2px solid #000000',
+                boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                fontSize: '12px', // Match status line font size
                 fontWeight: 'bold',
                 cursor: isLoading || !question.trim() ? 'default' : 'pointer',
                 color: isLoading || !question.trim() ? '#808080' : 'black', // Ensure dark text
-                fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                fontFamily: 'Geneva, sans-serif', // Match status line font
               }}
             >
               {isLoading ? 'Generating...' : 'Generate Argument'}
@@ -326,12 +328,13 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               style={{
                 padding: '4px 8px',
                 background: isLoading ? '#d0d0d0' : '#c0c0c0',
-                border: '2px outset #c0c0c0',
-                fontSize: '13px', // Slightly larger font size
+                border: '2px solid #000000',
+                boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                fontSize: '12px', // Match status line font size
                 fontWeight: 'bold',
                 cursor: isLoading ? 'default' : 'pointer',
                 color: isLoading ? '#808080' : 'black', // Ensure dark text
-                fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                fontFamily: 'Geneva, sans-serif', // Match status line font
               }}
             >
               Clear
@@ -345,12 +348,12 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             padding: '8px',
             background: '#f0f0f0',
             border: '1px inset #c0c0c0',
-            fontSize: '12px', // Slightly larger font size
+            fontSize: '12px', // Match status line font size
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
             color: 'black', // Ensure dark text
-            fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+            fontFamily: 'Geneva, sans-serif', // Match status line font
           }}>
             <div style={{ display: 'flex', gap: '2px' }}>
               <div style={{ 
@@ -388,11 +391,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             <div style={{
               marginBottom: '6px',
               fontWeight: 'bold',
-              fontSize: '13px', // Slightly larger font size
+              fontSize: '12px', // Match status line font size
               background: '#0066cc',
               color: 'white',
               padding: '2px 6px',
-              fontFamily: '"ChicagoFLF", monospace', // Use ChicagoFLF
+              fontFamily: 'Geneva, sans-serif', // Match status line font
             }}>
               Craig's Argument:
             </div>
@@ -403,10 +406,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               padding: '6px',
               maxHeight: '200px',
               overflowY: 'auto',
-              fontSize: '13px', // Slightly larger font size
+              fontSize: '12px', // Match status line font size
               lineHeight: '1.3',
               color: 'black', // Ensure dark text
-              fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+              fontFamily: 'Geneva, sans-serif', // Match status line font
             }}>
               {chatResponse}
               {isLoading && !isStreamingComplete && 
@@ -422,14 +425,15 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   style={{
                     padding: '2px 6px',
                     background: '#c0c0c0',
-                    border: '1px outset #c0c0c0',
-                    fontSize: '12px', // Slightly larger font size
+                    border: '2px solid #000000',
+                    boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                    fontSize: '12px', // Match status line font size
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
                     color: 'black', // Ensure dark text
-                    fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                    fontFamily: 'Geneva, sans-serif', // Match status line font
                   }}
                 >
                   <span style={{ 
@@ -449,11 +453,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                     padding: '6px',
                     maxHeight: '150px',
                     overflowY: 'auto',
-                    fontSize: '12px', // Slightly larger font size
+                    fontSize: '12px', // Match status line font size
                     lineHeight: '1.3',
                     whiteSpace: 'pre-wrap',
                     color: 'black', // Ensure dark text
-                    fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                    fontFamily: 'Geneva, sans-serif', // Match status line font
                   }}>
                     {reasoningResponse}
                   </div>
@@ -468,11 +472,12 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 style={{
                   padding: '2px 6px',
                   background: '#c0c0c0',
-                  border: '1px outset #c0c0c0',
-                  fontSize: '12px', // Slightly larger font size
+                  border: '2px solid #000000',
+                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                  fontSize: '12px', // Match status line font size
                   cursor: 'pointer',
                   color: 'black', // Ensure dark text
-                  fontFamily: '"Apple Garamond", serif', // Use Apple Garamond
+                  fontFamily: 'Geneva, sans-serif', // Match status line font
                 }}
               >
                 📋 Copy
