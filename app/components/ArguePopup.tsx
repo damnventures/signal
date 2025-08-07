@@ -33,6 +33,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setReasoningResponse('');
     setIsReasoningExpanded(false);
     setIsStreamingComplete(false);
+    setCurrentSection('chat');
   
     try {
       const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
@@ -67,7 +68,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      setCurrentSection('chat'); // Reset section tracking
+      let accumulatedChat = '';
+      let accumulatedReasoning = '';
   
       while (true) {
         const { done, value } = await reader.read();
@@ -86,20 +88,31 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
           try {
             const parsed = JSON.parse(line);
             if (parsed.type === 'response' && parsed.content.chat) {
-              const newText = parsed.content.chat;
+              const deltaText = parsed.content.chat;
               
-              // Simple logic to separate chat response from extended reasoning
-              if (newText.includes('**Extended Reasoning**')) {
-                const parts = newText.split('**Extended Reasoning**');
-                setChatResponse(prev => prev + parts[0]);
-                if (parts[1]) {
-                  setReasoningResponse(parts[1]);
-                }
+              // Check if we've hit the Extended Reasoning section
+              if (deltaText.includes('## Full Analysis') || deltaText.includes('**Extended Reasoning**')) {
                 setCurrentSection('reasoning');
-              } else if (currentSection === 'reasoning') {
-                setReasoningResponse(prev => prev + newText);
+              }
+              
+              // Accumulate the delta text based on current section
+              if (currentSection === 'reasoning') {
+                accumulatedReasoning += deltaText;
+                setReasoningResponse(accumulatedReasoning);
               } else {
-                setChatResponse(prev => prev + newText);
+                accumulatedChat += deltaText;
+                setChatResponse(accumulatedChat);
+                
+                // Check if this delta contains the transition to reasoning
+                if (deltaText.includes('## Full Analysis') || deltaText.includes('**Extended Reasoning**')) {
+                  const parts = accumulatedChat.split(/## Full Analysis|**Extended Reasoning**/);
+                  if (parts.length > 1) {
+                    setChatResponse(parts[0].trim());
+                    accumulatedReasoning = '## Full Analysis' + parts[1];
+                    setReasoningResponse(accumulatedReasoning);
+                    setCurrentSection('reasoning');
+                  }
+                }
               }
             } else if (parsed.type === 'error') {
               setError(parsed.content);
@@ -114,7 +127,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     } finally {
       setIsLoading(false);
     }
-  }, [question, capsuleId]);
+  }, [question, capsuleId, currentSection]);
 
   const handleClear = useCallback(() => {
     setQuestion('');
@@ -123,6 +136,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setError('');
     setIsReasoningExpanded(false);
     setIsStreamingComplete(false);
+    setCurrentSection('chat');
   }, []);
 
   if (!isOpen) return null;
@@ -219,14 +233,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  <span className="text-gray-600 text-sm">Generating argument...</span>
+                  <span className="text-gray-600 text-sm">Marcus is building his argument...</span>
                 </div>
               </div>
             )}
 
             {chatResponse && (
               <div className="mt-6">
-                <h3 className="font-bold text-lg mb-3 text-black">Generated Argument:</h3>
+                <h3 className="font-bold text-lg mb-3 text-black">Marcus Rivera's Argument:</h3>
                 <div 
                   className="p-4 bg-white border-2 border-gray-400 max-h-96 overflow-y-auto"
                   style={{
@@ -236,7 +250,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   {/* Chat Response Section */}
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                     {chatResponse}
-                    {isLoading && !isStreamingComplete && <span className="animate-pulse bg-gray-300">|</span>}
+                    {isLoading && !isStreamingComplete && currentSection === 'chat' && 
+                      <span className="animate-pulse bg-gray-300">|</span>
+                    }
                   </div>
                   
                   {/* Extended Reasoning Section */}
@@ -252,7 +268,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                         <span className={`transform transition-transform ${isReasoningExpanded ? 'rotate-90' : ''}`}>
                           ▶
                         </span>
-                        {isReasoningExpanded ? 'Hide Extended Reasoning' : 'Show Extended Reasoning'}
+                        {isReasoningExpanded ? 'Hide Full Analysis' : 'Show Full Analysis'}
                       </button>
                       {isReasoningExpanded && (
                         <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded">
@@ -270,7 +286,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={() => navigator.clipboard.writeText(chatResponse + (reasoningResponse ? '\n\nExtended Reasoning:\n' + reasoningResponse : ''))}
+                    onClick={() => navigator.clipboard.writeText(chatResponse + (reasoningResponse ? '\n\n' + reasoningResponse : ''))}
                     className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                     style={{
                       boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
