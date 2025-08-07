@@ -87,10 +87,17 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
             const parsed = JSON.parse(line);
             
             if (parsed.type === 'filtered') {
-              setReasoningResponse(parsed.content);
-            } else if (parsed.type === 'response' && parsed.content && typeof parsed.content.chat === 'string') {
-              const cleanedDelta = parsed.content.chat;
-              setChatResponse(prev => prev + cleanedDelta);
+              // Only set reasoning if it's not NO_RELEVANT_CONTEXT
+              if (parsed.content && !parsed.content.includes('NO_RELEVANT_CONTEXT')) {
+                setReasoningResponse(parsed.content);
+              }
+            } else if (parsed.type === 'response' && parsed.content) {
+              if (parsed.content.chat) {
+                setChatResponse(prev => prev + parsed.content.chat);
+              }
+              if (parsed.content.reasoning) {
+                setReasoningResponse(prev => prev + parsed.content.reasoning);
+              }
             } else if (parsed.type === 'error') {
               setError(parsed.content);
             }
@@ -232,7 +239,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   </div>
                   
                   {/* Extended Reasoning Section */}
-                  {reasoningResponse && (
+                  {reasoningResponse && reasoningResponse.trim() && (
                     <div className="mt-6">
                       <button
                         onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
