@@ -231,7 +231,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   }}
                 >
                   {/* Chat Response Section */}
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
+                  <div className="text-sm leading-relaxed text-black">
                     {chatResponse}
                     {isLoading && !isStreamingComplete && 
                       <span className="animate-pulse bg-gray-300">|</span>
