@@ -9,12 +9,7 @@ interface ArguePopupProps {
   capsuleId: string;
 }
 
-function cleanResponse(content: string): string {
-  // Remove <think> tags and their content, including malformed or split tags
-  content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim();
-  content = content.replace(/<think>[\s\S]*$/gi, '').trim(); // Handle unclosed think tags
-  return content;
-}
+
 
 const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) => {
   const [question, setQuestion] = useState('');
@@ -94,7 +89,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
             if (parsed.type === 'filtered') {
               setReasoningResponse(parsed.content);
             } else if (parsed.type === 'response' && parsed.content && typeof parsed.content.chat === 'string') {
-              const cleanedDelta = cleanResponse(parsed.content.chat);
+              const cleanedDelta = parsed.content.chat;
               setChatResponse(prev => prev + cleanedDelta);
             } else if (parsed.type === 'error') {
               setError(parsed.content);
