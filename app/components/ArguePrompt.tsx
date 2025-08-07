@@ -56,7 +56,9 @@ Build upon the facts and opinions to create a reasoned conclusion:
 - Do not generate arguments from general knowledge
 - Clearly distinguish between what sources said vs. your analysis of what they said
 - Maintain strict adherence to evidence-based reasoning
-- If context is insufficient, acknowledge this limitation in both the chat-like response and extended reasoning`;
+- If context is insufficient, acknowledge this limitation in both the chat-like response and extended reasoning
+
+Begin your response immediately with "**Chat-like Response**" - do not show thinking or planning.`;
 };
 
 export default getArguePrompt;

@@ -16,6 +16,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   const [reasoningResponse, setReasoningResponse] = useState('');
   const [error, setError] = useState('');
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
+  const [isStreamingComplete, setIsStreamingComplete] = useState(false);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +31,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setChatResponse('');
     setReasoningResponse('');
     setIsReasoningExpanded(false);
+    setIsStreamingComplete(false);
   
     try {
       const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
@@ -64,10 +66,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let currentSection = 'chat'; // Track which section we're currently building
   
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          setIsStreamingComplete(true);
+          break;
+        }
   
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
@@ -79,7 +85,21 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
           try {
             const parsed = JSON.parse(line);
             if (parsed.type === 'response' && parsed.content.chat) {
-              setChatResponse(prev => prev + parsed.content.chat);
+              const newText = parsed.content.chat;
+              
+              // Simple logic to separate chat response from extended reasoning
+              if (newText.includes('**Extended Reasoning**')) {
+                const parts = newText.split('**Extended Reasoning**');
+                setChatResponse(prev => prev + parts[0]);
+                if (parts[1]) {
+                  setReasoningResponse(parts[1]);
+                }
+                currentSection = 'reasoning';
+              } else if (currentSection === 'reasoning') {
+                setReasoningResponse(prev => prev + newText);
+              } else {
+                setChatResponse(prev => prev + newText);
+              }
             } else if (parsed.type === 'error') {
               setError(parsed.content);
             }
@@ -101,6 +121,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setReasoningResponse('');
     setError('');
     setIsReasoningExpanded(false);
+    setIsStreamingComplete(false);
   }, []);
 
   if (!isOpen) return null;
@@ -211,24 +232,35 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                     boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.1)'
                   }}
                 >
+                  {/* Chat Response Section */}
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                     {chatResponse}
-                    {isLoading && <span className="animate-pulse">|</span>}
+                    {isLoading && !isStreamingComplete && <span className="animate-pulse bg-gray-300">|</span>}
                   </div>
+                  
+                  {/* Extended Reasoning Section */}
                   {reasoningResponse && (
-                    <div className="mt-4">
+                    <div className="mt-6">
                       <button
                         onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
-                        className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
+                        className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black flex items-center gap-2"
                         style={{
                           boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
                         }}
                       >
+                        <span className={`transform transition-transform ${isReasoningExpanded ? 'rotate-90' : ''}`}>
+                          ▶
+                        </span>
                         {isReasoningExpanded ? 'Hide Extended Reasoning' : 'Show Extended Reasoning'}
                       </button>
                       {isReasoningExpanded && (
-                        <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-black">
-                          {reasoningResponse}
+                        <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded">
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
+                            {reasoningResponse}
+                            {isLoading && !isStreamingComplete && currentSection === 'reasoning' && 
+                              <span className="animate-pulse bg-gray-300">|</span>
+                            }
+                          </div>
                         </div>
                       )}
                     </div>
@@ -237,13 +269,13 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={() => navigator.clipboard.writeText(chatResponse + (isReasoningExpanded ? '\n\n' + reasoningResponse : ''))}
+                    onClick={() => navigator.clipboard.writeText(chatResponse + (reasoningResponse ? '\n\nExtended Reasoning:\n' + reasoningResponse : ''))}
                     className="px-4 py-2 text-sm bg-gray-200 border border-gray-400 hover:bg-gray-300 text-black"
                     style={{
                       boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.3)'
                     }}
                   >
-                    Copy to Clipboard
+                    📋 Copy to Clipboard
                   </button>
                 </div>
               </div>
