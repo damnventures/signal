@@ -1,12 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { getArguePrompt } from './ArguePrompt';
 
 interface ArguePopupProps {
   isOpen: boolean;
   onClose: () => void;
   capsuleId: string;
+}
+
+function cleanResponse(content: string): string {
+  // Remove <think> tags and their content, including malformed or split tags
+  content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim();
+  content = content.replace(/<think>[\s\S]*$/gi, '').trim(); // Handle unclosed think tags
+  return content;
 }
 
 const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) => {
@@ -17,7 +24,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   const [error, setError] = useState('');
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
-  const [currentSection, setCurrentSection] = useState('chat');
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +39,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setReasoningResponse('');
     setIsReasoningExpanded(false);
     setIsStreamingComplete(false);
-    setCurrentSection('chat');
   
     try {
       const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
@@ -68,8 +73,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let accumulatedChat = '';
-      let accumulatedReasoning = '';
   
       while (true) {
         const { done, value } = await reader.read();
@@ -80,40 +83,19 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        buffer = lines.pop() || '';
   
         for (const line of lines) {
           if (!line.trim()) continue;
           
           try {
             const parsed = JSON.parse(line);
-            if (parsed.type === 'response' && parsed.content.chat) {
-              const deltaText = parsed.content.chat;
-              
-              // Check if we've hit the Extended Reasoning section
-              if (deltaText.includes('## Full Analysis') || deltaText.includes('**Extended Reasoning**')) {
-                setCurrentSection('reasoning');
-              }
-              
-              // Accumulate the delta text based on current section
-              if (currentSection === 'reasoning') {
-                accumulatedReasoning += deltaText;
-                setReasoningResponse(accumulatedReasoning);
-              } else {
-                accumulatedChat += deltaText;
-                setChatResponse(accumulatedChat);
-                
-                // Check if this delta contains the transition to reasoning
-                if (deltaText.includes('## Full Analysis') || deltaText.includes('**Extended Reasoning**')) {
-                  const parts = accumulatedChat.split(/## Full Analysis|\*\*Extended Reasoning\*\*/);
-                  if (parts.length > 1) {
-                    setChatResponse(parts[0].trim());
-                    accumulatedReasoning = '## Full Analysis' + parts[1];
-                    setReasoningResponse(accumulatedReasoning);
-                    setCurrentSection('reasoning');
-                  }
-                }
-              }
+            
+            if (parsed.type === 'filtered') {
+              setReasoningResponse(parsed.content);
+            } else if (parsed.type === 'response' && parsed.content && typeof parsed.content.chat === 'string') {
+              const cleanedDelta = cleanResponse(parsed.content.chat);
+              setChatResponse(prev => prev + cleanedDelta);
             } else if (parsed.type === 'error') {
               setError(parsed.content);
             }
@@ -127,7 +109,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     } finally {
       setIsLoading(false);
     }
-  }, [question, capsuleId, currentSection]);
+  }, [question, capsuleId]);
 
   const handleClear = useCallback(() => {
     setQuestion('');
@@ -136,7 +118,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
     setError('');
     setIsReasoningExpanded(false);
     setIsStreamingComplete(false);
-    setCurrentSection('chat');
   }, []);
 
   if (!isOpen) return null;
@@ -250,7 +231,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   {/* Chat Response Section */}
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                     {chatResponse}
-                    {isLoading && !isStreamingComplete && currentSection === 'chat' && 
+                    {isLoading && !isStreamingComplete && 
                       <span className="animate-pulse bg-gray-300">|</span>
                     }
                   </div>
@@ -274,9 +255,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                         <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded">
                           <div className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                             {reasoningResponse}
-                            {isLoading && !isStreamingComplete && currentSection === 'reasoning' && 
-                              <span className="animate-pulse bg-gray-300">|</span>
-                            }
                           </div>
                         </div>
                       )}
