@@ -214,14 +214,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  <span className="text-gray-600 text-sm">Marcus is building his argument...</span>
+                  <span className="text-gray-600 text-sm">Craig is building his argument...</span>
                 </div>
               </div>
             )}
 
             {chatResponse && (
               <div className="mt-6">
-                <h3 className="font-bold text-lg mb-3 text-black">Marcus Rivera's Argument:</h3>
+                <h3 className="font-bold text-lg mb-3 text-black">Craig's Argument:</h3>
                 <div 
                   className="p-4 bg-white border-2 border-gray-400 max-h-96 overflow-y-auto"
                   style={{
