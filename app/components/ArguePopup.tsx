@@ -17,6 +17,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
   const [error, setError] = useState('');
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
+  const [currentSection, setCurrentSection] = useState('chat');
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +67,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
       const reader = argumentResponse.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let currentSection = 'chat'; // Track which section we're currently building
+      setCurrentSection('chat'); // Reset section tracking
   
       while (true) {
         const { done, value } = await reader.read();
@@ -94,7 +95,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({ isOpen, onClose, capsuleId }) =
                 if (parts[1]) {
                   setReasoningResponse(parts[1]);
                 }
-                currentSection = 'reasoning';
+                setCurrentSection('reasoning');
               } else if (currentSection === 'reasoning') {
                 setReasoningResponse(prev => prev + newText);
               } else {
