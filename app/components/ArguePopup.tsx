@@ -235,8 +235,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       {/* Content */}
       <div 
         style={{ 
-          padding: '8px', 
-          background: '#c0c0c0',
+          padding: '20px', 
           maxHeight: 'calc(100% - 16px)', // Adjust max height to account for padding
           overflowY: 'auto',
           fontSize: '12px', // Match status line font size
@@ -259,19 +258,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           }}
           onMouseDown={handleMouseDown}
         >
-          Argue with this container's data
+          Argue with Craig
         </div>
 
         <form onSubmit={handleSubmit} style={{ marginBottom: '12px' }}>
           <div style={{ marginBottom: '8px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '4px', 
-              fontWeight: 'bold',
-              fontSize: '12px', // Match status line font size
-            }}>
-              Question or Position:
-            </label>
             <textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
