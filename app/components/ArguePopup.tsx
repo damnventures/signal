@@ -25,6 +25,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [error, setError] = useState('');
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
+  const [currentCapsuleId, setCurrentCapsuleId] = useState(capsuleId);
   
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
@@ -98,7 +99,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     setIsStreamingComplete(false);
   
     try {
-      const contextResponse = await fetch(`/api/capsules/${capsuleId}/context`);
+      const contextResponse = await fetch(`/api/capsules/${currentCapsuleId}/context`);
       if (!contextResponse.ok) {
         throw new Error('Failed to fetch context');
       }
@@ -172,7 +173,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [question, capsuleId]);
+  }, [question, currentCapsuleId]);
 
   const handleClear = useCallback(() => {
     setQuestion('');
@@ -300,41 +301,61 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="submit"
-              disabled={isLoading || !question.trim()}
-              style={{
-                padding: '4px 8px',
-                background: isLoading || !question.trim() ? '#d0d0d0' : '#c0c0c0',
-                border: '2px solid #000000',
-                boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
-                fontSize: '12px', // Match status line font size
-                fontWeight: 'bold',
-                cursor: isLoading || !question.trim() ? 'default' : 'pointer',
-                color: isLoading || !question.trim() ? '#808080' : 'black', // Ensure dark text
-                fontFamily: 'Geneva, sans-serif', // Match status line font
-              }}
-            >
-              {isLoading ? 'Generating...' : 'Generate Argument'}
-            </button>
-            <button
-              onClick={handleClear}
-              disabled={isLoading}
-              style={{
-                padding: '4px 8px',
-                background: isLoading ? '#d0d0d0' : '#c0c0c0',
-                border: '2px solid #000000',
-                boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
-                fontSize: '12px', // Match status line font size
-                fontWeight: 'bold',
-                cursor: isLoading ? 'default' : 'pointer',
-                color: isLoading ? '#808080' : 'black', // Ensure dark text
-                fontFamily: 'Geneva, sans-serif', // Match status line font
-              }}
-            >
-              Clear
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="submit"
+                disabled={isLoading || !question.trim()}
+                style={{
+                  padding: '4px 8px',
+                  background: isLoading || !question.trim() ? '#d0d0d0' : '#c0c0c0',
+                  border: '2px solid #000000',
+                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: isLoading || !question.trim() ? 'default' : 'pointer',
+                  color: isLoading || !question.trim() ? '#808080' : 'black',
+                  fontFamily: 'Geneva, sans-serif',
+                }}
+              >
+                {isLoading ? 'Generating...' : 'Generate Argument'}
+              </button>
+              <button
+                onClick={handleClear}
+                disabled={isLoading}
+                style={{
+                  padding: '4px 8px',
+                  background: isLoading ? '#d0d0d0' : '#c0c0c0',
+                  border: '2px solid #000000',
+                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: isLoading ? 'default' : 'pointer',
+                  color: isLoading ? '#808080' : 'black',
+                  fontFamily: 'Geneva, sans-serif',
+                }}
+              >
+                Clear
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '12px', fontFamily: 'Geneva, sans-serif', color: 'black' }}>Capsule ID:</span>
+              <input
+                type="text"
+                value={currentCapsuleId}
+                onChange={(e) => setCurrentCapsuleId(e.target.value)}
+                style={{
+                  width: '150px',
+                  padding: '2px 4px',
+                  border: '2px inset #c0c0c0',
+                  background: 'white',
+                  fontSize: '12px',
+                  fontFamily: 'Geneva, sans-serif',
+                  color: 'black',
+                }}
+                disabled={isLoading}
+              />
+            </div>
           </div>
         </form>
 
