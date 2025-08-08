@@ -202,7 +202,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         maxHeight: '600px',
         cursor: isDragging ? 'grabbing' : 'default',
         background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
-        border: '2px solid #808080',
+        border: '1px solid black',
         boxShadow: '8px 8px 0px #808080, 16px 16px 0px #404040', // Flat, offset shadow like TV window
         borderRadius: '20px', // Rounded corners like TV window
       }}
@@ -246,15 +246,20 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         {/* New Header */}
         <div 
           style={{
-            background: 'linear-gradient(90deg, #e0e0e0 0%, #f0f8ff 100%)', // White to light blue gradient
+            background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)', // Same as main window background
             color: 'black', // Black text
-            padding: '6px 8px',
-            marginBottom: '12px',
+            padding: '6px 12px', // Add horizontal padding
             fontWeight: 'bold',
             fontSize: '13px', // Slightly larger for header
             fontFamily: 'Geneva, sans-serif', // Use Geneva for header
             userSelect: 'none',
             cursor: isDragging ? 'grabbing' : 'grab',
+            position: 'absolute', // Position absolutely
+            top: '-1px', // Move up to cover the border
+            left: '50%', // Center horizontally
+            transform: 'translateX(-50%)', // Adjust for centering
+            width: 'fit-content', // Fit to content
+            zIndex: 1, // Ensure it's on top of the border
           }}
           onMouseDown={handleMouseDown}
         >
