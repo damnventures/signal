@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 
 const AuthRedirectHandler: React.FC = () => {
-  const searchParams = useSearchParams();
-
   useEffect(() => {
     // Check if we have tokens in the URL (successful auth)
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('accessToken');
+    const refreshToken = urlParams.get('refreshToken');
     
     if (accessToken) {
       // Get the stored origin from localStorage
@@ -33,7 +31,7 @@ const AuthRedirectHandler: React.FC = () => {
       // If we're already on the correct domain, clean up localStorage
       localStorage.removeItem('auth_redirect_origin');
     }
-  }, [searchParams]);
+  }, []);
 
   return null; // This component doesn't render anything
 };
