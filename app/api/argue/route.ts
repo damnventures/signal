@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        const pump = () => {
+        const pump = (): Promise<void> => {
           return reader.read().then(({ done, value }) => {
             if (done) {
               controller.close();
