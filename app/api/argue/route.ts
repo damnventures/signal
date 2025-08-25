@@ -55,35 +55,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorText || 'Failed to generate argument' }, { status: argumentResponse.status });
     }
 
-    // 3. Stream the response back
-    const readableStream = new ReadableStream({
-      start(controller) {
-        const reader = argumentResponse.body?.getReader();
-        if (!reader) {
-          controller.close();
-          return;
-        }
+    // 3. Collect the full streaming response
+    if (!argumentResponse.body) {
+      return NextResponse.json({ error: 'Response body is empty' }, { status: 500 });
+    }
 
-        const pump = (): Promise<void> => {
-          return reader.read().then(({ done, value }) => {
-            if (done) {
-              controller.close();
-              return;
+    const reader = argumentResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let chatResponse = '';
+    let reasoningResponse = '';
+
+    // Collect all chunks
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        
+        try {
+          const parsed = JSON.parse(line);
+          
+          if (parsed.type === 'filtered') {
+            if (parsed.content && !parsed.content.includes('NO_RELEVANT_CONTEXT')) {
+              // Try to extract reasoning from the filtered content if it's JSON
+              try {
+                const filteredData = JSON.parse(parsed.content);
+                if (filteredData.output && filteredData.output[0] && filteredData.output[0].content) {
+                  const reasoningContent = filteredData.output[0].content[0];
+                  if (reasoningContent.type === 'reasoning_text') {
+                    reasoningResponse = reasoningContent.text || '';
+                  }
+                }
+              } catch (e) {
+                // If not JSON, use the content as is
+                reasoningResponse = parsed.content;
+              }
             }
-            controller.enqueue(value);
-            return pump();
-          });
-        };
-
-        return pump();
+          } else if (parsed.type === 'response' && parsed.content) {
+            if (parsed.content.chat) {
+              chatResponse += parsed.content.chat;
+            }
+            if (parsed.content.reasoning && !reasoningResponse) {
+              reasoningResponse = parsed.content.reasoning;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse line:', line);
+        }
       }
-    });
+    }
 
-    return new Response(readableStream, {
-      headers: {
-        'Content-Type': 'text/plain',
-        'Transfer-Encoding': 'chunked',
-      },
+    // Return structured response
+    return NextResponse.json({
+      success: true,
+      response: chatResponse.trim(),
+      reasoning: reasoningResponse.trim(),
+      capsuleId: capsuleId,
+      question: question.trim()
     });
 
   } catch (error: any) {
