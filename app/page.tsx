@@ -323,6 +323,7 @@ const HomePage = () => {
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
           const DELAY_BETWEEN_REQUESTS = 500;
+          console.log(`[HomePage] Processing ${data.fileIds.length} fileIds:`, data.fileIds);
 
           for (const fileId of data.fileIds) {
             try {
@@ -330,19 +331,45 @@ const HomePage = () => {
               if (apiKey) {
                 jobDetailsUrl += `&userApiKey=${encodeURIComponent(apiKey)}`;
               }
+              console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
               const jobDetailsResponse = await fetch(jobDetailsUrl);
+              console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
+              
               if (jobDetailsResponse.ok) {
                 const jobDetails = await jobDetailsResponse.json();
+                console.log(`[HomePage] Job details response for ${fileId}:`, jobDetails);
                 if (jobDetails.originalLink) {
                   console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
-                  setFetchedOriginalLinks(prevLinks => [...prevLinks, jobDetails.originalLink]);
+                  setFetchedOriginalLinks(prevLinks => {
+                    const newLinks = [...prevLinks, jobDetails.originalLink];
+                    console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
+                    return newLinks;
+                  });
                 } else {
-                  console.warn(`[HomePage] No originalLink found for fileId ${fileId}`);
+                  console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
                 }
               } else {
-                const errorText = await jobDetailsResponse.text();
-                console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
-                setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
+                console.log(`[HomePage] Job details request failed for ${fileId}, trying to parse error...`);
+                try {
+                  const errorData = await jobDetailsResponse.json();
+                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status}`, errorData);
+                  
+                  if (errorData.needsAuth && !user) {
+                    setStatusMessage('Login required to access video content');
+                  } else {
+                    setCapsuleContent(`Unable to load video content. Error: ${errorData.error || 'Backend service unavailable'}`);
+                  }
+                } catch (e) {
+                  // Fallback for non-JSON error responses (like 502 HTML)
+                  const errorText = await jobDetailsResponse.text();
+                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+                  
+                  if (jobDetailsResponse.status === 502) {
+                    setCapsuleContent(`Unable to load video content. Backend service is temporarily unavailable (502).`);
+                  } else {
+                    setCapsuleContent(`Unable to load video content. Error ${jobDetailsResponse.status}.`);
+                  }
+                }
               }
             } catch (error: any) {
               console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
@@ -569,7 +596,10 @@ const HomePage = () => {
               </DraggableWindow>
             ))}
 
-            {showVideo && fetchedOriginalLinks.length > 0 && (
+            {(() => {
+              console.log(`[HomePage] Video render check: showVideo=${showVideo}, fetchedOriginalLinks.length=${fetchedOriginalLinks.length}, links:`, fetchedOriginalLinks);
+              return showVideo && fetchedOriginalLinks.length > 0;
+            })() && (
               <DraggableWindow
                 id="original-links"
                 onBringToFront={handleBringToFront}

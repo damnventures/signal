@@ -14,11 +14,12 @@ export async function GET(request: Request) {
   const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
 
   if (!API_KEY) {
-    console.error('API Error: SHRINKED_API_KEY is not configured.');
+    console.error('API Error: No API key available (neither user nor default).');
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
   console.log(`[Job Details API] Attempting to fetch jobId from: ${API_URL}/jobs/by-result/${fileId}`);
+  console.log(`[Job Details API] Using ${userApiKey ? 'user' : 'default'} API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
 
   try {
     // Step 1: Fetch jobId using fileId
@@ -31,6 +32,15 @@ export async function GET(request: Request) {
     if (!jobIdResponse.ok) {
       const errorText = await jobIdResponse.text();
       console.error(`API Error: Failed to fetch jobId for fileId ${fileId}. Status: ${jobIdResponse.status}, Body: ${errorText}`);
+      
+      // If it's an auth error and we're using the default key, suggest using user key
+      if (jobIdResponse.status === 401 && !userApiKey) {
+        return NextResponse.json({ 
+          error: 'Authentication failed with default API key. Please login to use your personal API key.',
+          needsAuth: true 
+        }, { status: 401 });
+      }
+      
       return NextResponse.json({ error: `Failed to fetch jobId: ${jobIdResponse.statusText}` }, { status: jobIdResponse.status });
     }
 

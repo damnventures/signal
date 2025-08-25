@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   try {
     // Exchange authorization code for tokens with the backend API
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+    const requestUrl = new URL(request.url);
     const tokenResponse = await fetch(`${API_BASE_URL}/auth/google/redirect`, {
       method: 'POST',
       headers: {
@@ -41,7 +42,8 @@ export async function GET(request: Request) {
       },
       body: JSON.stringify({
         code,
-        redirect_uri: `${new URL(request.url).origin}/api/auth/callback`,
+        redirect_uri: `${requestUrl.origin}/api/auth/callback`,
+        origin_domain: requestUrl.hostname, // Pass the Signal subdomain to backend
       }),
     });
 
