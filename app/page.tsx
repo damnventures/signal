@@ -5,6 +5,8 @@ import DraggableWindow from './components/DraggableWindow';
 import AnimatedHeader from './components/AnimatedHeader';
 import Head from 'next/head';
 import ArguePopup from './components/ArguePopup';
+import AuthButton from './components/AuthButton';
+import { useAuth } from './contexts/AuthContext';
 
 interface Highlight {
   title: string;
@@ -14,6 +16,7 @@ interface Highlight {
 }
 
 const HomePage = () => {
+  const { user, accessToken, apiKey, setUserData } = useAuth();
   const [capsuleContent, setCapsuleContent] = useState<string>("");
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
@@ -34,11 +37,80 @@ const HomePage = () => {
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showArguePopup, setShowArguePopup] = useState(false);
 
-  const CAPSULE_ID = '6887e02fa01e2f4073d3bb51';
+  const DEFAULT_CAPSULE_ID = '6887e02fa01e2f4073d3bb51'; // Keep as default
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Handle OAuth callback and error handling
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessTokenFromUrl = urlParams.get('accessToken');
+      const refreshToken = urlParams.get('refreshToken');
+      const error = urlParams.get('error');
+
+      // Handle authentication errors
+      if (error) {
+        console.error('[Auth] Authentication error:', error);
+        setStatusMessage(`Authentication failed: ${error.replace(/_/g, ' ')}`);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      if (accessTokenFromUrl && !user) {
+        console.log('[Auth] Processing OAuth callback...');
+        setStatusMessage('Completing authentication...');
+        
+        try {
+          // Store refresh token if available
+          if (refreshToken) {
+            localStorage.setItem('auth_refresh_token', refreshToken);
+          }
+
+          // Get or create API key for the user
+          const response = await fetch('/api/auth/api-key', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accessToken: accessTokenFromUrl,
+            }),
+          });
+
+          if (response.ok) {
+            const { apiKey: newApiKey, userProfile, existing } = await response.json();
+            
+            setUserData(userProfile, accessTokenFromUrl, newApiKey);
+            console.log('[Auth] Successfully authenticated user');
+            setStatusMessage(`Welcome ${userProfile.email}! ${existing ? 'Using existing' : 'Created new'} API key.`);
+            
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Refresh the page content with user's data after a short delay
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } else {
+            const errorData = await response.json();
+            console.error('[Auth] Failed to get/create API key:', errorData);
+            setStatusMessage(`Authentication failed: ${errorData.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('[Auth] Error processing OAuth callback:', error);
+          setStatusMessage('Authentication failed: Network error');
+        }
+      }
+    };
+
+    if (isClient) {
+      handleAuthCallback();
+    }
+  }, [isClient, user, setUserData]);
 
   const statusMessages = {
     signal: [
@@ -206,7 +278,15 @@ const HomePage = () => {
     const fetchCapsuleContent = async () => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-        const apiUrl = `${baseUrl}/api/capsule-signal`;
+        let apiUrl = `${baseUrl}/api/capsule-signal`;
+        
+        // If user is authenticated, add their API key as a query parameter
+        if (apiKey) {
+          apiUrl += `?userApiKey=${encodeURIComponent(apiKey)}`;
+          console.log(`[HomePage] Using user's API key for capsule fetch`);
+        } else {
+          console.log(`[HomePage] Using default API key for capsule fetch`);
+        }
 
         console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
 
@@ -246,7 +326,11 @@ const HomePage = () => {
 
           for (const fileId of data.fileIds) {
             try {
-              const jobDetailsResponse = await fetch(`/api/job-details?fileId=${fileId}`);
+              let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
+              if (apiKey) {
+                jobDetailsUrl += `&userApiKey=${encodeURIComponent(apiKey)}`;
+              }
+              const jobDetailsResponse = await fetch(jobDetailsUrl);
               if (jobDetailsResponse.ok) {
                 const jobDetails = await jobDetailsResponse.json();
                 if (jobDetails.originalLink) {
@@ -277,7 +361,7 @@ const HomePage = () => {
     };
 
     fetchCapsuleContent();
-  }, [parseHighlights]);
+  }, [parseHighlights, apiKey]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
@@ -571,6 +655,10 @@ const HomePage = () => {
               </div>
             </DraggableWindow>
 
+            <div className="auth-button-container">
+              <AuthButton />
+            </div>
+
             <div className="fixed-buttons-container">
               <button
                 className={`action-button ${isLoading ? 'blinking' : ''}`}
@@ -596,7 +684,7 @@ const HomePage = () => {
             <ArguePopup 
               isOpen={showArguePopup}
               onClose={() => setShowArguePopup(false)}
-              capsuleId={CAPSULE_ID}
+              capsuleId={DEFAULT_CAPSULE_ID}
               onBringToFront={handleBringToFront}
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
             />

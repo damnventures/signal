@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  const API_KEY = process.env.SHRINKED_API_KEY;
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userApiKey = searchParams.get('userApiKey');
+  
+  // Use user's API key if provided, otherwise fall back to default
+  const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
   const CAPSULE_ID = '6887e02fa01e2f4073d3bb51';
   const requestUrl = `https://api.shrinked.ai/capsules/${CAPSULE_ID}`;
 
   if (!API_KEY) {
-    console.error('API Error: SHRINKED_API_KEY is not configured.');
+    console.error('API Error: No API key available (neither user nor default).');
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
   console.log(`[Route] Attempting to fetch from: ${requestUrl}`);
-  console.log(`[Route] Using API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
+  console.log(`[Route] Using ${userApiKey ? 'user' : 'default'} API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
 
   try {
     const response = await fetch(requestUrl, {

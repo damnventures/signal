@@ -40,6 +40,66 @@ body {
     font-display: swap;
 }
 
+/* Authentication button styles */
+.auth-button-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.auth-button {
+  background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
+  border: 2px outset #c0c0c0;
+  color: #000;
+  font-family: 'ChicagoFLF', 'Geneva', monospace;
+  font-size: 11px;
+  font-weight: normal;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 0;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+}
+
+.auth-button:hover {
+  background: linear-gradient(135deg, #d0d0d0 0%, #b0b0b0 100%);
+}
+
+.auth-button:active {
+  border: 2px inset #c0c0c0;
+  background: linear-gradient(135deg, #a0a0a0 0%, #c0c0c0 100%);
+}
+
+.auth-button.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.user-info {
+  background: #f0f0f0;
+  border: 1px inset #c0c0c0;
+  padding: 4px 8px;
+  font-family: 'ChicagoFLF', 'Geneva', monospace;
+  font-size: 10px;
+  color: #000;
+  border-radius: 0;
+  max-width: 200px;
+  word-break: break-all;
+}
+
+.user-email {
+  font-weight: bold;
+}
+
 @font-face {
     font-family: 'Apple Garamond';
     src: url('/fonts/AppleGaramondLight.woff2') format('woff2'),

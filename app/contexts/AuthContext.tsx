@@ -1,0 +1,116 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+interface User {
+  id: string;
+  email: string;
+  username?: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  accessToken: string | null;
+  apiKey: string | null;
+  isLoading: boolean;
+  login: () => void;
+  logout: () => void;
+  setUserData: (user: User, accessToken: string, apiKey?: string) => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load stored authentication data on mount
+  useEffect(() => {
+    const loadAuthData = () => {
+      try {
+        const storedUser = localStorage.getItem('auth_user');
+        const storedToken = localStorage.getItem('auth_access_token');
+        const storedApiKey = localStorage.getItem('auth_api_key');
+
+        if (storedUser && storedToken) {
+          setUser(JSON.parse(storedUser));
+          setAccessToken(storedToken);
+          if (storedApiKey) {
+            setApiKey(storedApiKey);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading auth data:', error);
+        // Clear corrupted data
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_access_token');
+        localStorage.removeItem('auth_api_key');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAuthData();
+  }, []);
+
+  const login = () => {
+    // Redirect to Google OAuth endpoint
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+    // Configure the redirect URL to point back to our callback handler
+    const redirectUrl = `${window.location.origin}/api/auth/callback`;
+    window.location.href = `${baseUrl}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+  };
+
+  const logout = () => {
+    setUser(null);
+    setAccessToken(null);
+    setApiKey(null);
+    
+    // Clear localStorage
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_access_token');
+    localStorage.removeItem('auth_api_key');
+    localStorage.removeItem('auth_refresh_token');
+  };
+
+  const setUserData = (userData: User, token: string, key?: string) => {
+    setUser(userData);
+    setAccessToken(token);
+    if (key) {
+      setApiKey(key);
+    }
+
+    // Store in localStorage
+    localStorage.setItem('auth_user', JSON.stringify(userData));
+    localStorage.setItem('auth_access_token', token);
+    if (key) {
+      localStorage.setItem('auth_api_key', key);
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    accessToken,
+    apiKey,
+    isLoading,
+    login,
+    logout,
+    setUserData,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
