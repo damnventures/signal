@@ -6,6 +6,7 @@ import AnimatedHeader from './components/AnimatedHeader';
 import Head from 'next/head';
 import ArguePopup from './components/ArguePopup';
 import AuthButton from './components/AuthButton';
+import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
 
 interface Highlight {
@@ -556,6 +557,7 @@ const HomePage = () => {
         <meta name="msapplication-TileColor" content="#c0c0c0" />
         <meta name="theme-color" content="#c0c0c0" />
       </Head>
+      <AuthRedirectHandler />
       <main className="main-container">
         {isClient && (
           <>

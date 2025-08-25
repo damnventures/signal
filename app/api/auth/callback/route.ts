@@ -43,7 +43,6 @@ export async function GET(request: Request) {
       body: JSON.stringify({
         code,
         redirect_uri: `${requestUrl.origin}/api/auth/callback`,
-        origin_domain: requestUrl.hostname, // Pass the Signal subdomain to backend
       }),
     });
 
