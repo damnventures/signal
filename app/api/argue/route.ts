@@ -14,16 +14,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No API key available' }, { status: 500 });
     }
 
-    // 1. Fetch capsule context
-    const contextResponse = await fetch(`https://api.shrinked.ai/capsules/${capsuleId}/context`, {
+    // 1. Fetch capsule context (use our internal route that handles the API properly)
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
+    let contextUrl = `${baseUrl}/api/capsules/${capsuleId}/context`;
+    
+    // Add user API key if provided
+    if (userApiKey) {
+      contextUrl += `?userApiKey=${encodeURIComponent(userApiKey)}`;
+    }
+    
+    const contextResponse = await fetch(contextUrl, {
       headers: {
-        'x-api-key': API_KEY,
         'Content-Type': 'application/json',
       },
     });
 
     if (!contextResponse.ok) {
-      return NextResponse.json({ error: 'Failed to fetch capsule context' }, { status: contextResponse.status });
+      const errorText = await contextResponse.text();
+      return NextResponse.json({ error: `Failed to fetch capsule context: ${errorText}` }, { status: contextResponse.status });
     }
 
     const contextData = await contextResponse.json();

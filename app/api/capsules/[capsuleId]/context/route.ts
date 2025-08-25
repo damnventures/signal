@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request, { params }: any) {
+  const { searchParams } = new URL(request.url);
+  const userApiKey = searchParams.get('userApiKey');
   const capsuleId = params.capsuleId;
 
   if (!capsuleId) {
@@ -9,7 +11,8 @@ export async function GET(request: Request, { params }: any) {
   }
 
   const API_URL = process.env.BACKEND_API_URL || 'https://api.shrinked.ai';
-  const API_KEY = process.env.SHRINKED_API_KEY;
+  // Use user's API key if provided, otherwise fall back to default
+  const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
   const requestUrl = `${API_URL}/capsules/${capsuleId}/context`;
 
   if (!API_KEY) {
