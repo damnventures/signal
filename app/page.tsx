@@ -582,7 +582,7 @@ const HomePage = () => {
     }
   }, [parseHighlights, isFetchingCapsuleContent]);
 
-  const fetchCapsules = useCallback(async (key?: string) => {
+  const fetchCapsules = useCallback(async (key?: string | null) => {
     if (!key && !accessToken) {
       console.log('[HomePage] No API key or access token, skipping capsule fetch.');
       return;

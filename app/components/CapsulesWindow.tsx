@@ -14,7 +14,7 @@ interface CapsulesWindowProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   id: string;
-  selectedCapsuleId?: string;
+  selectedCapsuleId?: string | null;
 }
 
 const CapsulesWindow: React.FC<CapsulesWindowProps> = ({ 
