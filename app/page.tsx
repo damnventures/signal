@@ -408,12 +408,16 @@ const HomePage = () => {
       }
 
       console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
+      console.log(`[HomePage] Headers:`, headers);
 
       const response = await fetch(apiUrl, {
         headers,
         cache: 'no-store',
         next: { revalidate: 0 },
       });
+
+      console.log(`[HomePage] Response status: ${response.status}`);
+      console.log(`[HomePage] Response URL: ${response.url}`);
 
       console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
 
@@ -562,9 +566,19 @@ const HomePage = () => {
 
   useEffect(() => {
     if (!isLoading && !authInProgress && selectedCapsuleId) {
+      console.log(`[HomePage] Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
   }, [isLoading, authInProgress, apiKey, selectedCapsuleId, fetchCapsuleContent]);
+
+  // Set default capsule for non-authenticated users when auth loading is complete
+  useEffect(() => {
+    if (!isLoading && !apiKey && !selectedCapsuleId) {
+      const defaultCapsuleId = '67dd9e10cbd0846c40b4bdf23';
+      console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
+      setSelectedCapsuleId(defaultCapsuleId);
+    }
+  }, [isLoading, apiKey, selectedCapsuleId]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
@@ -574,11 +588,6 @@ const HomePage = () => {
     
     if (apiKey) {
       fetchCapsules(apiKey);
-    } else {
-      // Set default capsule for non-authenticated users
-      const defaultCapsuleId = '67dd9e10cbd0846c40b4bdf23';
-      console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
-      setSelectedCapsuleId(defaultCapsuleId);
     }
 
     setTimeout(() => setHighlightCard(null), 300);
