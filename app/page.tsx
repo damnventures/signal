@@ -17,7 +17,7 @@ interface Highlight {
 }
 
 const HomePage = () => {
-  const { user, accessToken, apiKey, setUserData, isLoading } = useAuth();
+  const { user, accessToken, apiKey, setUserData, isLoading, logout } = useAuth();
   const [capsuleContent, setCapsuleContent] = useState<string>("");
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
@@ -103,9 +103,8 @@ const HomePage = () => {
           const success = await handleUserAuth(accessToken);
           if (!success) {
             console.warn('[Auth] Failed to complete authentication from stored token');
-            // Clear invalid token
-            localStorage.removeItem('auth_access_token');
-            setAccessToken(null);
+            // Clear invalid token data
+            logout();
           }
         } finally {
           setAuthInProgress(false);
