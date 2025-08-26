@@ -47,11 +47,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedApiKey = localStorage.getItem('auth_api_key');
 
         if (storedUser && storedToken) {
+          console.log('[AuthContext] Loading user from localStorage:', storedUser);
           setUser(JSON.parse(storedUser));
           setAccessToken(storedToken);
           if (storedApiKey) {
+            console.log('[AuthContext] Loading apiKey from localStorage:', storedApiKey);
             setApiKey(storedApiKey);
           }
+        } else {
+          console.log('[AuthContext] No auth data found in localStorage.');
         }
       } catch (error) {
         console.error('Error loading auth data:', error);

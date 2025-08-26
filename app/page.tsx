@@ -44,9 +44,9 @@ const HomePage = () => {
     setIsClient(true);
   }, []);
 
-  // Handle OAuth callback and error handling
+  // Handle auth flow: check if logged in, fetch/create token
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    const handleAuth = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const accessTokenFromUrl = urlParams.get('accessToken');
       const refreshToken = urlParams.get('refreshToken');
@@ -56,131 +56,113 @@ const HomePage = () => {
       if (error) {
         console.error('[Auth] Authentication error:', error);
         setStatusMessage(`Authentication failed: ${error.replace(/_/g, ' ')}`);
-        // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
 
+      // Handle OAuth callback
       if (accessTokenFromUrl && !user) {
         console.log('[Auth] Processing OAuth callback...');
         setStatusMessage('Completing authentication...');
         
         try {
-          // Store refresh token if available
           if (refreshToken) {
             localStorage.setItem('auth_refresh_token', refreshToken);
           }
 
-          try {
-            // First try to get the real user profile directly from the backend
-            let userProfile = null;
-            try {
-              const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
-              const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
-                headers: {
-                  'Authorization': `Bearer ${accessTokenFromUrl}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-              
-              if (profileResponse.ok) {
-                userProfile = await profileResponse.json();
-                console.log('[Auth] Successfully fetched user profile:', userProfile.email);
-              } else {
-                console.warn('[Auth] Failed to fetch user profile directly');
-              }
-            } catch (profileError) {
-              console.warn('[Auth] Error fetching user profile:', profileError);
-            }
-
-            // Try to get or create API key for the user
-            const response = await fetch('/api/auth/api-key', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                accessToken: accessTokenFromUrl,
-              }),
-            });
-
-            if (response.ok) {
-              const { apiKey: newApiKey, userProfile: apiKeyUserProfile, existing } = await response.json();
-              
-              // Use the profile from API key route, or fallback to direct profile fetch
-              const finalUserProfile = apiKeyUserProfile || userProfile;
-              setUserData(finalUserProfile, accessTokenFromUrl, newApiKey);
-              console.log('[Auth] Successfully authenticated user');
-              setStatusMessage(`Welcome ${finalUserProfile.email}! ${existing ? 'Using existing' : 'Created new'} API key.`);
-            } else {
-              // API key creation failed, but we can still authenticate with user profile if we have it
-              console.warn('[Auth] API key creation failed, proceeding with basic auth');
-              const finalUserProfile = userProfile || {
-                id: 'signal-user-fallback',
-                email: 'user@signal.shrinked.ai',
-                name: 'Signal User'
-              };
-              setUserData(finalUserProfile, accessTokenFromUrl);
-              setStatusMessage(`Welcome ${finalUserProfile.email}! (API key unavailable)`);
-            }
-            
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Refresh the page content with user's data after a short delay
-            setTimeout(() => {
-              window.location.reload();
-            }, 2000);
-            
-          } catch (apiError) {
-            console.warn('[Auth] API key request failed, proceeding with basic auth:', apiError);
-            
-            // Try to get user profile directly as final attempt
-            let userProfile = null;
-            try {
-              const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
-              const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
-                headers: {
-                  'Authorization': `Bearer ${accessTokenFromUrl}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-              
-              if (profileResponse.ok) {
-                userProfile = await profileResponse.json();
-                console.log('[Auth] Successfully fetched user profile in fallback:', userProfile.email);
-              }
-            } catch (fallbackError) {
-              console.warn('[Auth] Fallback profile fetch also failed:', fallbackError);
-            }
-            
-            // Use real profile if available, otherwise fallback
-            const finalUserProfile = userProfile || {
-              id: 'signal-user-fallback',
-              email: 'user@signal.shrinked.ai',
-              name: 'Signal User'
-            };
-            setUserData(finalUserProfile, accessTokenFromUrl);
-            setStatusMessage(`Welcome ${finalUserProfile.email}! (API key unavailable)`);
-            
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            setTimeout(() => {
-              window.location.reload();
-            }, 2000);
-          }
+          // Get user profile and handle token
+          await handleUserAuth(accessTokenFromUrl);
+          
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => window.location.reload(), 2000);
+          
         } catch (error) {
           console.error('[Auth] Error processing OAuth callback:', error);
           setStatusMessage('Authentication failed: Network error');
         }
       }
+      // If user is already logged in, ensure they have a token
+      else if (user && accessToken && !isLoading) {
+        console.log('[Auth] User logged in, checking/creating token...');
+        await handleUserAuth(accessToken);
+      }
+    };
+
+    const handleUserAuth = async (token: string) => {
+      try {
+        // First, get user profile
+        let userProfile = null;
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+        
+        try {
+          const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (profileResponse.ok) {
+            userProfile = await profileResponse.json();
+            console.log('[Auth] Successfully fetched user profile:', userProfile.email);
+          }
+        } catch (profileError) {
+          console.warn('[Auth] Error fetching user profile:', profileError);
+        }
+
+        // Always try to get or create token for logged in user
+        try {
+          const response = await fetch('/api/auth/api-key', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accessToken: token,
+              defaultName: 'Chars' // Create with name "Chars" if no token exists
+            }),
+          });
+
+          if (response.ok) {
+            const { apiKey: newApiKey, userProfile: apiKeyUserProfile, existing } = await response.json();
+            const finalUserProfile = apiKeyUserProfile || userProfile || {
+              id: 'signal-user-fallback',
+              email: 'user@signal.shrinked.ai',
+              name: 'Signal User'
+            };
+            
+            setUserData(finalUserProfile, token, newApiKey);
+            setStatusMessage(`Welcome ${finalUserProfile.email}! ${existing ? 'Using existing' : 'Created new'} token.`);
+          } else {
+            // Fallback if API key creation fails
+            const finalUserProfile = userProfile || {
+              id: 'signal-user-fallback', 
+              email: 'user@signal.shrinked.ai',
+              name: 'Signal User'
+            };
+            setUserData(finalUserProfile, token);
+            setStatusMessage(`Welcome ${finalUserProfile.email}! (Token unavailable)`);
+          }
+        } catch (apiError) {
+          console.warn('[Auth] Token request failed:', apiError);
+          const finalUserProfile = userProfile || {
+            id: 'signal-user-fallback',
+            email: 'user@signal.shrinked.ai', 
+            name: 'Signal User'
+          };
+          setUserData(finalUserProfile, token);
+          setStatusMessage(`Welcome ${finalUserProfile.email}! (Token unavailable)`);
+        }
+      } catch (error) {
+        console.error('[Auth] Error in handleUserAuth:', error);
+        setStatusMessage('Authentication failed: Network error');
+      }
     };
 
     if (isClient) {
-      handleAuthCallback();
+      handleAuth();
     }
-  }, [isClient, user, setUserData]);
+  }, [isClient, user, accessToken, isLoading, setUserData]);
 
   const statusMessages = {
     signal: [
@@ -344,143 +326,143 @@ const HomePage = () => {
     return highlights;
   }, []);
 
-  useEffect(() => {
-    const fetchCapsuleContent = async () => {
-      setHighlightsData([]);
-      setFetchedOriginalLinks([]);
-      setCapsuleContent("");
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-        let apiUrl = `${baseUrl}/api/capsule-signal`;
-        
-        if (apiKey) {
-          apiUrl += `?userApiKey=${encodeURIComponent(apiKey)}`;
-          console.log(`[HomePage] Using user's API key for capsule fetch`);
-        } else {
-          console.log(`[HomePage] Using default API key for capsule fetch`);
-        }
-
-        console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
-
-        const response = await fetch(apiUrl, {
-          cache: 'no-store',
-          next: { revalidate: 0 },
-        });
-
-        console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
-          throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        const fetchedContent = data.highlights || data.signal || JSON.stringify(data, null, 2);
-        setCapsuleContent(fetchedContent);
-
-        if (data.highlights) {
-          const parsed = parseHighlights(data.highlights);
-          setHighlightsData(parsed);
-          console.log('[HomePage] Highlights data set:', parsed);
-          const initialZIndexes: Record<string, number> = {};
-          initialZIndexes['header'] = 1;
-          initialZIndexes['argue-popup'] = parsed.length + 10; // Add argue popup with high z-index
-          parsed.forEach((_, index) => {
-            initialZIndexes[`highlight-${index}`] = index + 2;
-          });
-          setCardZIndexes(initialZIndexes);
-          setNextZIndex(parsed.length + 11); // Update next z-index accordingly
-        }
-
-        if (data.fileIds && Array.isArray(data.fileIds)) {
-          const DELAY_BETWEEN_REQUESTS = 2500; // Increased delay to further reduce rate limiting
-          const processedFileIds = new Set<string>();
-          console.log(`[HomePage] Processing ${data.fileIds.length} fileIds (${new Set(data.fileIds).size} unique):`, data.fileIds);
-
-          for (const fileId of data.fileIds) {
-            if (processedFileIds.has(fileId)) {
-              console.log(`[HomePage] Skipping already processed fileId: ${fileId}`);
-              continue;
-            }
-            processedFileIds.add(fileId);
-            
-            try {
-              let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
-              if (apiKey) {
-                jobDetailsUrl += `&userApiKey=${encodeURIComponent(apiKey)}`;
-              }
-              console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
-              
-              const jobDetailsResponse = await fetch(jobDetailsUrl, {
-                cache: 'no-store',
-              });
-              
-              console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
-              
-              if (jobDetailsResponse.ok) {
-                const jobDetails = await jobDetailsResponse.json();
-                console.log(`[HomePage] Job details response for ${fileId}:`, jobDetails);
-                if (jobDetails.originalLink) {
-                  console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
-                  setFetchedOriginalLinks(prevLinks => {
-                    const newLinks = [...prevLinks, jobDetails.originalLink];
-                    console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
-                    return newLinks;
-                  });
-                } else {
-                  console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
-                }
-              } else {
-                console.log(`[HomePage] Job details request failed for ${fileId}, trying to parse error...`);
-                console.log(`[HomePage] Failed request URL: ${jobDetailsUrl}`);
-                console.log(`[HomePage] Response headers:`, [...jobDetailsResponse.headers.entries()]);
-                
-                try {
-                  const errorData = await jobDetailsResponse.json();
-                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status}`, errorData);
-                  
-                  if (errorData.needsAuth && !user) {
-                    setStatusMessage('Login required to access video content');
-                  } else {
-                    setCapsuleContent(`Unable to load video content. Error: ${errorData.error || 'Backend service unavailable'}`);
-                  }
-                } catch (e) {
-                  // Fallback for non-JSON error responses (like 502 HTML)
-                  try {
-                    const errorText = await jobDetailsResponse.text();
-                    console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
-                  } catch (readError) {
-                    console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - Could not read response body`);
-                  }
-                  
-                  if (jobDetailsResponse.status === 502) {
-                    setCapsuleContent(`Unable to load video content. Backend service is temporarily unavailable (502).`);
-                  } else {
-                    setCapsuleContent(`Unable to load video content. Error ${jobDetailsResponse.status}.`);
-                  }
-                }
-              }
-            } catch (error: any) {
-              console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
-              setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
-            }
-
-            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
-          }
-        }
-
-        console.log(`[HomePage] Successfully fetched capsule content.`);
-      } catch (error: any) {
-        console.error(`[HomePage] Error fetching capsule content:`, error.message);
-        setCapsuleContent('Unable to load capsule content. Please try again later.');
+  const fetchCapsuleContent = useCallback(async (key: string | null) => {
+    setHighlightsData([]);
+    setFetchedOriginalLinks([]);
+    setCapsuleContent("");
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
+      let apiUrl = `${baseUrl}/api/capsule-signal`;
+      
+      if (key) {
+        apiUrl += `?userApiKey=${encodeURIComponent(key)}`;
+        console.log(`[HomePage] Using user's API key for capsule fetch`);
+      } else {
+        console.log(`[HomePage] Using default API key for capsule fetch`);
       }
-    };
 
-    if (!isLoading) {
-      fetchCapsuleContent();
+      console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
+
+      const response = await fetch(apiUrl, {
+        cache: 'no-store',
+        next: { revalidate: 0 },
+      });
+
+      console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const fetchedContent = data.highlights || data.signal || JSON.stringify(data, null, 2);
+      setCapsuleContent(fetchedContent);
+
+      if (data.highlights) {
+        const parsed = parseHighlights(data.highlights);
+        setHighlightsData(parsed);
+        console.log('[HomePage] Highlights data set:', parsed);
+        const initialZIndexes: Record<string, number> = {};
+        initialZIndexes['header'] = 1;
+        initialZIndexes['argue-popup'] = parsed.length + 10; // Add argue popup with high z-index
+        parsed.forEach((_, index) => {
+          initialZIndexes[`highlight-${index}`] = index + 2;
+        });
+        setCardZIndexes(initialZIndexes);
+        setNextZIndex(parsed.length + 11); // Update next z-index accordingly
+      }
+
+      if (data.fileIds && Array.isArray(data.fileIds)) {
+        const DELAY_BETWEEN_REQUESTS = 2500; // Increased delay to further reduce rate limiting
+        const processedFileIds = new Set<string>();
+        console.log(`[HomePage] Processing ${data.fileIds.length} fileIds (${new Set(data.fileIds).size} unique):`, data.fileIds);
+
+        for (const fileId of data.fileIds) {
+          if (processedFileIds.has(fileId)) {
+            console.log(`[HomePage] Skipping already processed fileId: ${fileId}`);
+            continue;
+          }
+          processedFileIds.add(fileId);
+          
+          try {
+            let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
+            if (key) {
+              jobDetailsUrl += `&userApiKey=${encodeURIComponent(key)}`;
+            }
+            console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
+            
+            const jobDetailsResponse = await fetch(jobDetailsUrl, {
+              cache: 'no-store',
+            });
+            
+            console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
+            
+            if (jobDetailsResponse.ok) {
+              const jobDetails = await jobDetailsResponse.json();
+              console.log(`[HomePage] Job details response for ${fileId}:`, jobDetails);
+              if (jobDetails.originalLink) {
+                console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
+                setFetchedOriginalLinks(prevLinks => {
+                  const newLinks = [...prevLinks, jobDetails.originalLink];
+                  console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
+                  return newLinks;
+                });
+              } else {
+                console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
+              }
+            } else {
+              console.log(`[HomePage] Job details request failed for ${fileId}, trying to parse error...`);
+              console.log(`[HomePage] Failed request URL: ${jobDetailsUrl}`);
+              console.log(`[HomePage] Response headers:`, [...jobDetailsResponse.headers.entries()]);
+              
+              try {
+                const errorData = await jobDetailsResponse.json();
+                console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status}`, errorData);
+                
+                if (errorData.needsAuth && !user) {
+                  setStatusMessage('Login required to access video content');
+                } else {
+                  setCapsuleContent(`Unable to load video content. Error: ${errorData.error || 'Backend service unavailable'}`);
+                }
+              } catch (e) {
+                // Fallback for non-JSON error responses (like 502 HTML)
+                try {
+                  const errorText = await jobDetailsResponse.text();
+                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+                } catch (readError) {
+                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - Could not read response body`);
+                }
+                
+                if (jobDetailsResponse.status === 502) {
+                  setCapsuleContent(`Unable to load video content. Backend service is temporarily unavailable (502).`);
+                } else {
+                  setCapsuleContent(`Unable to load video content. Error ${jobDetailsResponse.status}.`);
+                }
+              }
+            }
+          } catch (error: any) {
+            console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
+            setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
+        }
+      }
+
+      console.log(`[HomePage] Successfully fetched capsule content.`);
+    } catch (error: any) {
+      console.error(`[HomePage] Error fetching capsule content:`, error.message);
+      setCapsuleContent('Unable to load capsule content. Please try again later.');
     }
-  }, [isLoading, apiKey, user, parseHighlights]);
+  }, [parseHighlights, user]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      fetchCapsuleContent(apiKey);
+    }
+  }, [isLoading, apiKey, fetchCapsuleContent]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
