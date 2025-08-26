@@ -8,18 +8,18 @@ export async function GET(request: Request) {
   console.log(`[Capsules Route] API Key present: ${userApiKey ? 'yes' : 'no'}`);
   console.log(`[Capsules Route] Auth header present: ${authHeader ? 'yes' : 'no'}`);
 
-  // For capsules, try API key first as it's more likely to work
+  // Try Bearer token first, fall back to API key
   let requestHeaders: Record<string, string> = {};
   let authMethod = '';
   
-  if (userApiKey) {
-    requestHeaders['x-api-key'] = userApiKey;
-    authMethod = 'API key';
-    console.log(`[Capsules Route] Using API key authentication (last 4 chars): ...${userApiKey.slice(-4)}`);
-  } else if (authHeader && authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
     requestHeaders['Authorization'] = authHeader;
     authMethod = 'Bearer token';
     console.log(`[Capsules Route] Using Bearer token authentication`);
+  } else if (userApiKey) {
+    requestHeaders['x-api-key'] = userApiKey;
+    authMethod = 'API key';
+    console.log(`[Capsules Route] Using API key authentication (last 4 chars): ...${userApiKey.slice(-4)}`);
   } else {
     console.error('[Capsules Route] No authentication method available');
     return NextResponse.json({ error: 'Authentication required (Bearer token or API key)' }, { status: 401 });
