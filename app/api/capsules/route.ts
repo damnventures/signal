@@ -1,34 +1,36 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userApiKey = searchParams.get('userApiKey');
-  
+  const userApiKey = request.headers.get('x-api-key');
+
+  // User API key is required to list their capsules
   if (!userApiKey) {
-    return NextResponse.json({ error: 'User API key required for this endpoint' }, { status: 400 });
+    return NextResponse.json({ error: 'API key is required' }, { status: 401 });
   }
 
-  const API_URL = 'https://api.shrinked.ai';
+  const requestUrl = `https://api.shrinked.ai/capsules`;
+
+  console.log(`[Capsules Route] Attempting to fetch capsules from: ${requestUrl}`);
+  console.log(`[Capsules Route] Using user API Key (last 4 chars): ...${userApiKey.slice(-4)}`);
 
   try {
-    const response = await fetch(`${API_URL}/capsules`, {
+    const response = await fetch(requestUrl, {
       headers: {
         'x-api-key': userApiKey,
-        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Capsules API] Failed to fetch capsules. Status: ${response.status}, Body: ${errorText}`);
+      console.error(`[Capsules Route] API Error: Failed to fetch capsules. Status: ${response.status}, StatusText: ${response.statusText}, Body: ${errorText}`);
       return NextResponse.json({ error: `Failed to fetch capsules: ${response.statusText}` }, { status: response.status });
     }
 
-    const capsules = await response.json();
-    return NextResponse.json(capsules);
-
+    const data = await response.json();
+    console.log('[Capsules Route] API Success: Capsules fetched successfully.');
+    return NextResponse.json(data);
   } catch (error: any) {
-    console.error('[Capsules API] Error:', error);
+    console.error(`[Capsules Route] API Error: An exception occurred: ${error.message}`);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

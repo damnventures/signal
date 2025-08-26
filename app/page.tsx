@@ -8,6 +8,7 @@ import ArguePopup from './components/ArguePopup';
 import AuthButton from './components/AuthButton';
 import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
+import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 
 interface Highlight {
   title: string;
@@ -39,6 +40,9 @@ const HomePage = () => {
   const [showArguePopup, setShowArguePopup] = useState(false);
   const [authProcessed, setAuthProcessed] = useState(false);
   const [authInProgress, setAuthInProgress] = useState(false);
+  const [capsules, setCapsules] = useState<Capsule[]>([]);
+  const [showCapsulesWindow, setShowCapsulesWindow] = useState(false);
+  const [selectedCapsuleId, setSelectedCapsuleId] = useState<string>('6887e02fa01e2f4073d3bb51');
 
   const DEFAULT_CAPSULE_ID = '6887e02fa01e2f4073d3bb51'; // Keep as default
 
@@ -223,7 +227,7 @@ const HomePage = () => {
     if (isClient) {
       handleAuth();
     }
-  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData]);
+  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData, logout]);
 
   const statusMessages = {
     signal: [
@@ -387,13 +391,13 @@ const HomePage = () => {
     return highlights;
   }, []);
 
-  const fetchCapsuleContent = useCallback(async (key: string | null) => {
+  const fetchCapsuleContent = useCallback(async (key: string | null, capsuleId: string) => {
     setHighlightsData([]);
     setFetchedOriginalLinks([]);
     setCapsuleContent("");
     try {
       const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-      const apiUrl = `${baseUrl}/api/capsule-signal`;
+      const apiUrl = `${baseUrl}/api/capsule-signal?capsuleId=${capsuleId}`;
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -525,6 +529,28 @@ const HomePage = () => {
     }
   }, [parseHighlights, user]);
 
+  const fetchCapsules = useCallback(async (key: string) => {
+    if (!key) return;
+
+    try {
+      const response = await fetch('/api/capsules', {
+        headers: {
+          'X-Api-Key': key,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCapsules(data);
+        setShowCapsulesWindow(true);
+      } else {
+        console.error('Failed to fetch capsules');
+      }
+    } catch (error) {
+      console.error('Error fetching capsules:', error);
+    }
+  }, []);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const accessTokenFromUrl = urlParams.get('accessToken');
@@ -543,9 +569,9 @@ const HomePage = () => {
     // We can fetch if auth is not in progress. This allows the second fetch after login,
     // and the first fetch if no login is detected.
     if (!isLoading && !authInProgress) {
-      fetchCapsuleContent(apiKey);
+      fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [isLoading, authInProgress, apiKey, fetchCapsuleContent, user, accessToken, authProcessed]);
+  }, [isLoading, authInProgress, apiKey, fetchCapsuleContent, user, accessToken, authProcessed, selectedCapsuleId]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
@@ -553,6 +579,10 @@ const HomePage = () => {
     setLoadingPhase('insights');
     updateStatusMessage('insights');
     
+    if (apiKey) {
+      fetchCapsules(apiKey);
+    }
+
     setTimeout(() => setHighlightCard(null), 300);
     setTimeout(() => {
       setShowVideo(true);
@@ -565,7 +595,7 @@ const HomePage = () => {
         updateStatusMessage('idle');
       }, 10000);
     }, highlightsData.length * 300);
-  }, [highlightsData.length, updateStatusMessage]);
+  }, [highlightsData.length, updateStatusMessage, apiKey, fetchCapsules]);
 
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
@@ -603,6 +633,23 @@ const HomePage = () => {
     }
   }, [highlightsData.length]);
 
+  const calculateCapsulesWindowPosition = useCallback(() => {
+    const isDesktop = window.innerWidth >= 768;
+    
+    if (isDesktop) {
+      const videoWidth = 480; // From .window max-width
+      const leftAreaWidth = window.innerWidth * 0.62;
+      return { x: leftAreaWidth + videoWidth - 500, y: 450 };
+    } else {
+      // Below the video player on mobile
+      const cardWidth = 320;
+      const centerX = (window.innerWidth - cardWidth) / 2;
+      const cardsHeight = highlightsData.length * 50 + 100;
+      const videoHeight = 315 + 100; // approx video height + controls
+      return { x: centerX, y: cardsHeight + videoHeight + 40 };
+    }
+  }, [highlightsData.length]);
+
   const calculateHeaderPosition = useCallback(() => {
     const isDesktop = window.innerWidth >= 768;
 
@@ -624,7 +671,7 @@ const HomePage = () => {
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
-    const boldedText = text.replace(/\*{2,3}(.*?)\*{2,3}/g, '<strong>$1</strong>');
+    const boldedText = text.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
     return <span dangerouslySetInnerHTML={{ __html: boldedText }} />;
   }, []);
 
@@ -838,6 +885,19 @@ const HomePage = () => {
                   </div>
                 </div>
               </DraggableWindow>
+            )}
+
+            {showCapsulesWindow && capsules.length > 0 && (
+              <CapsulesWindow
+                id="capsules-window"
+                capsules={capsules}
+                onSelectCapsule={(capsuleId) => {
+                  setSelectedCapsuleId(capsuleId);
+                }}
+                initialPosition={calculateCapsulesWindowPosition()}
+                onBringToFront={handleBringToFront}
+                initialZIndex={nextZIndex}
+              />
             )}
 
             <DraggableWindow

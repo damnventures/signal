@@ -643,3 +643,34 @@ body {
 .argue-button:hover {
   transform: scale(1.1);
 }
+
+/* Capsules Window Styles */
+.capsules-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.capsules-list li {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #e0e0e0;
+  font-family: 'Geneva', sans-serif;
+  font-size: 14px;
+}
+
+.capsules-list li:last-child {
+  border-bottom: none;
+}
+
+.capsules-list li:hover {
+  background-color: #f0f0f0;
+}
+
+.capsules-list li img {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+}

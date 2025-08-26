@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const userApiKey = request.headers.get('x-api-key');
+  const { searchParams } = new URL(request.url);
+  const capsuleId = searchParams.get('capsuleId');
+
+  if (!capsuleId) {
+    return NextResponse.json({ error: 'capsuleId is required' }, { status: 400 });
+  }
   
   // Use user's API key if provided, otherwise fall back to default
   const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
-  const CAPSULE_ID = '6887e02fa01e2f4073d3bb51';
-  const requestUrl = `https://api.shrinked.ai/capsules/${CAPSULE_ID}`;
+  const requestUrl = `https://api.shrinked.ai/capsules/${capsuleId}`;
 
   if (!API_KEY) {
     console.error('API Error: No API key available (neither user nor default).');
