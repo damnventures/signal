@@ -23,14 +23,25 @@ export async function GET(request: Request) {
 
   try {
     // Step 1: Fetch jobId using fileId
-    const jobIdResponse = await fetch(`${API_URL}/jobs/by-result/${fileId}`, {
+    const jobIdUrl = `${API_URL}/jobs/by-result/${fileId}`;
+    console.log(`[Job Details API] Making request to: ${jobIdUrl}`);
+    
+    const jobIdResponse = await fetch(jobIdUrl, {
       headers: {
         'x-api-key': API_KEY,
       },
     });
 
+    console.log(`[Job Details API] Response status: ${jobIdResponse.status} ${jobIdResponse.statusText}`);
+
     if (!jobIdResponse.ok) {
-      const errorText = await jobIdResponse.text();
+      let errorText = `HTTP ${jobIdResponse.status}`;
+      try {
+        errorText = await jobIdResponse.text();
+      } catch (readError: any) {
+        console.warn(`[Job Details API] Could not read error response: ${readError.message}`);
+      }
+      
       console.error(`API Error: Failed to fetch jobId for fileId ${fileId}. Status: ${jobIdResponse.status}, Body: ${errorText}`);
       
       // If it's an auth error and we're using the default key, suggest using user key
@@ -41,7 +52,7 @@ export async function GET(request: Request) {
         }, { status: 401 });
       }
       
-      return NextResponse.json({ error: `Failed to fetch jobId: ${jobIdResponse.statusText}` }, { status: jobIdResponse.status });
+      return NextResponse.json({ error: `Failed to fetch jobId: ${jobIdResponse.statusText} - ${errorText}` }, { status: jobIdResponse.status });
     }
 
     const jobIdData = await jobIdResponse.json();
@@ -81,7 +92,18 @@ export async function GET(request: Request) {
     }
 
     if (!jobDetailsResponse || !jobDetailsResponse.ok) {
-      const errorText = jobDetailsResponse ? await jobDetailsResponse.text() : 'No response from server.';
+      let errorText = 'No response from server.';
+      
+      if (jobDetailsResponse) {
+        try {
+          // Only try to read the response body if it hasn't been read yet
+          errorText = await jobDetailsResponse.text();
+        } catch (readError: any) {
+          console.warn(`[Job Details API] Could not read error response body: ${readError.message}`);
+          errorText = `HTTP ${jobDetailsResponse.status} - ${jobDetailsResponse.statusText}`;
+        }
+      }
+      
       console.error(`API Error: Failed to fetch job details for jobId ${jobId} after ${MAX_RETRIES} attempts. Last status: ${jobDetailsResponse?.status}, Body: ${errorText}`);
       return NextResponse.json({ error: `Failed to fetch job details: ${jobDetailsResponse?.statusText}` }, { status: jobDetailsResponse?.status || 500 });
     }

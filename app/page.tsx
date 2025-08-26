@@ -402,7 +402,14 @@ const HomePage = () => {
                 jobDetailsUrl += `&userApiKey=${encodeURIComponent(apiKey)}`;
               }
               console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
-              const jobDetailsResponse = await fetch(jobDetailsUrl);
+              const jobDetailsResponse = await fetch(jobDetailsUrl, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+              });
               console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
               
               if (jobDetailsResponse.ok) {
@@ -420,6 +427,9 @@ const HomePage = () => {
                 }
               } else {
                 console.log(`[HomePage] Job details request failed for ${fileId}, trying to parse error...`);
+                console.log(`[HomePage] Failed request URL: ${jobDetailsUrl}`);
+                console.log(`[HomePage] Response headers:`, [...jobDetailsResponse.headers.entries()]);
+                
                 try {
                   const errorData = await jobDetailsResponse.json();
                   console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status}`, errorData);
@@ -431,8 +441,12 @@ const HomePage = () => {
                   }
                 } catch (e) {
                   // Fallback for non-JSON error responses (like 502 HTML)
-                  const errorText = await jobDetailsResponse.text();
-                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+                  try {
+                    const errorText = await jobDetailsResponse.text();
+                    console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+                  } catch (readError) {
+                    console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - Could not read response body`);
+                  }
                   
                   if (jobDetailsResponse.status === 502) {
                     setCapsuleContent(`Unable to load video content. Backend service is temporarily unavailable (502).`);
