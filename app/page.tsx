@@ -72,7 +72,28 @@ const HomePage = () => {
           }
 
           try {
-            // Get or create API key for the user
+            // First try to get the real user profile directly from the backend
+            let userProfile = null;
+            try {
+              const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+              const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
+                headers: {
+                  'Authorization': `Bearer ${accessTokenFromUrl}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              
+              if (profileResponse.ok) {
+                userProfile = await profileResponse.json();
+                console.log('[Auth] Successfully fetched user profile:', userProfile.email);
+              } else {
+                console.warn('[Auth] Failed to fetch user profile directly');
+              }
+            } catch (profileError) {
+              console.warn('[Auth] Error fetching user profile:', profileError);
+            }
+
+            // Try to get or create API key for the user
             const response = await fetch('/api/auth/api-key', {
               method: 'POST',
               headers: {
@@ -84,21 +105,23 @@ const HomePage = () => {
             });
 
             if (response.ok) {
-              const { apiKey: newApiKey, userProfile, existing } = await response.json();
+              const { apiKey: newApiKey, userProfile: apiKeyUserProfile, existing } = await response.json();
               
-              setUserData(userProfile, accessTokenFromUrl, newApiKey);
+              // Use the profile from API key route, or fallback to direct profile fetch
+              const finalUserProfile = apiKeyUserProfile || userProfile;
+              setUserData(finalUserProfile, accessTokenFromUrl, newApiKey);
               console.log('[Auth] Successfully authenticated user');
-              setStatusMessage(`Welcome ${userProfile.email}! ${existing ? 'Using existing' : 'Created new'} API key.`);
+              setStatusMessage(`Welcome ${finalUserProfile.email}! ${existing ? 'Using existing' : 'Created new'} API key.`);
             } else {
-              // API key creation failed, but we can still authenticate with a minimal user profile
+              // API key creation failed, but we can still authenticate with user profile if we have it
               console.warn('[Auth] API key creation failed, proceeding with basic auth');
-              const basicUserProfile = {
+              const finalUserProfile = userProfile || {
                 id: 'signal-user-fallback',
-                email: 'user@signal.shrinked.ai', // Fallback email
+                email: 'user@signal.shrinked.ai',
                 name: 'Signal User'
               };
-              setUserData(basicUserProfile, accessTokenFromUrl);
-              setStatusMessage('Welcome! Authenticated successfully (API key unavailable).');
+              setUserData(finalUserProfile, accessTokenFromUrl);
+              setStatusMessage(`Welcome ${finalUserProfile.email}! (API key unavailable)`);
             }
             
             // Clean up URL
@@ -111,14 +134,34 @@ const HomePage = () => {
             
           } catch (apiError) {
             console.warn('[Auth] API key request failed, proceeding with basic auth:', apiError);
-            // Fallback: still authenticate the user even if API key creation fails
-            const basicUserProfile = {
+            
+            // Try to get user profile directly as final attempt
+            let userProfile = null;
+            try {
+              const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+              const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
+                headers: {
+                  'Authorization': `Bearer ${accessTokenFromUrl}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              
+              if (profileResponse.ok) {
+                userProfile = await profileResponse.json();
+                console.log('[Auth] Successfully fetched user profile in fallback:', userProfile.email);
+              }
+            } catch (fallbackError) {
+              console.warn('[Auth] Fallback profile fetch also failed:', fallbackError);
+            }
+            
+            // Use real profile if available, otherwise fallback
+            const finalUserProfile = userProfile || {
               id: 'signal-user-fallback',
               email: 'user@signal.shrinked.ai',
               name: 'Signal User'
             };
-            setUserData(basicUserProfile, accessTokenFromUrl);
-            setStatusMessage('Welcome! Authenticated successfully (API key unavailable).');
+            setUserData(finalUserProfile, accessTokenFromUrl);
+            setStatusMessage(`Welcome ${finalUserProfile.email}! (API key unavailable)`);
             
             // Clean up URL
             window.history.replaceState({}, document.title, window.location.pathname);
