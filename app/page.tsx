@@ -392,7 +392,7 @@ const HomePage = () => {
         }
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
-          const DELAY_BETWEEN_REQUESTS = 500;
+          const DELAY_BETWEEN_REQUESTS = 1000; // Increased delay to reduce rate limiting
           console.log(`[HomePage] Processing ${data.fileIds.length} fileIds:`, data.fileIds);
 
           for (const fileId of data.fileIds) {
@@ -403,85 +403,9 @@ const HomePage = () => {
               }
               console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
               
-              // Try fetch first, if it fails use iframe fallback
-              let jobDetailsResponse;
-              let useIframeFallback = false;
-              
-              try {
-                jobDetailsResponse = await fetch(jobDetailsUrl, {
-                  cache: 'no-store',
-                });
-                
-                // If we get a 502 or HTML response, use iframe fallback
-                if (!jobDetailsResponse.ok || jobDetailsResponse.headers.get('content-type')?.includes('text/html')) {
-                  console.log(`[HomePage] Fetch failed (${jobDetailsResponse.status}), trying iframe fallback...`);
-                  useIframeFallback = true;
-                }
-              } catch (fetchError) {
-                console.log(`[HomePage] Fetch error, trying iframe fallback:`, fetchError);
-                useIframeFallback = true;
-              }
-              
-              if (useIframeFallback) {
-                // Create a promise that will resolve when iframe loads the data
-                const iframeData = await new Promise((resolve, reject) => {
-                  const iframe = document.createElement('iframe');
-                  iframe.style.display = 'none';
-                  iframe.src = jobDetailsUrl;
-                  
-                  const timeout = setTimeout(() => {
-                    document.body.removeChild(iframe);
-                    reject(new Error('Iframe timeout'));
-                  }, 10000);
-                  
-                  iframe.onload = () => {
-                    try {
-                      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                      const content = iframeDoc?.body?.textContent || '';
-                      
-                      // Try to parse as JSON
-                      const data = JSON.parse(content);
-                      
-                      clearTimeout(timeout);
-                      document.body.removeChild(iframe);
-                      resolve(data);
-                    } catch (error) {
-                      clearTimeout(timeout);
-                      document.body.removeChild(iframe);
-                      reject(error);
-                    }
-                  };
-                  
-                  iframe.onerror = () => {
-                    clearTimeout(timeout);
-                    document.body.removeChild(iframe);
-                    reject(new Error('Iframe load error'));
-                  };
-                  
-                  document.body.appendChild(iframe);
-                });
-                
-                console.log(`[HomePage] Iframe fallback successful:`, iframeData);
-                const jobDetails = iframeData as { originalLink?: string };
-                
-                if (jobDetails.originalLink) {
-                  console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
-                  setFetchedOriginalLinks(prevLinks => {
-                    const newLinks = [...prevLinks, jobDetails.originalLink!];
-                    console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
-                    return newLinks;
-                  });
-                } else {
-                  console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
-                }
-                
-                continue; // Skip the normal fetch processing
-              }
-              
-              if (!jobDetailsResponse) {
-                console.error(`[HomePage] No response object available for ${fileId}`);
-                continue;
-              }
+              const jobDetailsResponse = await fetch(jobDetailsUrl, {
+                cache: 'no-store',
+              });
               
               console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
               

@@ -65,6 +65,9 @@ export async function GET(request: Request) {
 
     console.log(`[Job Details API] Fetched jobId: ${jobId} for fileId: ${fileId}`);
 
+    // Add a small delay before the second API call to avoid rapid successive requests
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     // Step 2: Fetch job details using jobId, with retry logic
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 1000; // 1 second
