@@ -106,25 +106,24 @@ const HomePage = () => {
 
         if (response.ok) {
           const { apiKey: newApiKey, userProfile, existing } = await response.json();
-          const finalUserProfile = userProfile || {
-            id: 'signal-user-fallback',
-            email: 'user@signal.shrinked.ai',
-            name: 'Signal User'
-          };
           
-          setUserData(finalUserProfile, token, newApiKey);
-          console.log('[Auth] Successfully authenticated user with API key');
-          setStatusMessage(`Welcome ${finalUserProfile.email || finalUserProfile.username}! ${existing ? 'Using existing' : 'Created new'} token.`);
+          if (userProfile) {
+            setUserData(userProfile, token, newApiKey);
+            console.log('[Auth] Successfully authenticated user with API key');
+            setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! ${existing ? 'Using existing' : 'Created new'} token.`);
+          } else {
+            console.warn('[Auth] No user profile returned from API');
+            setStatusMessage('Authentication failed: No user data');
+          }
         } else {
           console.warn('[Auth] API key creation failed');
-          // Fallback - use stored user data if available
-          const finalUserProfile = user || {
-            id: 'signal-user-fallback', 
-            email: 'user@signal.shrinked.ai',
-            name: 'Signal User'
-          };
-          setUserData(finalUserProfile, token);
-          setStatusMessage(`Welcome! (Token unavailable)`);
+          // If user is already stored locally, keep them logged in without API key
+          if (user) {
+            setUserData(user, token);
+            setStatusMessage(`Welcome ${user.email || user.username}! (Token unavailable)`);
+          } else {
+            setStatusMessage('Authentication failed: Unable to create token');
+          }
         }
       } catch (error) {
         console.error('[Auth] Error in handleUserAuth:', error);
