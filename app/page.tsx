@@ -569,6 +569,8 @@ const HomePage = () => {
     }
 
     console.log('[HomePage] Fetching capsules...');
+    console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
+    
     try {
       // Prepare headers with both API key and Bearer token
       const headers: Record<string, string> = {};
@@ -581,13 +583,20 @@ const HomePage = () => {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
         console.log(`[HomePage] Adding Bearer token to request`);
+      } else {
+        console.log(`[HomePage] No accessToken available for Bearer auth`);
       }
       
       console.log(`[HomePage] Request headers prepared:`, Object.keys(headers));
+      console.log(`[HomePage] Making fetch request to /api/capsules...`);
       
       const response = await fetch('/api/capsules', {
         headers,
       });
+      
+      console.log(`[HomePage] Fetch completed, response received`);
+      console.log(`[HomePage] Response status: ${response.status}`);
+      console.log(`[HomePage] Response ok: ${response.ok}`);
 
       console.log(`[HomePage] Capsules response status: ${response.status}`);
 
@@ -606,7 +615,7 @@ const HomePage = () => {
     } catch (error) {
       console.error('Error fetching capsules:', error);
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     if (!isLoading && !authInProgress && selectedCapsuleId) {
