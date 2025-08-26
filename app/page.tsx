@@ -15,6 +15,7 @@ interface Highlight {
   setup: string;
   quote: string;
   whyItMatters: string;
+  isCapsuleSummary?: boolean;
 }
 
 const HomePage = () => {
@@ -445,14 +446,18 @@ const HomePage = () => {
         // If no highlights were parsed but we have content, treat it as a summary
         if (parsed.length === 0 && data.highlights.trim()) {
           console.log('[HomePage] No structured highlights found, creating summary card');
+          const capsuleName = data.name || 'Capsule Summary';
           const summaryHighlight = {
-            title: 'Content Analysis',
-            setup: 'This capsule contains detailed analysis and insights',
-            quote: data.highlights.substring(0, 500) + (data.highlights.length > 500 ? '...' : ''),
-            whyItMatters: 'Review the full analysis for comprehensive insights and conclusions.'
+            title: capsuleName,
+            setup: '',
+            quote: data.highlights.length > 800 ? 
+              data.highlights.substring(0, 800) + '...\n\n[Click to view full analysis]' : 
+              data.highlights,
+            whyItMatters: '',
+            isCapsuleSummary: true // Special flag for different display
           };
           setHighlightsData([summaryHighlight]);
-          console.log('[HomePage] Created summary highlight for unstructured content');
+          console.log('[HomePage] Created capsule summary card for:', capsuleName);
         } else {
           setHighlightsData(parsed);
           console.log('[HomePage] Highlights data set:', parsed);
@@ -881,12 +886,24 @@ const HomePage = () => {
                   ...(highlightCard === index && { animation: 'highlightCard 0.3s ease-out' }),
                 }}
               >
-                <div className="window-content">
-                  <h2 className="main-heading">{highlight.title}</h2>
-                  <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
-                  <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
-                  <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
-                </div>
+                {highlight.isCapsuleSummary ? (
+                  <div className="window-content capsule-summary">
+                    <div className="capsule-icon-container">
+                      <img src="/capsule.png" alt="Capsule" className="capsule-icon" />
+                    </div>
+                    <h2 className="capsule-title">{highlight.title}</h2>
+                    <div className="capsule-content">
+                      <p className="main-text">{renderMarkdown(highlight.quote)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="window-content">
+                    <h2 className="main-heading">{highlight.title}</h2>
+                    <p className="main-text"><strong><i>Highlight:</i></strong> {renderMarkdown(highlight.setup)}</p>
+                    <p className="main-text"><strong><i>Quote:</i></strong> {renderMarkdown(highlight.quote)}</p>
+                    <p className="main-text"><strong><i>Why it matters:</i></strong> {renderMarkdown(highlight.whyItMatters)}</p>
+                  </div>
+                )}
               </DraggableWindow>
             ))}
 

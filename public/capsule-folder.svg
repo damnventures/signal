@@ -1,0 +1,40 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+  <!-- Background folder -->
+  <g fill="#A0A0FF">
+    <!-- Top part -->
+    <rect x="6" y="8" width="20" height="16"/>
+    <!-- Tab -->
+    <rect x="6" y="6" width="8" height="4"/>
+  </g>
+  
+  <!-- Folder outline -->
+  <g fill="#000000">
+    <!-- Top outline -->
+    <rect x="5" y="5" width="1" height="1"/>
+    <rect x="6" y="5" width="8" height="1"/>
+    <rect x="14" y="5" width="1" height="1"/>
+    <rect x="15" y="6" width="1" height="1"/>
+    <rect x="16" y="7" width="10" height="1"/>
+    <rect x="26" y="8" width="1" height="15"/>
+    <rect x="6" y="24" width="20" height="1"/>
+    <rect x="5" y="8" width="1" height="16"/>
+    
+    <!-- Tab outline -->
+    <rect x="5" y="6" width="1" height="2"/>
+    <rect x="14" y="6" width="1" height="2"/>
+  </g>
+  
+  <!-- Inner content representation -->
+  <g fill="#E0E0FF" opacity="0.7">
+    <rect x="8" y="12" width="16" height="1"/>
+    <rect x="8" y="14" width="12" height="1"/>
+    <rect x="8" y="16" width="14" height="1"/>
+    <rect x="8" y="18" width="10" height="1"/>
+  </g>
+  
+  <!-- Highlight accent -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <rect x="6" y="8" width="1" height="1"/>
+    <rect x="7" y="9" width="1" height="1"/>
+  </g>
+</svg>
