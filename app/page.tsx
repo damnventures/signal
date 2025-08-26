@@ -54,18 +54,23 @@ const HomePage = () => {
       const refreshToken = urlParams.get('refreshToken');
       const error = urlParams.get('error');
 
+      // Set auth in progress IMMEDIATELY if we detect OAuth callback or stored token without user
+      if (accessTokenFromUrl || (!user && accessToken && !isLoading && !authProcessed)) {
+        setAuthInProgress(true);
+      }
+
       // Handle authentication errors
       if (error) {
         console.error('[Auth] Authentication error:', error);
         setStatusMessage(`Authentication failed: ${error.replace(/_/g, ' ')}`);
         window.history.replaceState({}, document.title, window.location.pathname);
+        setAuthInProgress(false);
         return;
       }
 
       // Handle OAuth callback
       if (accessTokenFromUrl && !user) {
         console.log('[Auth] Processing OAuth callback...');
-        setAuthInProgress(true);
         setStatusMessage('Completing authentication...');
         
         try {
@@ -515,10 +520,26 @@ const HomePage = () => {
   }, [parseHighlights, user]);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessTokenFromUrl = urlParams.get('accessToken');
+
+    // An auth flow is pending if a token is in the URL, or if we have a token
+    // but haven't completed the user setup yet.
+    const authIsPending = accessTokenFromUrl || 
+                          (!user && accessToken && !isLoading && !authProcessed) ||
+                          (user && accessToken && !isLoading && !authProcessed && !apiKey);
+
+    if (authIsPending && !apiKey) {
+      console.log('[HomePage] Auth flow is pending, delaying initial capsule fetch.');
+      return;
+    }
+
+    // We can fetch if auth is not in progress. This allows the second fetch after login,
+    // and the first fetch if no login is detected.
     if (!isLoading && !authInProgress) {
       fetchCapsuleContent(apiKey);
     }
-  }, [isLoading, authInProgress, apiKey, fetchCapsuleContent]);
+  }, [isLoading, authInProgress, apiKey, fetchCapsuleContent, user, accessToken, authProcessed]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
