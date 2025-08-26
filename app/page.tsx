@@ -43,6 +43,7 @@ const HomePage = () => {
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [showCapsulesWindow, setShowCapsulesWindow] = useState(false);
   const [selectedCapsuleId, setSelectedCapsuleId] = useState<string | null>(null);
+  const [isFetchingCapsuleContent, setIsFetchingCapsuleContent] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -390,7 +391,14 @@ const HomePage = () => {
   }, []);
 
   const fetchCapsuleContent = useCallback(async (key: string | null, capsuleId: string | null) => {
+    console.log(`[HomePage] fetchCapsuleContent called with capsuleId: ${capsuleId}, key: ${key ? 'present' : 'null'}`);
     if (!capsuleId) return;
+    if (isFetchingCapsuleContent) {
+      console.log(`[HomePage] Already fetching capsule content, skipping...`);
+      return;
+    }
+    
+    setIsFetchingCapsuleContent(true);
     setHighlightsData([]);
     setFetchedOriginalLinks([]);
     setCapsuleContent("");
@@ -549,8 +557,10 @@ const HomePage = () => {
         }
       }
       setCapsuleContent(errorMessage);
+    } finally {
+      setIsFetchingCapsuleContent(false);
     }
-  }, [parseHighlights, user]);
+  }, [parseHighlights, isFetchingCapsuleContent]);
 
   const fetchCapsules = useCallback(async (key: string) => {
     if (!key) {
@@ -587,19 +597,19 @@ const HomePage = () => {
 
   useEffect(() => {
     if (!isLoading && !authInProgress && selectedCapsuleId) {
-      console.log(`[HomePage] Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
+      console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [isLoading, authInProgress, apiKey, selectedCapsuleId, fetchCapsuleContent]);
+  }, [isLoading, authInProgress, apiKey, selectedCapsuleId]);
 
   // Set default capsule for non-authenticated users when auth loading is complete
   useEffect(() => {
-    if (!isLoading && !apiKey && !selectedCapsuleId) {
+    if (!isLoading && !user && !selectedCapsuleId) {
       const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
       console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
       setSelectedCapsuleId(defaultCapsuleId);
     }
-  }, [isLoading, apiKey, selectedCapsuleId]);
+  }, [isLoading, user, selectedCapsuleId]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);

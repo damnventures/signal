@@ -28,6 +28,12 @@ export async function GET(request: Request) {
 
     const data = await response.json();
     console.log('[Capsules Route] API Success: Capsules fetched successfully.');
+    console.log('[Capsules Route] Data received:', JSON.stringify(data, null, 2));
+    console.log('[Capsules Route] Data type:', typeof data);
+    console.log('[Capsules Route] Is array:', Array.isArray(data));
+    if (Array.isArray(data)) {
+      console.log('[Capsules Route] Array length:', data.length);
+    }
     return NextResponse.json(data);
   } catch (error: any) {
     console.error(`[Capsules Route] API Error: An exception occurred: ${error.message}`);
