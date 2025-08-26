@@ -17,7 +17,7 @@ interface Highlight {
 }
 
 const HomePage = () => {
-  const { user, accessToken, apiKey, setUserData } = useAuth();
+  const { user, accessToken, apiKey, setUserData, isLoading } = useAuth();
   const [capsuleContent, setCapsuleContent] = useState<string>("");
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
@@ -344,139 +344,141 @@ const HomePage = () => {
     return highlights;
   }, []);
 
-  useEffect(() => {
-    const fetchCapsuleContent = async () => {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-        let apiUrl = `${baseUrl}/api/capsule-signal`;
-        
-        // If user is authenticated, add their API key as a query parameter
-        if (apiKey) {
-          apiUrl += `?userApiKey=${encodeURIComponent(apiKey)}`;
-          console.log(`[HomePage] Using user's API key for capsule fetch`);
-        } else {
-          console.log(`[HomePage] Using default API key for capsule fetch`);
-        }
-
-        console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
-
-        const response = await fetch(apiUrl, {
-          cache: 'no-store',
-          next: { revalidate: 0 },
-        });
-
-        console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
-          throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        const fetchedContent = data.highlights || data.signal || JSON.stringify(data, null, 2);
-        setCapsuleContent(fetchedContent);
-
-        if (data.highlights) {
-          const parsed = parseHighlights(data.highlights);
-          setHighlightsData(parsed);
-          console.log('[HomePage] Highlights data set:', parsed);
-          const initialZIndexes: Record<string, number> = {};
-          initialZIndexes['header'] = 1;
-          initialZIndexes['argue-popup'] = parsed.length + 10; // Add argue popup with high z-index
-          parsed.forEach((_, index) => {
-            initialZIndexes[`highlight-${index}`] = index + 2;
-          });
-          setCardZIndexes(initialZIndexes);
-          setNextZIndex(parsed.length + 11); // Update next z-index accordingly
-        }
-
-        if (data.fileIds && Array.isArray(data.fileIds)) {
-          const DELAY_BETWEEN_REQUESTS = 2500; // Increased delay to further reduce rate limiting
-          const processedFileIds = new Set<string>();
-          console.log(`[HomePage] Processing ${data.fileIds.length} fileIds (${new Set(data.fileIds).size} unique):`, data.fileIds);
-
-          for (const fileId of data.fileIds) {
-            if (processedFileIds.has(fileId)) {
-              console.log(`[HomePage] Skipping already processed fileId: ${fileId}`);
-              continue;
-            }
-            processedFileIds.add(fileId);
-            
-            try {
-              let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
-              if (apiKey) {
-                jobDetailsUrl += `&userApiKey=${encodeURIComponent(apiKey)}`;
-              }
-              console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
-              
-              const jobDetailsResponse = await fetch(jobDetailsUrl, {
-                cache: 'no-store',
-              });
-              
-              console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
-              
-              if (jobDetailsResponse.ok) {
-                const jobDetails = await jobDetailsResponse.json();
-                console.log(`[HomePage] Job details response for ${fileId}:`, jobDetails);
-                if (jobDetails.originalLink) {
-                  console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
-                  setFetchedOriginalLinks(prevLinks => {
-                    const newLinks = [...prevLinks, jobDetails.originalLink];
-                    console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
-                    return newLinks;
-                  });
-                } else {
-                  console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
-                }
-              } else {
-                console.log(`[HomePage] Job details request failed for ${fileId}, trying to parse error...`);
-                console.log(`[HomePage] Failed request URL: ${jobDetailsUrl}`);
-                console.log(`[HomePage] Response headers:`, [...jobDetailsResponse.headers.entries()]);
-                
-                try {
-                  const errorData = await jobDetailsResponse.json();
-                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status}`, errorData);
-                  
-                  if (errorData.needsAuth && !user) {
-                    setStatusMessage('Login required to access video content');
-                  } else {
-                    setCapsuleContent(`Unable to load video content. Error: ${errorData.error || 'Backend service unavailable'}`);
-                  }
-                } catch (e) {
-                  // Fallback for non-JSON error responses (like 502 HTML)
-                  try {
-                    const errorText = await jobDetailsResponse.text();
-                    console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
-                  } catch (readError) {
-                    console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - Could not read response body`);
-                  }
-                  
-                  if (jobDetailsResponse.status === 502) {
-                    setCapsuleContent(`Unable to load video content. Backend service is temporarily unavailable (502).`);
-                  } else {
-                    setCapsuleContent(`Unable to load video content. Error ${jobDetailsResponse.status}.`);
-                  }
-                }
-              }
-            } catch (error: any) {
-              console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
-              setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
-            }
-
-            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
-          }
-        }
-
-        console.log(`[HomePage] Successfully fetched capsule content.`);
-      } catch (error: any) {
-        console.error(`[HomePage] Error fetching capsule content:`, error.message);
-        setCapsuleContent('Unable to load capsule content. Please try again later.');
+  const fetchCapsuleContent = useCallback(async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
+      let apiUrl = `${baseUrl}/api/capsule-signal`;
+      
+      // If user is authenticated, add their API key as a query parameter
+      if (apiKey) {
+        apiUrl += `?userApiKey=${encodeURIComponent(apiKey)}`;
+        console.log(`[HomePage] Using user's API key for capsule fetch`);
+      } else {
+        console.log(`[HomePage] Using default API key for capsule fetch`);
       }
-    };
 
-    fetchCapsuleContent();
-  }, [parseHighlights, apiKey]);
+      console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
+
+      const response = await fetch(apiUrl, {
+        cache: 'no-store',
+        next: { revalidate: 0 },
+      });
+
+      console.log(`[HomePage] Received response status: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[HomePage] Failed to fetch capsule signal: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Failed to fetch capsule signal: ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const fetchedContent = data.highlights || data.signal || JSON.stringify(data, null, 2);
+      setCapsuleContent(fetchedContent);
+
+      if (data.highlights) {
+        const parsed = parseHighlights(data.highlights);
+        setHighlightsData(parsed);
+        console.log('[HomePage] Highlights data set:', parsed);
+        const initialZIndexes: Record<string, number> = {};
+        initialZIndexes['header'] = 1;
+        initialZIndexes['argue-popup'] = parsed.length + 10; // Add argue popup with high z-index
+        parsed.forEach((_, index) => {
+          initialZIndexes[`highlight-${index}`] = index + 2;
+        });
+        setCardZIndexes(initialZIndexes);
+        setNextZIndex(parsed.length + 11); // Update next z-index accordingly
+      }
+
+      if (data.fileIds && Array.isArray(data.fileIds)) {
+        const DELAY_BETWEEN_REQUESTS = 2500; // Increased delay to further reduce rate limiting
+        const processedFileIds = new Set<string>();
+        console.log(`[HomePage] Processing ${data.fileIds.length} fileIds (${new Set(data.fileIds).size} unique):`, data.fileIds);
+
+        for (const fileId of data.fileIds) {
+          if (processedFileIds.has(fileId)) {
+            console.log(`[HomePage] Skipping already processed fileId: ${fileId}`);
+            continue;
+          }
+          processedFileIds.add(fileId);
+          
+          try {
+            let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
+            if (apiKey) {
+              jobDetailsUrl += `&userApiKey=${encodeURIComponent(apiKey)}`;
+            }
+            console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
+            
+            const jobDetailsResponse = await fetch(jobDetailsUrl, {
+              cache: 'no-store',
+            });
+            
+            console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
+            
+            if (jobDetailsResponse.ok) {
+              const jobDetails = await jobDetailsResponse.json();
+              console.log(`[HomePage] Job details response for ${fileId}:`, jobDetails);
+              if (jobDetails.originalLink) {
+                console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
+                setFetchedOriginalLinks(prevLinks => {
+                  const newLinks = [...prevLinks, jobDetails.originalLink];
+                  console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
+                  return newLinks;
+                });
+              } else {
+                console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
+              }
+            } else {
+              console.log(`[HomePage] Job details request failed for ${fileId}, trying to parse error...`);
+              console.log(`[HomePage] Failed request URL: ${jobDetailsUrl}`);
+              console.log(`[HomePage] Response headers:`, [...jobDetailsResponse.headers.entries()]);
+              
+              try {
+                const errorData = await jobDetailsResponse.json();
+                console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status}`, errorData);
+                
+                if (errorData.needsAuth && !user) {
+                  setStatusMessage('Login required to access video content');
+                } else {
+                  setCapsuleContent(`Unable to load video content. Error: ${errorData.error || 'Backend service unavailable'}`);
+                }
+              } catch (e) {
+                // Fallback for non-JSON error responses (like 502 HTML)
+                try {
+                  const errorText = await jobDetailsResponse.text();
+                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - ${errorText}`);
+                } catch (readError) {
+                  console.error(`[HomePage] Failed to fetch job details for fileId ${fileId}: ${jobDetailsResponse.status} - Could not read response body`);
+                }
+                
+                if (jobDetailsResponse.status === 502) {
+                  setCapsuleContent(`Unable to load video content. Backend service is temporarily unavailable (502).`);
+                } else {
+                  setCapsuleContent(`Unable to load video content. Error ${jobDetailsResponse.status}.`);
+                }
+              }
+            }
+          } catch (error: any) {
+            console.error(`[HomePage] Error fetching job details for fileId ${fileId}:`, error.message);
+            setCapsuleContent(`Unable to load video content. The backend service is currently unavailable.`);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
+        }
+      }
+
+      console.log(`[HomePage] Successfully fetched capsule content.`);
+    } catch (error: any) {
+      console.error(`[HomePage] Error fetching capsule content:`, error.message);
+      setCapsuleContent('Unable to load capsule content. Please try again later.');
+    }
+  }, [apiKey, parseHighlights, user]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      fetchCapsuleContent();
+    }
+  }, [fetchCapsuleContent, isLoading]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
@@ -660,7 +662,17 @@ const HomePage = () => {
             )}
 
             {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
-              <p>No highlights found or parsing failed.</p>
+              <DraggableWindow
+                id="no-content-card"
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes['no-content-card'] || 2}
+                initialPosition={calculateInitialPosition(1)}
+              >
+                <div className="window-content">
+                  <h2 className="main-heading">No Content</h2>
+                  <p className="main-text">No highlights are available to display for this content.</p>
+                </div>
+              </DraggableWindow>
             )}
 
             {showCards && highlightsData.map((highlight, index) => (
