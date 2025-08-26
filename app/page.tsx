@@ -582,9 +582,9 @@ const HomePage = () => {
     }
   }, [parseHighlights, isFetchingCapsuleContent]);
 
-  const fetchCapsules = useCallback(async (key: string) => {
-    if (!key) {
-      console.log('[HomePage] No API key, skipping capsule fetch.');
+  const fetchCapsules = useCallback(async (key?: string) => {
+    if (!key && !accessToken) {
+      console.log('[HomePage] No API key or access token, skipping capsule fetch.');
       return;
     }
 
@@ -659,12 +659,12 @@ const HomePage = () => {
     setLoadingPhase('insights');
     updateStatusMessage('insights');
     
-    console.log(`[HomePage] handleHeaderLoadingComplete called, apiKey: ${apiKey ? 'present' : 'null'}`);
-    if (apiKey) {
-      console.log(`[HomePage] About to call fetchCapsules with apiKey: ...${apiKey.slice(-4)}`);
+    console.log(`[HomePage] handleHeaderLoadingComplete called, apiKey: ${apiKey ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
+    if (apiKey || accessToken) {
+      console.log(`[HomePage] About to call fetchCapsules with apiKey: ${apiKey ? '...' + apiKey.slice(-4) : 'none'}, accessToken: ${accessToken ? 'present' : 'none'}`);
       fetchCapsules(apiKey);
     } else {
-      console.log(`[HomePage] No apiKey available, skipping fetchCapsules`);
+      console.log(`[HomePage] No apiKey or accessToken available, skipping fetchCapsules`);
     }
 
     setTimeout(() => setHighlightCard(null), 300);
