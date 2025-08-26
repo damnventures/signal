@@ -441,16 +441,31 @@ const HomePage = () => {
 
       if (data.highlights) {
         const parsed = parseHighlights(data.highlights);
-        setHighlightsData(parsed);
-        console.log('[HomePage] Highlights data set:', parsed);
+        
+        // If no highlights were parsed but we have content, treat it as a summary
+        if (parsed.length === 0 && data.highlights.trim()) {
+          console.log('[HomePage] No structured highlights found, creating summary card');
+          const summaryHighlight = {
+            title: 'Content Analysis',
+            setup: 'This capsule contains detailed analysis and insights',
+            quote: data.highlights.substring(0, 500) + (data.highlights.length > 500 ? '...' : ''),
+            whyItMatters: 'Review the full analysis for comprehensive insights and conclusions.'
+          };
+          setHighlightsData([summaryHighlight]);
+          console.log('[HomePage] Created summary highlight for unstructured content');
+        } else {
+          setHighlightsData(parsed);
+          console.log('[HomePage] Highlights data set:', parsed);
+        }
+        const currentHighlights = parsed.length > 0 ? parsed : [{}]; // Use parsed or single summary
         const initialZIndexes: Record<string, number> = {};
         initialZIndexes['header'] = 1;
-        initialZIndexes['argue-popup'] = parsed.length + 10; // Add argue popup with high z-index
-        parsed.forEach((_, index) => {
+        initialZIndexes['argue-popup'] = currentHighlights.length + 10; // Add argue popup with high z-index
+        currentHighlights.forEach((_, index) => {
           initialZIndexes[`highlight-${index}`] = index + 2;
         });
         setCardZIndexes(initialZIndexes);
-        setNextZIndex(parsed.length + 11); // Update next z-index accordingly
+        setNextZIndex(currentHighlights.length + 11); // Update next z-index accordingly
       }
 
       if (data.fileIds && Array.isArray(data.fileIds)) {
