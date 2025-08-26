@@ -527,7 +527,28 @@ const HomePage = () => {
       console.log(`[HomePage] Successfully fetched capsule content.`);
     } catch (error: any) {
       console.error(`[HomePage] Error fetching capsule content:`, error.message);
-      setCapsuleContent('Unable to load capsule content. Please try again later.');
+      let errorMessage = 'Unable to load capsule content. Please try again later.';
+      if (error.message.includes('{')) {
+        try {
+          // Extract the JSON part of the error message
+          const jsonString = error.message.substring(error.message.indexOf('{'));
+          const errorDetails = JSON.parse(jsonString);
+          if (errorDetails.error) {
+            errorMessage = `Error: ${errorDetails.error}.`;
+            if (errorDetails.details) {
+                try {
+                    const details = JSON.parse(errorDetails.details);
+                    errorMessage += ` Details: ${details.message || errorDetails.details}`;
+                } catch (e) {
+                    errorMessage += ` Details: ${errorDetails.details}`;
+                }
+            }
+          }
+        } catch (e) {
+          // Ignore parsing error, use the generic message
+        }
+      }
+      setCapsuleContent(errorMessage);
     }
   }, [parseHighlights, user]);
 
