@@ -103,8 +103,8 @@ const HomePage = () => {
           const success = await handleUserAuth(accessToken);
           if (!success) {
             console.warn('[Auth] Failed to complete authentication from stored token');
-            // Clear invalid token data
-            logout();
+            // Try to at least get user profile directly before clearing everything
+            await tryDirectUserProfile(accessToken);
           }
         } finally {
           setAuthInProgress(false);
@@ -123,6 +123,33 @@ const HomePage = () => {
         } finally {
           setAuthInProgress(false);
         }
+      }
+    };
+
+    const tryDirectUserProfile = async (token: string) => {
+      try {
+        console.log('[Auth] Attempting direct user profile fetch...');
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+        const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (profileResponse.ok) {
+          const userProfile = await profileResponse.json();
+          const userId = userProfile.userId || userProfile.id || userProfile._id;
+          console.log('[Auth] Direct profile fetch successful:', userProfile.email, 'userId:', userId);
+          setUserData(userProfile, token); // No API key, but we have user data
+          setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! (Using default access)`);
+        } else {
+          console.warn('[Auth] Direct profile fetch also failed, clearing auth');
+          logout();
+        }
+      } catch (error) {
+        console.error('[Auth] Error in direct profile fetch:', error);
+        logout();
       }
     };
 

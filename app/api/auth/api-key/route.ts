@@ -28,11 +28,14 @@ export async function POST(request: Request) {
     }
 
     const userProfile = await profileResponse.json();
-    const userId = userProfile.userId || userProfile.id;
+    const userId = userProfile.userId || userProfile.id || userProfile._id;
 
     if (!userId) {
+      console.error('User profile structure:', userProfile);
       return NextResponse.json({ error: 'User ID not found in profile' }, { status: 400 });
     }
+
+    console.log('[API Key Route] Using userId:', userId, 'from profile:', userProfile.email);
 
     // Check if user already has an API key
     const existingKeysResponse = await fetch(`${API_BASE_URL}/users/api-keys`, {
