@@ -595,7 +595,7 @@ const HomePage = () => {
   // Set default capsule for non-authenticated users when auth loading is complete
   useEffect(() => {
     if (!isLoading && !apiKey && !selectedCapsuleId) {
-      const defaultCapsuleId = '67dd9e10cbd0846c40b4bdf23';
+      const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
       console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
       setSelectedCapsuleId(defaultCapsuleId);
     }
