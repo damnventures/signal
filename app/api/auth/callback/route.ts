@@ -23,6 +23,10 @@ export async function GET(request: Request) {
     if (refreshToken) {
       redirectUrl.searchParams.set('refreshToken', refreshToken);
     }
+    // Pass through state parameter if it exists
+    if (state) {
+      redirectUrl.searchParams.set('state', state);
+    }
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -57,6 +61,10 @@ export async function GET(request: Request) {
     redirectUrl.searchParams.set('accessToken', tokenData.accessToken);
     if (tokenData.refreshToken) {
       redirectUrl.searchParams.set('refreshToken', tokenData.refreshToken);
+    }
+    // Pass through state parameter if it exists
+    if (state) {
+      redirectUrl.searchParams.set('state', state);
     }
     
     return NextResponse.redirect(redirectUrl);

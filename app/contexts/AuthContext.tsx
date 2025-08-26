@@ -68,14 +68,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = () => {
-    // Store the current origin in localStorage for the callback to use
-    localStorage.setItem('auth_redirect_origin', window.location.origin);
-    
-    // Redirect to Google OAuth endpoint
+    // Redirect to Google OAuth endpoint with state parameter containing our origin
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
     // Configure the redirect URL to point back to our callback handler
     const redirectUrl = `${window.location.origin}/api/auth/callback`;
-    window.location.href = `${baseUrl}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+    const state = encodeURIComponent(window.location.origin);
+    window.location.href = `${baseUrl}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}&state=${state}`;
   };
 
   const logout = () => {
