@@ -42,9 +42,7 @@ const HomePage = () => {
   const [authInProgress, setAuthInProgress] = useState(false);
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [showCapsulesWindow, setShowCapsulesWindow] = useState(false);
-  const [selectedCapsuleId, setSelectedCapsuleId] = useState<string>('6887e02fa01e2f4073d3bb51');
-
-  const DEFAULT_CAPSULE_ID = '6887e02fa01e2f4073d3bb51'; // Keep as default
+  const [selectedCapsuleId, setSelectedCapsuleId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -391,7 +389,8 @@ const HomePage = () => {
     return highlights;
   }, []);
 
-  const fetchCapsuleContent = useCallback(async (key: string | null, capsuleId: string) => {
+  const fetchCapsuleContent = useCallback(async (key: string | null, capsuleId: string | null) => {
+    if (!capsuleId) return;
     setHighlightsData([]);
     setFetchedOriginalLinks([]);
     setCapsuleContent("");
@@ -549,6 +548,9 @@ const HomePage = () => {
         const data = await response.json();
         console.log('[HomePage] Fetched capsules data:', data);
         setCapsules(data);
+        if (data.length > 0) {
+          setSelectedCapsuleId(data[0]._id);
+        }
         setShowCapsulesWindow(true);
       } else {
         const errorText = await response.text();
@@ -560,26 +562,10 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessTokenFromUrl = urlParams.get('accessToken');
-
-    // An auth flow is pending if a token is in the URL, or if we have a token
-    // but haven't completed the user setup yet.
-    const authIsPending = accessTokenFromUrl || 
-                          (!user && accessToken && !isLoading && !authProcessed) ||
-                          (user && accessToken && !isLoading && !authProcessed && !apiKey);
-
-    if (authIsPending && !apiKey) {
-      console.log('[HomePage] Auth flow is pending, delaying initial capsule fetch.');
-      return;
-    }
-
-    // We can fetch if auth is not in progress. This allows the second fetch after login,
-    // and the first fetch if no login is detected.
-    if (!isLoading && !authInProgress) {
+    if (!isLoading && !authInProgress && selectedCapsuleId) {
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [isLoading, authInProgress, apiKey, fetchCapsuleContent, user, accessToken, authProcessed, selectedCapsuleId]);
+  }, [isLoading, authInProgress, apiKey, selectedCapsuleId, fetchCapsuleContent]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
@@ -950,7 +936,7 @@ const HomePage = () => {
             <ArguePopup 
               isOpen={showArguePopup}
               onClose={() => setShowArguePopup(false)}
-              capsuleId={DEFAULT_CAPSULE_ID}
+              capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
             />
