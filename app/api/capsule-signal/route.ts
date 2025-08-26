@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userApiKey = searchParams.get('userApiKey');
+  const headersList = headers();
+  const userApiKey = headersList.get('x-api-key');
   
   // Use user's API key if provided, otherwise fall back to default
   const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;

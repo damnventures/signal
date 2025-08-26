@@ -393,10 +393,13 @@ const HomePage = () => {
     setCapsuleContent("");
     try {
       const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-      let apiUrl = `${baseUrl}/api/capsule-signal`;
+      const apiUrl = `${baseUrl}/api/capsule-signal`;
       
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (key) {
-        apiUrl += `?userApiKey=${encodeURIComponent(key)}`;
+        headers['X-Api-Key'] = key;
         console.log(`[HomePage] Using user's API key for capsule fetch`);
       } else {
         console.log(`[HomePage] Using default API key for capsule fetch`);
@@ -405,6 +408,7 @@ const HomePage = () => {
       console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
 
       const response = await fetch(apiUrl, {
+        headers,
         cache: 'no-store',
         next: { revalidate: 0 },
       });
@@ -448,13 +452,15 @@ const HomePage = () => {
           processedFileIds.add(fileId);
           
           try {
-            let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
+            const jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
+            const jobDetailsHeaders: Record<string, string> = {};
             if (key) {
-              jobDetailsUrl += `&userApiKey=${encodeURIComponent(key)}`;
+              jobDetailsHeaders['X-Api-Key'] = key;
             }
             console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
             
             const jobDetailsResponse = await fetch(jobDetailsUrl, {
+              headers: jobDetailsHeaders,
               cache: 'no-store',
             });
             

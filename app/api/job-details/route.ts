@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const fileId = searchParams.get('fileId');
-  const userApiKey = searchParams.get('userApiKey');
+  const headersList = headers();
+  const userApiKey = headersList.get('x-api-key');
 
   if (!fileId) {
     return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
