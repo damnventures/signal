@@ -10,8 +10,7 @@ interface DraggableWindowProps {
   initialPosition: { x: number; y: number };
   style?: React.CSSProperties;
   className?: string;
-  isDraggable?: boolean;
-  title?: string;
+  isDraggable?: boolean; // New prop
 }
 
 const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -22,8 +21,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   initialPosition,
   style,
   className,
-  isDraggable = true,
-  title,
+  isDraggable = true, // Default to true
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(initialPosition);
@@ -32,10 +30,10 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isDraggable) return;
+    if (!isDraggable) return; // Prevent dragging if not draggable
     if (windowRef.current) {
       setIsDragging(true);
-      onBringToFront(id);
+      onBringToFront(id); // Bring this window to front on click/drag start
       offset.current = {
         x: e.clientX - windowRef.current.getBoundingClientRect().left,
         y: e.clientY - windowRef.current.getBoundingClientRect().top,
@@ -44,7 +42,7 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isDraggable) return;
+    if (!isDraggable) return; // Prevent dragging if not draggable
     if (windowRef.current) {
       setIsDragging(true);
       onBringToFront(id);
@@ -93,17 +91,21 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
     };
   }, [isDragging]);
 
+  // Update zIndex when initialZIndex prop changes (managed by parent)
   useEffect(() => {
     setZIndex(initialZIndex);
   }, [initialZIndex]);
 
+  // Dynamic style based on isDraggable
   const dynamicStyle = isDraggable ? {
     position: 'absolute' as const,
     left: position.x,
     top: position.y,
+    cursor: isDragging ? 'grabbing' : 'grab',
     zIndex: zIndex,
     ...style,
   } : {
+    // For non-draggable windows, let CSS handle positioning
     cursor: 'default',
     zIndex: zIndex,
     ...style,
@@ -114,20 +116,9 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
       ref={windowRef}
       className={`window ${className || ''}`}
       style={dynamicStyle}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
-      <div 
-        className="window-top-bar"
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        style={{ cursor: isDraggable ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
-      >
-        <div className="window-controls">
-            <div className="window-control control-red"></div>
-            <div className="window-control control-yellow"></div>
-            <div className="window-control control-green"></div>
-        </div>
-        {title && <div className="window-title-bar">{title}</div>}
-      </div>
       {children}
     </div>
   );

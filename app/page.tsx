@@ -530,8 +530,12 @@ const HomePage = () => {
   }, [parseHighlights, user]);
 
   const fetchCapsules = useCallback(async (key: string) => {
-    if (!key) return;
+    if (!key) {
+      console.log('[HomePage] No API key, skipping capsule fetch.');
+      return;
+    }
 
+    console.log('[HomePage] Fetching capsules...');
     try {
       const response = await fetch('/api/capsules', {
         headers: {
@@ -539,12 +543,16 @@ const HomePage = () => {
         },
       });
 
+      console.log(`[HomePage] Capsules response status: ${response.status}`);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('[HomePage] Fetched capsules data:', data);
         setCapsules(data);
         setShowCapsulesWindow(true);
       } else {
-        console.error('Failed to fetch capsules');
+        const errorText = await response.text();
+        console.error('Failed to fetch capsules:', errorText);
       }
     } catch (error) {
       console.error('Error fetching capsules:', error);

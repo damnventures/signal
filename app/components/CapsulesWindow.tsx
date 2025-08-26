@@ -30,9 +30,9 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
       onBringToFront={onBringToFront}
       initialZIndex={initialZIndex}
       initialPosition={initialPosition}
-      title="Capsules"
     >
       <div className="window-content capsules-list">
+        <h2 className="main-heading">Capsules</h2>
         <ul>
           {capsules.map(capsule => (
             <li key={capsule._id} onClick={() => onSelectCapsule(capsule._id)}>
