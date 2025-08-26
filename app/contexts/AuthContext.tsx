@@ -54,6 +54,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('[AuthContext] Loading apiKey from localStorage:', storedApiKey);
             setApiKey(storedApiKey);
           }
+        } else if (storedToken) {
+          // We have a token but no user - auth is in progress
+          console.log('[AuthContext] Found access token, waiting for user data completion...');
+          setAccessToken(storedToken);
+          if (storedApiKey) {
+            setApiKey(storedApiKey);
+          }
         } else {
           console.log('[AuthContext] No auth data found in localStorage.');
         }

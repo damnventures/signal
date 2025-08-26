@@ -67,30 +67,56 @@ const HomePage = () => {
         setStatusMessage('Completing authentication...');
         
         try {
+          // Store refresh token immediately
           if (refreshToken) {
             localStorage.setItem('auth_refresh_token', refreshToken);
           }
 
+          // Store access token immediately to prevent loss on refresh
+          localStorage.setItem('auth_access_token', accessTokenFromUrl);
+
           // Get user profile and handle token
-          await handleUserAuth(accessTokenFromUrl);
+          const success = await handleUserAuth(accessTokenFromUrl);
           
+          // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
-          setTimeout(() => window.location.reload(), 2000);
+          
+          // Only reload if auth was successful
+          if (success) {
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            setStatusMessage('Authentication failed: Unable to complete setup');
+          }
           
         } catch (error) {
           console.error('[Auth] Error processing OAuth callback:', error);
           setStatusMessage('Authentication failed: Network error');
         }
       }
+      // If we have access token but no user (auth in progress after page reload)
+      else if (!user && accessToken && !isLoading && !authProcessed) {
+        console.log('[Auth] Found access token without user, completing auth...');
+        setAuthProcessed(true);
+        const success = await handleUserAuth(accessToken);
+        if (!success) {
+          console.warn('[Auth] Failed to complete authentication from stored token');
+          // Clear invalid token
+          localStorage.removeItem('auth_access_token');
+          setAccessToken(null);
+        }
+      }
       // If user is already logged in, ensure they have a token (only once)
       else if (user && accessToken && !isLoading && !authProcessed && !apiKey) {
         console.log('[Auth] User logged in, checking/creating token...');
         setAuthProcessed(true);
-        await handleUserAuth(accessToken);
+        const success = await handleUserAuth(accessToken);
+        if (!success) {
+          console.warn('[Auth] Failed to get/create API key for existing user');
+        }
       }
     };
 
-    const handleUserAuth = async (token: string) => {
+    const handleUserAuth = async (token: string): Promise<boolean> => {
       try {
         // Use proxy API route to get/create API key (which also fetches user profile)
         const response = await fetch('/api/auth/api-key', {
@@ -111,9 +137,11 @@ const HomePage = () => {
             setUserData(userProfile, token, newApiKey);
             console.log('[Auth] Successfully authenticated user with API key');
             setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! ${existing ? 'Using existing' : 'Created new'} token.`);
+            return true;
           } else {
             console.warn('[Auth] No user profile returned from API');
             setStatusMessage('Authentication failed: No user data');
+            return false;
           }
         } else {
           console.warn('[Auth] API key creation failed');
@@ -121,13 +149,16 @@ const HomePage = () => {
           if (user) {
             setUserData(user, token);
             setStatusMessage(`Welcome ${user.email || user.username}! (Token unavailable)`);
+            return true; // User is still authenticated
           } else {
             setStatusMessage('Authentication failed: Unable to create token');
+            return false;
           }
         }
       } catch (error) {
         console.error('[Auth] Error in handleUserAuth:', error);
         setStatusMessage('Authentication failed: Network error');
+        return false;
       }
     };
 
