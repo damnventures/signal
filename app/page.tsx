@@ -403,12 +403,7 @@ const HomePage = () => {
               }
               console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
               const jobDetailsResponse = await fetch(jobDetailsUrl, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-                credentials: 'same-origin',
+                cache: 'no-store',
               });
               console.log(`[HomePage] Job details response status: ${jobDetailsResponse.status}`);
               
