@@ -37,6 +37,7 @@ const HomePage = () => {
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showArguePopup, setShowArguePopup] = useState(false);
+  const [authProcessed, setAuthProcessed] = useState(false);
 
   const DEFAULT_CAPSULE_ID = '6887e02fa01e2f4073d3bb51'; // Keep as default
 
@@ -81,77 +82,49 @@ const HomePage = () => {
           setStatusMessage('Authentication failed: Network error');
         }
       }
-      // If user is already logged in, ensure they have a token
-      else if (user && accessToken && !isLoading) {
+      // If user is already logged in, ensure they have a token (only once)
+      else if (user && accessToken && !isLoading && !authProcessed && !apiKey) {
         console.log('[Auth] User logged in, checking/creating token...');
+        setAuthProcessed(true);
         await handleUserAuth(accessToken);
       }
     };
 
     const handleUserAuth = async (token: string) => {
       try {
-        // First, get user profile
-        let userProfile = null;
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
-        
-        try {
-          const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (profileResponse.ok) {
-            userProfile = await profileResponse.json();
-            console.log('[Auth] Successfully fetched user profile:', userProfile.email);
-          }
-        } catch (profileError) {
-          console.warn('[Auth] Error fetching user profile:', profileError);
-        }
+        // Use proxy API route to get/create API key (which also fetches user profile)
+        const response = await fetch('/api/auth/api-key', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken: token,
+            defaultName: 'Chars' // Create with name "Chars" if no token exists
+          }),
+        });
 
-        // Always try to get or create token for logged in user
-        try {
-          const response = await fetch('/api/auth/api-key', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              accessToken: token,
-              defaultName: 'Chars' // Create with name "Chars" if no token exists
-            }),
-          });
-
-          if (response.ok) {
-            const { apiKey: newApiKey, userProfile: apiKeyUserProfile, existing } = await response.json();
-            const finalUserProfile = apiKeyUserProfile || userProfile || {
-              id: 'signal-user-fallback',
-              email: 'user@signal.shrinked.ai',
-              name: 'Signal User'
-            };
-            
-            setUserData(finalUserProfile, token, newApiKey);
-            setStatusMessage(`Welcome ${finalUserProfile.email}! ${existing ? 'Using existing' : 'Created new'} token.`);
-          } else {
-            // Fallback if API key creation fails
-            const finalUserProfile = userProfile || {
-              id: 'signal-user-fallback', 
-              email: 'user@signal.shrinked.ai',
-              name: 'Signal User'
-            };
-            setUserData(finalUserProfile, token);
-            setStatusMessage(`Welcome ${finalUserProfile.email}! (Token unavailable)`);
-          }
-        } catch (apiError) {
-          console.warn('[Auth] Token request failed:', apiError);
+        if (response.ok) {
+          const { apiKey: newApiKey, userProfile, existing } = await response.json();
           const finalUserProfile = userProfile || {
             id: 'signal-user-fallback',
-            email: 'user@signal.shrinked.ai', 
+            email: 'user@signal.shrinked.ai',
+            name: 'Signal User'
+          };
+          
+          setUserData(finalUserProfile, token, newApiKey);
+          console.log('[Auth] Successfully authenticated user with API key');
+          setStatusMessage(`Welcome ${finalUserProfile.email || finalUserProfile.username}! ${existing ? 'Using existing' : 'Created new'} token.`);
+        } else {
+          console.warn('[Auth] API key creation failed');
+          // Fallback - use stored user data if available
+          const finalUserProfile = user || {
+            id: 'signal-user-fallback', 
+            email: 'user@signal.shrinked.ai',
             name: 'Signal User'
           };
           setUserData(finalUserProfile, token);
-          setStatusMessage(`Welcome ${finalUserProfile.email}! (Token unavailable)`);
+          setStatusMessage(`Welcome! (Token unavailable)`);
         }
       } catch (error) {
         console.error('[Auth] Error in handleUserAuth:', error);
@@ -162,7 +135,7 @@ const HomePage = () => {
     if (isClient) {
       handleAuth();
     }
-  }, [isClient, user, accessToken, isLoading, setUserData]);
+  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData]);
 
   const statusMessages = {
     signal: [
