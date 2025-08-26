@@ -570,10 +570,23 @@ const HomePage = () => {
 
     console.log('[HomePage] Fetching capsules...');
     try {
+      // Prepare headers with both API key and Bearer token
+      const headers: Record<string, string> = {};
+      
+      if (key) {
+        headers['x-api-key'] = key;
+        console.log(`[HomePage] Adding API key to request`);
+      }
+      
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+        console.log(`[HomePage] Adding Bearer token to request`);
+      }
+      
+      console.log(`[HomePage] Request headers prepared:`, Object.keys(headers));
+      
       const response = await fetch('/api/capsules', {
-        headers: {
-          'x-api-key': key,
-        },
+        headers,
       });
 
       console.log(`[HomePage] Capsules response status: ${response.status}`);
@@ -617,8 +630,12 @@ const HomePage = () => {
     setLoadingPhase('insights');
     updateStatusMessage('insights');
     
+    console.log(`[HomePage] handleHeaderLoadingComplete called, apiKey: ${apiKey ? 'present' : 'null'}`);
     if (apiKey) {
+      console.log(`[HomePage] About to call fetchCapsules with apiKey: ...${apiKey.slice(-4)}`);
       fetchCapsules(apiKey);
+    } else {
+      console.log(`[HomePage] No apiKey available, skipping fetchCapsules`);
     }
 
     setTimeout(() => setHighlightCard(null), 300);

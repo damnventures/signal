@@ -2,22 +2,36 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const userApiKey = request.headers.get('x-api-key');
+  const authHeader = request.headers.get('authorization');
+  
+  console.log(`[Capsules Route] Request received`);
+  console.log(`[Capsules Route] API Key present: ${userApiKey ? 'yes' : 'no'}`);
+  console.log(`[Capsules Route] Auth header present: ${authHeader ? 'yes' : 'no'}`);
 
-  // User API key is required to list their capsules
-  if (!userApiKey) {
-    return NextResponse.json({ error: 'API key is required' }, { status: 401 });
+  // Try Bearer token first, fall back to API key
+  let requestHeaders: Record<string, string> = {};
+  let authMethod = '';
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    requestHeaders['Authorization'] = authHeader;
+    authMethod = 'Bearer token';
+    console.log(`[Capsules Route] Using Bearer token authentication`);
+  } else if (userApiKey) {
+    requestHeaders['x-api-key'] = userApiKey;
+    authMethod = 'API key';
+    console.log(`[Capsules Route] Using API key authentication (last 4 chars): ...${userApiKey.slice(-4)}`);
+  } else {
+    console.error('[Capsules Route] No authentication method available');
+    return NextResponse.json({ error: 'Authentication required (Bearer token or API key)' }, { status: 401 });
   }
 
   const requestUrl = `https://api.shrinked.ai/capsules`;
-
   console.log(`[Capsules Route] Attempting to fetch capsules from: ${requestUrl}`);
-  console.log(`[Capsules Route] Using user API Key (last 4 chars): ...${userApiKey.slice(-4)}`);
+  console.log(`[Capsules Route] Using ${authMethod}`);
 
   try {
     const response = await fetch(requestUrl, {
-      headers: {
-        'x-api-key': userApiKey,
-      },
+      headers: requestHeaders,
     });
 
     if (!response.ok) {
