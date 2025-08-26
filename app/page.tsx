@@ -38,6 +38,7 @@ const HomePage = () => {
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showArguePopup, setShowArguePopup] = useState(false);
   const [authProcessed, setAuthProcessed] = useState(false);
+  const [authInProgress, setAuthInProgress] = useState(false);
 
   const DEFAULT_CAPSULE_ID = '6887e02fa01e2f4073d3bb51'; // Keep as default
 
@@ -64,6 +65,7 @@ const HomePage = () => {
       // Handle OAuth callback
       if (accessTokenFromUrl && !user) {
         console.log('[Auth] Processing OAuth callback...');
+        setAuthInProgress(true);
         setStatusMessage('Completing authentication...');
         
         try {
@@ -81,37 +83,46 @@ const HomePage = () => {
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          // Only reload if auth was successful
-          if (success) {
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
+          if (!success) {
             setStatusMessage('Authentication failed: Unable to complete setup');
           }
           
         } catch (error) {
           console.error('[Auth] Error processing OAuth callback:', error);
           setStatusMessage('Authentication failed: Network error');
+        } finally {
+          setAuthInProgress(false);
         }
       }
       // If we have access token but no user (auth in progress after page reload)
       else if (!user && accessToken && !isLoading && !authProcessed) {
         console.log('[Auth] Found access token without user, completing auth...');
         setAuthProcessed(true);
-        const success = await handleUserAuth(accessToken);
-        if (!success) {
-          console.warn('[Auth] Failed to complete authentication from stored token');
-          // Clear invalid token
-          localStorage.removeItem('auth_access_token');
-          setAccessToken(null);
+        setAuthInProgress(true);
+        try {
+          const success = await handleUserAuth(accessToken);
+          if (!success) {
+            console.warn('[Auth] Failed to complete authentication from stored token');
+            // Clear invalid token
+            localStorage.removeItem('auth_access_token');
+            setAccessToken(null);
+          }
+        } finally {
+          setAuthInProgress(false);
         }
       }
       // If user is already logged in, ensure they have a token (only once)
       else if (user && accessToken && !isLoading && !authProcessed && !apiKey) {
         console.log('[Auth] User logged in, checking/creating token...');
         setAuthProcessed(true);
-        const success = await handleUserAuth(accessToken);
-        if (!success) {
-          console.warn('[Auth] Failed to get/create API key for existing user');
+        setAuthInProgress(true);
+        try {
+          const success = await handleUserAuth(accessToken);
+          if (!success) {
+            console.warn('[Auth] Failed to get/create API key for existing user');
+          }
+        } finally {
+          setAuthInProgress(false);
         }
       }
     };
@@ -462,10 +473,10 @@ const HomePage = () => {
   }, [parseHighlights, user]);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !authInProgress) {
       fetchCapsuleContent(apiKey);
     }
-  }, [isLoading, apiKey, fetchCapsuleContent]);
+  }, [isLoading, authInProgress, apiKey, fetchCapsuleContent]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     setShowCards(true);
