@@ -32,7 +32,7 @@ const HomePage = () => {
   const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const [loadingPhase, setLoadingPhase] = useState<'signal' | 'insights' | 'idle'>('signal');
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -489,7 +489,7 @@ const HomePage = () => {
     setTimeout(() => setHighlightCard(null), 300);
     setTimeout(() => {
       setShowVideo(true);
-      setIsLoading(false);
+      setIsPageLoading(false);
       setLoadingPhase('idle');
       updateStatusMessage('idle');
       
@@ -792,7 +792,7 @@ const HomePage = () => {
 
             <div className="fixed-buttons-container">
               <button
-                className={`action-button ${isLoading ? 'blinking' : ''}`}
+                className={`action-button ${isPageLoading ? 'blinking' : ''}`}
                 onClick={() => window.location.reload()}
               >
                 <img src="/signal.png" alt="Refresh" />
