@@ -68,6 +68,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = () => {
+    // Store origin in localStorage with a domain that works across shrinked.ai subdomains
+    try {
+      // Try to set a cookie that works across subdomains
+      document.cookie = `auth_redirect_origin=${encodeURIComponent(window.location.origin)}; domain=.shrinked.ai; path=/; max-age=600; SameSite=Lax`;
+    } catch (e) {
+      console.warn('Failed to set cross-domain cookie:', e);
+    }
+    
+    // Also store in localStorage as fallback
+    localStorage.setItem('auth_redirect_origin', window.location.origin);
+    
     // Redirect to Google OAuth endpoint with state parameter containing our origin
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
     // Configure the redirect URL to point back to our callback handler
