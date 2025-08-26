@@ -392,10 +392,17 @@ const HomePage = () => {
         }
 
         if (data.fileIds && Array.isArray(data.fileIds)) {
-          const DELAY_BETWEEN_REQUESTS = 1000; // Increased delay to reduce rate limiting
-          console.log(`[HomePage] Processing ${data.fileIds.length} fileIds:`, data.fileIds);
+          const DELAY_BETWEEN_REQUESTS = 2500; // Increased delay to further reduce rate limiting
+          const processedFileIds = new Set<string>();
+          console.log(`[HomePage] Processing ${data.fileIds.length} fileIds (${new Set(data.fileIds).size} unique):`, data.fileIds);
 
           for (const fileId of data.fileIds) {
+            if (processedFileIds.has(fileId)) {
+              console.log(`[HomePage] Skipping already processed fileId: ${fileId}`);
+              continue;
+            }
+            processedFileIds.add(fileId);
+            
             try {
               let jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
               if (apiKey) {
