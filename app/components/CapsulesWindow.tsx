@@ -14,6 +14,7 @@ interface CapsulesWindowProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   id: string;
+  selectedCapsuleId?: string;
 }
 
 const CapsulesWindow: React.FC<CapsulesWindowProps> = ({ 
@@ -22,7 +23,8 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
   initialPosition, 
   onBringToFront, 
   initialZIndex, 
-  id 
+  id,
+  selectedCapsuleId 
 }) => {
   return (
     <DraggableWindow
@@ -32,21 +34,28 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
       initialPosition={initialPosition}
     >
       <div className="window-content capsules-list">
-        <h2 className="main-heading">Capsules</h2>
-        <ul>
+        <div className="capsules-grid">
           {capsules.length > 0 ? (
             capsules.map(capsule => (
-              <li key={capsule._id} onClick={() => onSelectCapsule(capsule._id)}>
-                <img src="/file.svg" alt="Capsule" />
-                <span>{capsule.name}</span>
-              </li>
+              <div 
+                key={capsule._id} 
+                className={`capsule-item ${selectedCapsuleId === capsule._id ? 'active' : ''}`}
+                onClick={() => onSelectCapsule(capsule._id)}
+              >
+                <div className="capsule-icon-cell">
+                  <img src="/capsule.png" alt="Capsule" className="capsule-list-icon" />
+                </div>
+                <div className="capsule-name-cell">
+                  {capsule.name || 'Untitled'}
+                </div>
+              </div>
             ))
           ) : (
-            <li className="empty-state">
+            <div className="empty-state">
               <span>No capsules found. Create your first capsule by uploading content.</span>
-            </li>
+            </div>
           )}
-        </ul>
+        </div>
       </div>
     </DraggableWindow>
   );

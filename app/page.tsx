@@ -755,8 +755,9 @@ const HomePage = () => {
   }, []);
 
   const renderMarkdown = useCallback((text: string) => {
-    const boldedText = text.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
-    return <span dangerouslySetInnerHTML={{ __html: boldedText }} />;
+    let processedText = text.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
+    processedText = processedText.replace(/### (.*)/g, '<h3>$1</h3>');
+    return <span dangerouslySetInnerHTML={{ __html: processedText }} />;
   }, []);
 
   const getYouTubeVideoId = (url: string): string | null => {
@@ -887,14 +888,8 @@ const HomePage = () => {
                 }}
               >
                 {highlight.isCapsuleSummary ? (
-                  <div className="window-content capsule-summary">
-                    <div className="capsule-icon-container">
-                      <img src="/capsule.png" alt="Capsule" className="capsule-icon" />
-                    </div>
-                    <h2 className="capsule-title">{highlight.title}</h2>
-                    <div className="capsule-content">
-                      <p className="main-text">{renderMarkdown(highlight.quote)}</p>
-                    </div>
+                  <div className="window-content">
+                    <div className="main-text">{renderMarkdown(highlight.quote)}</div>
                   </div>
                 ) : (
                   <div className="window-content">
@@ -990,6 +985,7 @@ const HomePage = () => {
                 onSelectCapsule={(capsuleId) => {
                   setSelectedCapsuleId(capsuleId);
                 }}
+                selectedCapsuleId={selectedCapsuleId}
                 initialPosition={calculateCapsulesWindowPosition()}
                 onBringToFront={handleBringToFront}
                 initialZIndex={nextZIndex}
