@@ -56,6 +56,7 @@ export async function GET(request: Request) {
     }
 
     const jobIdData = await jobIdResponse.json();
+    console.log(`[Job Details API] Received jobIdData:`, JSON.stringify(jobIdData, null, 2));
     const jobId = jobIdData._id;
 
     if (!jobId) {
@@ -84,6 +85,7 @@ export async function GET(request: Request) {
 
       if (jobDetailsResponse.ok) {
         jobData = await jobDetailsResponse.json();
+        console.log(`[Job Details API] Received jobData for jobId ${jobId}:`, JSON.stringify(jobData, null, 2));
         break; // Success, exit loop
       }
 
@@ -113,9 +115,11 @@ export async function GET(request: Request) {
 
     // Extract originalLink from steps where name is "UPLOAD_FILE"
     const uploadStep = jobData.steps?.find((step: any) => step.name === 'UPLOAD_FILE');
+    console.log(`[Job Details API] Found UPLOAD_FILE step:`, JSON.stringify(uploadStep, null, 2));
     const originalLink = uploadStep?.data?.originalLink;
 
     if (originalLink) {
+      console.log(`[Job Details API] Extracted originalLink: ${originalLink} from UPLOAD_FILE step.`);
       console.log(`[Job Details API] Fetched originalLink: ${originalLink} for jobId: ${jobId}`);
       return NextResponse.json({ originalLink });
     } else {

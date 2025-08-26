@@ -345,6 +345,9 @@ const HomePage = () => {
   }, []);
 
   const fetchCapsuleContent = useCallback(async () => {
+    setHighlightsData([]);
+    setFetchedOriginalLinks([]);
+    setCapsuleContent("");
     try {
       const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
       let apiUrl = `${baseUrl}/api/capsule-signal`;

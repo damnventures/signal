@@ -32,6 +32,7 @@ export async function GET(request: Request) {
 
     const data = await response.json();
     console.log('[Route] API Success: Capsule fetched successfully.');
+    console.log('[Route] Capsule data:', JSON.stringify(data, null, 2)); // Log the full data
     return NextResponse.json(data);
   } catch (error: any) {
     console.error(`[Route] API Error: An exception occurred: ${error.message}`);
