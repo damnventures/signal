@@ -395,8 +395,7 @@ const HomePage = () => {
     setFetchedOriginalLinks([]);
     setCapsuleContent("");
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-      const apiUrl = `${baseUrl}/api/capsule-signal?capsuleId=${capsuleId}`;
+      const apiUrl = `/api/capsule-signal?capsuleId=${capsuleId}`;
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',

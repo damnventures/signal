@@ -108,6 +108,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('auth_access_token');
     localStorage.removeItem('auth_api_key');
     localStorage.removeItem('auth_refresh_token');
+    
+    // Refresh the page to reset the application state
+    window.location.reload();
   };
 
   const setUserData = (userData: User, token: string, key?: string) => {
