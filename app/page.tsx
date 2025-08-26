@@ -402,7 +402,7 @@ const HomePage = () => {
         'Content-Type': 'application/json',
       };
       if (key) {
-        headers['X-Api-Key'] = key;
+        headers['x-api-key'] = key;
         console.log(`[HomePage] Using user's API key for capsule fetch`);
       } else {
         console.log(`[HomePage] Using default API key for capsule fetch`);
@@ -458,7 +458,7 @@ const HomePage = () => {
             const jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
             const jobDetailsHeaders: Record<string, string> = {};
             if (key) {
-              jobDetailsHeaders['X-Api-Key'] = key;
+              jobDetailsHeaders['x-api-key'] = key;
             }
             console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
             
@@ -538,7 +538,7 @@ const HomePage = () => {
     try {
       const response = await fetch('/api/capsules', {
         headers: {
-          'X-Api-Key': key,
+          'x-api-key': key,
         },
       });
 
@@ -575,6 +575,11 @@ const HomePage = () => {
     
     if (apiKey) {
       fetchCapsules(apiKey);
+    } else {
+      // Set default capsule for non-authenticated users
+      const defaultCapsuleId = '67dd9e10cbd0846c40b4bdf23';
+      console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
+      setSelectedCapsuleId(defaultCapsuleId);
     }
 
     setTimeout(() => setHighlightCard(null), 300);
@@ -881,7 +886,7 @@ const HomePage = () => {
               </DraggableWindow>
             )}
 
-            {showCapsulesWindow && capsules.length > 0 && (
+            {showCapsulesWindow && (
               <CapsulesWindow
                 id="capsules-window"
                 capsules={capsules}

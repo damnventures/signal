@@ -34,12 +34,18 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
       <div className="window-content capsules-list">
         <h2 className="main-heading">Capsules</h2>
         <ul>
-          {capsules.map(capsule => (
-            <li key={capsule._id} onClick={() => onSelectCapsule(capsule._id)}>
-              <img src="/file.svg" alt="Capsule" />
-              <span>{capsule.name}</span>
+          {capsules.length > 0 ? (
+            capsules.map(capsule => (
+              <li key={capsule._id} onClick={() => onSelectCapsule(capsule._id)}>
+                <img src="/file.svg" alt="Capsule" />
+                <span>{capsule.name}</span>
+              </li>
+            ))
+          ) : (
+            <li className="empty-state">
+              <span>No capsules found. Create your first capsule by uploading content.</span>
             </li>
-          ))}
+          )}
         </ul>
       </div>
     </DraggableWindow>
