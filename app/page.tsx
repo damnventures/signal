@@ -154,14 +154,30 @@ const HomePage = () => {
             return false;
           }
         } else {
-          console.warn('[Auth] API key creation failed');
+          console.warn('[Auth] API key creation failed, checking for user profile in response');
+          
+          // Try to get user data even if API key creation failed
+          try {
+            const errorData = await response.json();
+            const userProfile = errorData.userProfile;
+            
+            if (userProfile) {
+              // We have user data but no API key - still authenticate the user
+              setUserData(userProfile, token);
+              setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! (Using default access)`);
+              return true;
+            }
+          } catch (parseError) {
+            console.warn('[Auth] Could not parse error response');
+          }
+          
           // If user is already stored locally, keep them logged in without API key
           if (user) {
             setUserData(user, token);
-            setStatusMessage(`Welcome ${user.email || user.username}! (Token unavailable)`);
+            setStatusMessage(`Welcome ${user.email || user.username}! (Using default access)`);
             return true; // User is still authenticated
           } else {
-            setStatusMessage('Authentication failed: Unable to create token');
+            setStatusMessage('Authentication failed: Unable to verify identity');
             return false;
           }
         }
