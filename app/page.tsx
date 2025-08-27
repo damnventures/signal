@@ -363,7 +363,7 @@ const HomePage = () => {
     }
   }, [fetchedOriginalLinks, initializePlayers]);
 
-  const parseHighlights = useCallback((text: string): Highlight[] => {
+  const parseHighlights = (text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
@@ -392,7 +392,7 @@ const HomePage = () => {
     });
     console.log('[parseHighlights] Final parsed highlights:', highlights);
     return highlights;
-  }, []);
+  };
 
   const fetchCapsuleContent = useCallback(async (key: string | null, capsuleId: string | null) => {
     console.log(`[HomePage] fetchCapsuleContent called with capsuleId: ${capsuleId}, key: ${key ? 'present' : 'null'}`);
@@ -584,7 +584,7 @@ const HomePage = () => {
     } finally {
       setIsFetchingCapsuleContent(false);
     }
-  }, [parseHighlights, isFetchingCapsuleContent, authFetch]);
+  }, [authFetch]); // Simplified dependencies to prevent loops
 
   const fetchCapsules = useCallback(async (key?: string | null) => {
     if (!key && !accessToken) {
@@ -639,14 +639,14 @@ const HomePage = () => {
     } catch (error) {
       console.error('Error fetching capsules:', error);
     }
-  }, [accessToken, authFetch]);
+  }, [authFetch]); // Simplified dependencies
 
   useEffect(() => {
-    if (!isLoading && !authInProgress && selectedCapsuleId && !isFetchingCapsuleContent) {
+    if (!isLoading && !authInProgress && selectedCapsuleId) {
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [isLoading, authInProgress, apiKey, selectedCapsuleId, isFetchingCapsuleContent, fetchCapsuleContent]);
+  }, [selectedCapsuleId]); // Removed isFetchingCapsuleContent condition to prevent circular dependency
 
   // Handle capsule selection based on auth state
   useEffect(() => {
