@@ -657,57 +657,64 @@ body {
 /* Capsules Window Styles */
 .capsules-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  padding: 0;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 8px;
   margin: 0;
 }
 
 .capsule-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 8px;
+  padding: 12px 8px 8px 8px;
   cursor: pointer;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-family: 'Geneva', sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   background-color: #f9f9f9;
   transition: background-color 0.2s ease;
+  min-height: 80px;
 }
 
-.capsule-item:hover {
+.capsule-item:hover .capsule-name-cell {
   background-color: #f0f0f0;
 }
 
-.capsule-item.active {
+.capsule-item.active .capsule-name-cell {
   background-color: #333;
   color: #fff;
-  border-color: #555;
 }
 
-.capsule-item.active:hover {
+.capsule-item.active:hover .capsule-name-cell {
   background-color: #444;
 }
 
 .capsule-icon-cell {
-  margin-right: 8px;
+  margin-bottom: 8px;
   flex-shrink: 0;
 }
 
 .capsule-list-icon {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
 
 .capsule-name-cell {
-  flex: 1;
+  text-align: center;
+  padding: 4px 6px;
+  border-radius: 3px;
+  min-width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-transform: lowercase;
+  transition: background-color 0.2s ease;
 }
 
 /* Capsule summary styles */

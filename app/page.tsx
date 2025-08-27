@@ -468,6 +468,7 @@ const HomePage = () => {
         const currentHighlights = parsed.length > 0 ? parsed : [{}]; // Use parsed or single summary
         const initialZIndexes: Record<string, number> = {};
         initialZIndexes['header'] = 1;
+        initialZIndexes['original-links'] = 9999; // Video player always on top
         initialZIndexes['argue-popup'] = currentHighlights.length + 10; // Add argue popup with high z-index
         currentHighlights.forEach((_, index) => {
           initialZIndexes[`highlight-${index}`] = index + 2;
@@ -718,7 +719,7 @@ const HomePage = () => {
     
     if (isDesktop) {
       const leftAreaWidth = window.innerWidth * 0.62;
-      return { x: leftAreaWidth, y: 100 };
+      return { x: leftAreaWidth, y: 150 }; // Moved down from 100 to 150
     } else {
       const cardWidth = 320;
       const centerX = (window.innerWidth - cardWidth) / 2;
@@ -919,7 +920,7 @@ const HomePage = () => {
               <DraggableWindow
                 id="original-links"
                 onBringToFront={handleBringToFront}
-                initialZIndex={cardZIndexes['original-links'] || nextZIndex}
+                initialZIndex={cardZIndexes['original-links'] || 9999}
                 initialPosition={calculateVideoPosition()}
                 style={{ animation: 'fadeInVideo 0.5s ease-out forwards', opacity: 0 }}
                 className="tv-player-window"
