@@ -161,6 +161,7 @@ body {
         2px 2px 0px #808080,
         4px 4px 0px #404040;
     overflow: hidden;
+    transform: translateZ(0);
 }
 
 .animated-header-window {
