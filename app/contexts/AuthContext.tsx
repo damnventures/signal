@@ -17,6 +17,7 @@ interface AuthContextType {
   logout: () => void;
   setUserData: (user: User, accessToken: string, apiKey?: string) => void;
   refreshToken: () => Promise<boolean>;
+  refreshTokenIfNeeded: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
 
   // Load stored authentication data on mount
   useEffect(() => {
@@ -129,6 +131,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Helper function to check if token is about to expire (within 5 minutes)
+  const isTokenExpiringSoon = (token: string): boolean => {
+    try {
+      // JWT tokens have payload as base64 encoded second part
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convert to milliseconds
+      const now = Date.now();
+      const fiveMinutes = 5 * 60 * 1000;
+      return (exp - now) < fiveMinutes;
+    } catch (error) {
+      console.warn('[AuthContext] Could not parse token expiry:', error);
+      return true; // Assume it's expiring to be safe
+    }
+  };
+
   const refreshToken = async (): Promise<boolean> => {
     try {
       const storedRefreshToken = localStorage.getItem('auth_refresh_token');
@@ -173,6 +190,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshTokenIfNeeded = async (): Promise<boolean> => {
+    // Check if we need to refresh proactively
+    if (accessToken && !isTokenExpiringSoon(accessToken)) {
+      return true; // Token is still valid, no refresh needed
+    }
+    
+    console.log('[AuthContext] Token is expiring soon or expired, refreshing...');
+    return await refreshToken();
+  };
+
+  // Periodic token refresh check (every 4 minutes)
+  useEffect(() => {
+    if (!user || !accessToken) return;
+
+    const interval = setInterval(() => {
+      refreshTokenIfNeeded().catch(error => {
+        console.error('[AuthContext] Periodic refresh check failed:', error);
+      });
+    }, 4 * 60 * 1000); // 4 minutes
+
+    return () => clearInterval(interval);
+  }, [user, accessToken, refreshTokenIfNeeded]);
+
+  // Refresh token when user returns to the tab after being away
+  useEffect(() => {
+    if (!user || !accessToken) return;
+
+    const handleFocus = () => {
+      console.log('[AuthContext] Tab regained focus, checking token freshness...');
+      refreshTokenIfNeeded().catch(error => {
+        console.error('[AuthContext] Focus refresh check failed:', error);
+      });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user, accessToken, refreshTokenIfNeeded]);
+
   const value: AuthContextType = {
     user,
     accessToken,
@@ -182,6 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     setUserData,
     refreshToken,
+    refreshTokenIfNeeded,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

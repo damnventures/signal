@@ -20,15 +20,18 @@ export const createAuthFetch = (refreshTokenFn: () => Promise<boolean>) => {
         return response;
       }
       
-      // Update the Authorization header with new token if it exists
+      // Update the Authorization header with new token
       const accessToken = localStorage.getItem('auth_access_token');
-      if (accessToken && options.headers) {
-        const headers = options.headers as Record<string, string>;
-        if (headers['Authorization'] || headers['authorization']) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
-          // Remove lowercase version if it exists
-          delete headers['authorization'];
+      if (accessToken) {
+        // Ensure options.headers exists
+        if (!options.headers) {
+          options.headers = {};
         }
+        const headers = options.headers as Record<string, string>;
+        headers['Authorization'] = `Bearer ${accessToken}`;
+        // Remove lowercase version if it exists
+        delete headers['authorization'];
+        console.log('[AuthFetch] Updated Authorization header with refreshed token');
       }
       
       console.log('[AuthFetch] Retrying request with refreshed token...');

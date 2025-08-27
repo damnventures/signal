@@ -20,8 +20,8 @@ interface Highlight {
 }
 
 const HomePage = () => {
-  const { user, accessToken, apiKey, setUserData, isLoading, logout, refreshToken } = useAuth();
-  const authFetch = useMemo(() => createAuthFetch(refreshToken), [refreshToken]);
+  const { user, accessToken, apiKey, setUserData, isLoading, logout, refreshToken, refreshTokenIfNeeded } = useAuth();
+  const authFetch = useMemo(() => createAuthFetch(refreshTokenIfNeeded), [refreshTokenIfNeeded]);
   const [capsuleContent, setCapsuleContent] = useState<string>("");
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
@@ -366,10 +366,12 @@ const HomePage = () => {
   const parseHighlights = (text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
+    
+    // First try the old highlight format with Title/Setup/Quote/Why it matters
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
-
     console.log('[parseHighlights] Number of highlight blocks found:', highlightBlocks.length);
 
+    let foundOldFormat = false;
     highlightBlocks.forEach((block, index) => {
       console.log(`[parseHighlights] Processing block ${index}:`, block);
       const subTitleMatch = block.match(/\*\*Title:\s*([\s\S]*?)\s*\*\*Setup:/);
@@ -378,6 +380,7 @@ const HomePage = () => {
       const whyItMattersMatch = block.match(/\*\*Why it matters:\s*([\s\S]*?)(?=\s*---|$)/);
 
       if (subTitleMatch && setupMatch && quoteMatch && whyItMattersMatch) {
+        foundOldFormat = true;
         const newHighlight = {
           title: subTitleMatch[1].trim().replace(/\*\*/g, ''),
           setup: setupMatch[1].trim().replace(/\*\*/g, ''),
@@ -387,9 +390,41 @@ const HomePage = () => {
         highlights.push(newHighlight);
         console.log(`[parseHighlights] Successfully parsed highlight ${index}:`, newHighlight);
       } else {
-        console.warn(`[parseHighlights] Failed to parse block ${index}. Missing matches.`);
+        console.warn(`[parseHighlights] Failed to parse block ${index} in old format.`);
       }
     });
+
+    // If old format didn't work, try parsing as markdown sections
+    if (!foundOldFormat && text.includes('##')) {
+      console.log('[parseHighlights] Trying markdown section format...');
+      
+      // Split by markdown headers (## or #)
+      const sections = text.split(/(?=^##?\s)/m).filter(section => section.trim() !== '');
+      console.log(`[parseHighlights] Found ${sections.length} markdown sections`);
+      
+      sections.forEach((section, index) => {
+        // Extract title from markdown header
+        const titleMatch = section.match(/^##?\s*(.+?)(?:\n|$)/);
+        if (titleMatch) {
+          const title = titleMatch[1].trim();
+          // Remove the title line and get the content
+          const content = section.replace(/^##?\s*.+?\n/, '').trim();
+          
+          if (content.length > 0) {
+            const newHighlight = {
+              title: title,
+              setup: '',
+              quote: content,
+              whyItMatters: '',
+              isCapsuleSummary: true // Mark as summary to use different display
+            };
+            highlights.push(newHighlight);
+            console.log(`[parseHighlights] Successfully parsed markdown section ${index}:`, newHighlight.title);
+          }
+        }
+      });
+    }
+
     console.log('[parseHighlights] Final parsed highlights:', highlights);
     return highlights;
   };
@@ -446,9 +481,9 @@ const HomePage = () => {
       if (data.highlights) {
         const parsed = parseHighlights(data.highlights);
         
-        // If no highlights were parsed but we have content, treat it as a summary
+        // If no highlights were parsed but we have content, treat it as a single summary
         if (parsed.length === 0 && data.highlights.trim()) {
-          console.log('[HomePage] No structured highlights found, creating summary card');
+          console.log('[HomePage] No structured highlights found, creating single summary card');
           const capsuleName = data.name || 'Capsule Summary';
           const summaryHighlight = {
             title: capsuleName,
@@ -460,10 +495,10 @@ const HomePage = () => {
             isCapsuleSummary: true // Special flag for different display
           };
           setHighlightsData([summaryHighlight]);
-          console.log('[HomePage] Created capsule summary card for:', capsuleName);
+          console.log('[HomePage] Created single capsule summary card for:', capsuleName);
         } else {
           setHighlightsData(parsed);
-          console.log('[HomePage] Highlights data set:', parsed);
+          console.log('[HomePage] Highlights data set:', parsed.length, 'sections');
         }
         const currentHighlights = parsed.length > 0 ? parsed : [{}]; // Use parsed or single summary
         const initialZIndexes: Record<string, number> = {};
