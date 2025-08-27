@@ -27,6 +27,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
   const [currentCapsuleId, setCurrentCapsuleId] = useState(capsuleId);
   
+  // Update currentCapsuleId when the prop changes
+  useEffect(() => {
+    setCurrentCapsuleId(capsuleId);
+  }, [capsuleId]);
+  
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
