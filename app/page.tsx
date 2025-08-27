@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import DraggableWindow from './components/DraggableWindow';
 import AnimatedHeader from './components/AnimatedHeader';
 import Head from 'next/head';
@@ -21,7 +21,7 @@ interface Highlight {
 
 const HomePage = () => {
   const { user, accessToken, apiKey, setUserData, isLoading, logout, refreshToken } = useAuth();
-  const authFetch = createAuthFetch(refreshToken);
+  const authFetch = useMemo(() => createAuthFetch(refreshToken), [refreshToken]);
   const [capsuleContent, setCapsuleContent] = useState<string>("");
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
@@ -47,6 +47,7 @@ const HomePage = () => {
   const [showCapsulesWindow, setShowCapsulesWindow] = useState(false);
   const [selectedCapsuleId, setSelectedCapsuleId] = useState<string | null>(null);
   const [isFetchingCapsuleContent, setIsFetchingCapsuleContent] = useState(false);
+  const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -656,6 +657,13 @@ const HomePage = () => {
   }, [isLoading, user, selectedCapsuleId]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
+    if (hasHeaderCompleted) {
+      console.log('[HomePage] Header already completed, skipping...');
+      return;
+    }
+    
+    console.log('[HomePage] Setting header as completed');
+    setHasHeaderCompleted(true);
     setShowCards(true);
     setHighlightCard(0);
     setLoadingPhase('insights');
@@ -681,7 +689,7 @@ const HomePage = () => {
         updateStatusMessage('idle');
       }, 10000);
     }, highlightsData.length * 300);
-  }, [highlightsData.length, updateStatusMessage, apiKey, fetchCapsules]);
+  }, [hasHeaderCompleted, highlightsData.length, updateStatusMessage, apiKey, accessToken, fetchCapsules]);
 
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
