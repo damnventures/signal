@@ -47,6 +47,7 @@ const HomePage = () => {
   const [showCapsulesWindow, setShowCapsulesWindow] = useState(false);
   const [selectedCapsuleId, setSelectedCapsuleId] = useState<string | null>(null);
   const [isFetchingCapsuleContent, setIsFetchingCapsuleContent] = useState(false);
+  const [isFetchingCapsules, setIsFetchingCapsules] = useState(false);
   const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
 
   useEffect(() => {
@@ -623,6 +624,7 @@ const HomePage = () => {
 
   const fetchCapsules = useCallback(async (key?: string | null) => {
     console.log('[HomePage] Fetching capsules...');
+    setIsFetchingCapsules(true);
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
     
     try {
@@ -668,15 +670,23 @@ const HomePage = () => {
       }
     } catch (error) {
       console.error('Error fetching capsules:', error);
+    } finally {
+      setIsFetchingCapsules(false);
     }
   }, [authFetch]); // Simplified dependencies
 
   useEffect(() => {
     if (!isLoading && !authInProgress && selectedCapsuleId) {
+      // For non-auth users, wait for capsules fetch to complete to prevent concurrent requests
+      if (!apiKey && !accessToken && isFetchingCapsules) {
+        console.log(`[HomePage] Non-auth user - waiting for capsules fetch to complete before fetching capsule content`);
+        return;
+      }
+      
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [selectedCapsuleId]); // Removed isFetchingCapsuleContent condition to prevent circular dependency
+  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress]); // Added isFetchingCapsules dependency
 
   // Handle capsule selection based on auth state
   useEffect(() => {
