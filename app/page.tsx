@@ -635,9 +635,7 @@ const HomePage = () => {
           {
             _id: '6887e02fa01e2f4073d3bb51',
             name: 'Demo Capsule',
-            description: 'Sample content for non-authenticated users',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            isPublic: true
           }
         ];
         
