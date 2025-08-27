@@ -16,6 +16,7 @@ interface AuthContextType {
   login: () => void;
   logout: () => void;
   setUserData: (user: User, accessToken: string, apiKey?: string) => void;
+  refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -128,6 +129,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const storedRefreshToken = localStorage.getItem('auth_refresh_token');
+      
+      if (!storedRefreshToken) {
+        console.error('[AuthContext] No refresh token available');
+        return false;
+      }
+
+      console.log('[AuthContext] Attempting to refresh access token...');
+      
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refreshToken: storedRefreshToken
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('[AuthContext] Token refresh failed:', response.status);
+        // If refresh fails, clear all auth data and logout
+        logout();
+        return false;
+      }
+
+      const data = await response.json();
+      
+      // Update tokens
+      setAccessToken(data.accessToken);
+      localStorage.setItem('auth_access_token', data.accessToken);
+      localStorage.setItem('auth_refresh_token', data.refreshToken);
+      
+      console.log('[AuthContext] Token refreshed successfully');
+      return true;
+    } catch (error) {
+      console.error('[AuthContext] Error refreshing token:', error);
+      logout();
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     accessToken,
@@ -136,6 +181,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     setUserData,
+    refreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

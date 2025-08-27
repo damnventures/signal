@@ -9,6 +9,7 @@ import AuthButton from './components/AuthButton';
 import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
+import { createAuthFetch } from './utils/authFetch';
 
 interface Highlight {
   title: string;
@@ -19,7 +20,8 @@ interface Highlight {
 }
 
 const HomePage = () => {
-  const { user, accessToken, apiKey, setUserData, isLoading, logout } = useAuth();
+  const { user, accessToken, apiKey, setUserData, isLoading, logout, refreshToken } = useAuth();
+  const authFetch = createAuthFetch(refreshToken);
   const [capsuleContent, setCapsuleContent] = useState<string>("");
   const [highlightsData, setHighlightsData] = useState<Highlight[]>([]);
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
@@ -419,7 +421,7 @@ const HomePage = () => {
       console.log(`[HomePage] Attempting to fetch from: ${apiUrl}`);
       console.log(`[HomePage] Headers:`, headers);
 
-      const response = await fetch(apiUrl, {
+      const response = await authFetch(apiUrl, {
         headers,
         cache: 'no-store',
         next: { revalidate: 0 },
@@ -493,7 +495,7 @@ const HomePage = () => {
             }
             console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
             
-            const jobDetailsResponse = await fetch(jobDetailsUrl, {
+            const jobDetailsResponse = await authFetch(jobDetailsUrl, {
               headers: jobDetailsHeaders,
               cache: 'no-store',
             });
@@ -580,7 +582,7 @@ const HomePage = () => {
     } finally {
       setIsFetchingCapsuleContent(false);
     }
-  }, [parseHighlights, isFetchingCapsuleContent]);
+  }, [parseHighlights, isFetchingCapsuleContent, authFetch]);
 
   const fetchCapsules = useCallback(async (key?: string | null) => {
     if (!key && !accessToken) {
@@ -610,7 +612,7 @@ const HomePage = () => {
       console.log(`[HomePage] Request headers prepared:`, Object.keys(headers));
       console.log(`[HomePage] Making fetch request to /api/capsules...`);
       
-      const response = await fetch('/api/capsules', {
+      const response = await authFetch('/api/capsules', {
         headers,
       });
       
@@ -635,7 +637,7 @@ const HomePage = () => {
     } catch (error) {
       console.error('Error fetching capsules:', error);
     }
-  }, [accessToken]);
+  }, [accessToken, authFetch]);
 
   useEffect(() => {
     if (!isLoading && !authInProgress && selectedCapsuleId) {
