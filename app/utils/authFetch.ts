@@ -15,7 +15,8 @@ export const createAuthFetch = (refreshTokenFn: () => Promise<boolean>) => {
       // Handle 502 Bad Gateway with exponential backoff
       if (response.status === 502 && attempt < maxRetries) {
         const delay = baseDelay * Math.pow(2, attempt - 1); // 500ms, 1000ms, 2000ms
-        console.log(`[AuthFetch] Got 502 Bad Gateway on attempt ${attempt}, retrying in ${delay}ms...`);
+        console.log(`[AuthFetch] Got 502 Bad Gateway on attempt ${attempt}/${maxRetries}, retrying in ${delay}ms...`);
+        console.log(`[AuthFetch] URL: ${url}`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

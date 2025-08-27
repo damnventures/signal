@@ -628,7 +628,27 @@ const HomePage = () => {
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
     
     try {
-      // Prepare headers with both API key and Bearer token
+      // For non-auth users, return hardcoded capsule list instead of real API lookup
+      if (!key && !accessToken) {
+        console.log('[HomePage] Non-auth user detected, returning hardcoded capsule list');
+        const hardcodedCapsules = [
+          {
+            _id: '6887e02fa01e2f4073d3bb51',
+            name: 'Demo Capsule',
+            description: 'Sample content for non-authenticated users',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ];
+        
+        console.log('[HomePage] Using hardcoded capsules:', hardcodedCapsules);
+        setCapsules(hardcodedCapsules);
+        setSelectedCapsuleId(hardcodedCapsules[0]._id);
+        setShowCapsulesWindow(true);
+        return;
+      }
+      
+      // For authenticated users, make real API call
       const headers: Record<string, string> = {};
       
       if (key) {
@@ -639,8 +659,6 @@ const HomePage = () => {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
         console.log(`[HomePage] Adding Bearer token to request`);
-      } else {
-        console.log(`[HomePage] No accessToken available for Bearer auth`);
       }
       
       console.log(`[HomePage] Request headers prepared:`, Object.keys(headers));
@@ -673,7 +691,7 @@ const HomePage = () => {
     } finally {
       setIsFetchingCapsules(false);
     }
-  }, [authFetch]); // Simplified dependencies
+  }, [authFetch, accessToken]); // Added accessToken dependency
 
   useEffect(() => {
     if (!isLoading && !authInProgress && selectedCapsuleId) {
