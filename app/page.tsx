@@ -622,11 +622,6 @@ const HomePage = () => {
   }, [authFetch]); // Simplified dependencies to prevent loops
 
   const fetchCapsules = useCallback(async (key?: string | null) => {
-    if (!key && !accessToken) {
-      console.log('[HomePage] No API key or access token, skipping capsule fetch.');
-      return;
-    }
-
     console.log('[HomePage] Fetching capsules...');
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
     
@@ -721,7 +716,8 @@ const HomePage = () => {
       console.log(`[HomePage] About to call fetchCapsules with apiKey: ${apiKey ? '...' + apiKey.slice(-4) : 'none'}, accessToken: ${accessToken ? 'present' : 'none'}`);
       fetchCapsules(apiKey);
     } else {
-      console.log(`[HomePage] No apiKey or accessToken available, skipping fetchCapsules`);
+      console.log(`[HomePage] No user API key available, calling fetchCapsules with null (will use default API key)`);
+      fetchCapsules(null);
     }
 
     setTimeout(() => setHighlightCard(null), 300);

@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   console.log(`[Capsules Route] API Key present: ${userApiKey ? 'yes' : 'no'}`);
   console.log(`[Capsules Route] Auth header present: ${authHeader ? 'yes' : 'no'}`);
 
-  // Try Bearer token first, fall back to API key
+  // Try Bearer token first, then user API key, then default API key
   let requestHeaders: Record<string, string> = {};
   let authMethod = '';
   
@@ -16,13 +16,19 @@ export async function GET(request: Request) {
     requestHeaders['Authorization'] = authHeader;
     authMethod = 'Bearer token';
     console.log(`[Capsules Route] Using Bearer token authentication`);
-  } else if (userApiKey) {
-    requestHeaders['x-api-key'] = userApiKey;
-    authMethod = 'API key';
-    console.log(`[Capsules Route] Using API key authentication (last 4 chars): ...${userApiKey.slice(-4)}`);
   } else {
-    console.error('[Capsules Route] No authentication method available');
-    return NextResponse.json({ error: 'Authentication required (Bearer token or API key)' }, { status: 401 });
+    // Use user's API key if provided, otherwise fall back to default
+    const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
+    
+    if (!API_KEY) {
+      console.error('[Capsules Route] No API key available (neither user nor default).');
+      console.error('[Capsules Route] Environment SHRINKED_API_KEY:', process.env.SHRINKED_API_KEY ? 'present' : 'not set');
+      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+    }
+    
+    requestHeaders['x-api-key'] = API_KEY;
+    authMethod = userApiKey ? 'User API key' : 'Default API key';
+    console.log(`[Capsules Route] Using ${authMethod} (last 4 chars): ...${API_KEY.slice(-4)}`);
   }
 
   const requestUrl = `https://api.shrinked.ai/capsules`;
