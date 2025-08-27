@@ -778,18 +778,34 @@ const HomePage = () => {
     const isDesktop = window.innerWidth >= 768;
     
     if (isDesktop) {
-      const videoWidth = 480; // From .window max-width
-      const leftAreaWidth = window.innerWidth * 0.62;
-      return { x: leftAreaWidth + videoWidth - 500, y: 450 };
+      // Position capsules window right above the bottom-right menu buttons
+      // Menu buttons: bottom: 20px, right: 20px, height: 30px, total width: ~110px
+      const menuButtonsWidth = 110; // 3 buttons * 30px + 2 gaps * 10px
+      const menuButtonsHeight = 30;
+      const menuBottomMargin = 20;
+      const capsuleWindowWidth = 320; // Approximate capsules window width
+      const capsuleWindowHeight = 200; // Approximate capsules window height
+      const gap = 10; // Gap above the menu buttons
+      
+      return { 
+        x: window.innerWidth - 20 - Math.max(menuButtonsWidth, capsuleWindowWidth), // Align right edge with buttons
+        y: window.innerHeight - menuBottomMargin - menuButtonsHeight - gap - capsuleWindowHeight 
+      };
     } else {
-      // Below the video player on mobile
-      const cardWidth = 320;
-      const centerX = (window.innerWidth - cardWidth) / 2;
-      const cardsHeight = highlightsData.length * 50 + 100;
-      const videoHeight = 315 + 100; // approx video height + controls
-      return { x: centerX, y: cardsHeight + videoHeight + 40 };
+      // On mobile, place it at the bottom center, above the buttons
+      const capsuleWindowWidth = 320;
+      const capsuleWindowHeight = 200;
+      const menuButtonsHeight = 30;
+      const menuBottomMargin = 20;
+      const gap = 10;
+      const centerX = (window.innerWidth - capsuleWindowWidth) / 2;
+      
+      return { 
+        x: centerX, 
+        y: window.innerHeight - menuBottomMargin - menuButtonsHeight - gap - capsuleWindowHeight
+      };
     }
-  }, [highlightsData.length]);
+  }, []);
 
   const calculateHeaderPosition = useCallback(() => {
     const isDesktop = window.innerWidth >= 768;
