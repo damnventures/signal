@@ -642,20 +642,31 @@ const HomePage = () => {
   }, [accessToken, authFetch]);
 
   useEffect(() => {
-    if (!isLoading && !authInProgress && selectedCapsuleId) {
+    if (!isLoading && !authInProgress && selectedCapsuleId && !isFetchingCapsuleContent) {
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [isLoading, authInProgress, apiKey, selectedCapsuleId]);
+  }, [isLoading, authInProgress, apiKey, selectedCapsuleId, isFetchingCapsuleContent, fetchCapsuleContent]);
 
-  // Set default capsule for non-authenticated users when auth loading is complete
+  // Handle capsule selection based on auth state
   useEffect(() => {
-    if (!isLoading && !user && !selectedCapsuleId) {
-      const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
-      console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
-      setSelectedCapsuleId(defaultCapsuleId);
+    if (!isLoading && !authInProgress) {
+      if (user) {
+        // User is authenticated - clear default capsule, let capsules list set the selected one
+        if (selectedCapsuleId === '6887e02fa01e2f4073d3bb51') {
+          console.log(`[HomePage] User authenticated, clearing default capsule`);
+          setSelectedCapsuleId(null);
+          setHighlightsData([]);
+          setCapsuleContent("");
+        }
+      } else if (!selectedCapsuleId) {
+        // No user and no capsule selected - set default
+        const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
+        console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
+        setSelectedCapsuleId(defaultCapsuleId);
+      }
     }
-  }, [isLoading, user, selectedCapsuleId]);
+  }, [isLoading, user, authInProgress, selectedCapsuleId]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     if (hasHeaderCompleted) {
@@ -871,7 +882,7 @@ const HomePage = () => {
               />
             )}
 
-            {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && (
+            {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && !isLoading && !authInProgress && !isFetchingCapsuleContent && (
               <DraggableWindow
                 id="no-content-card"
                 onBringToFront={handleBringToFront}
@@ -999,7 +1010,7 @@ const HomePage = () => {
                 selectedCapsuleId={selectedCapsuleId}
                 initialPosition={calculateCapsulesWindowPosition()}
                 onBringToFront={handleBringToFront}
-                initialZIndex={nextZIndex}
+                initialZIndex={Math.min(nextZIndex, 9998)}
               />
             )}
 
