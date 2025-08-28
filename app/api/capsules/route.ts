@@ -2,34 +2,24 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const userApiKey = request.headers.get('x-api-key');
-  const authHeader = request.headers.get('authorization');
   
   console.log(`[Capsules Route] Request received`);
   console.log(`[Capsules Route] API Key present: ${userApiKey ? 'yes' : 'no'}`);
-  console.log(`[Capsules Route] Auth header present: ${authHeader ? 'yes' : 'no'}`);
 
-  // Try Bearer token first, then user API key, then default API key
-  let requestHeaders: Record<string, string> = {};
-  let authMethod = '';
+  // Use user's API key if provided, otherwise fall back to default
+  const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
   
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    requestHeaders['Authorization'] = authHeader;
-    authMethod = 'Bearer token';
-    console.log(`[Capsules Route] Using Bearer token authentication`);
-  } else {
-    // Use user's API key if provided, otherwise fall back to default
-    const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
-    
-    if (!API_KEY) {
-      console.error('[Capsules Route] No API key available (neither user nor default).');
-      console.error('[Capsules Route] Environment SHRINKED_API_KEY:', process.env.SHRINKED_API_KEY ? 'present' : 'not set');
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-    }
-    
-    requestHeaders['x-api-key'] = API_KEY;
-    authMethod = userApiKey ? 'User API key' : 'Default API key';
-    console.log(`[Capsules Route] Using ${authMethod} (last 4 chars): ...${API_KEY.slice(-4)}`);
+  if (!API_KEY) {
+    console.error('[Capsules Route] No API key available (neither user nor default).');
+    console.error('[Capsules Route] Environment SHRINKED_API_KEY:', process.env.SHRINKED_API_KEY ? 'present' : 'not set');
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
+  
+  const requestHeaders: Record<string, string> = {
+    'x-api-key': API_KEY
+  };
+  const authMethod = userApiKey ? 'User API key' : 'Default API key';
+  console.log(`[Capsules Route] Using ${authMethod} (last 4 chars): ...${API_KEY.slice(-4)}`);
 
   const requestUrl = `https://api.shrinked.ai/capsules`;
   console.log(`[Capsules Route] Attempting to fetch capsules from: ${requestUrl}`);

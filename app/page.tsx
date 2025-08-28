@@ -654,11 +654,6 @@ const HomePage = () => {
         console.log(`[HomePage] Adding API key to request`);
       }
       
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-        console.log(`[HomePage] Adding Bearer token to request`);
-      }
-      
       console.log(`[HomePage] Request headers prepared:`, Object.keys(headers));
       console.log(`[HomePage] Making fetch request to /api/capsules...`);
       
