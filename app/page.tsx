@@ -506,6 +506,7 @@ const HomePage = () => {
         initialZIndexes['header'] = 1;
         initialZIndexes['original-links'] = 9999; // Video player always on top
         initialZIndexes['argue-popup'] = currentHighlights.length + 10; // Add argue popup with high z-index
+        initialZIndexes['capsules-window'] = currentHighlights.length + 5; // Add capsules window to z-index tracking
         currentHighlights.forEach((_, index) => {
           initialZIndexes[`highlight-${index}`] = index + 2;
         });
@@ -1084,7 +1085,7 @@ const HomePage = () => {
                 selectedCapsuleId={selectedCapsuleId}
                 initialPosition={calculateCapsulesWindowPosition()}
                 onBringToFront={handleBringToFront}
-                initialZIndex={Math.min(nextZIndex, 9998)}
+                initialZIndex={cardZIndexes['capsules-window'] || nextZIndex}
               />
             )}
 
