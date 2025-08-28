@@ -694,6 +694,12 @@ const HomePage = () => {
         return;
       }
       
+      // Prevent fetching demo capsule with user API key (race condition fix)
+      if (apiKey && selectedCapsuleId === '6887e02fa01e2f4073d3bb51') {
+        console.log(`[HomePage] Skipping demo capsule fetch with user API key - will be cleared by auth useEffect`);
+        return;
+      }
+      
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
