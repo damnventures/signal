@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect, useContext } from 'react';
 import { getArguePrompt } from './ArguePrompt';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ArguePopupProps {
   isOpen: boolean;
@@ -27,7 +27,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
   const [currentCapsuleId, setCurrentCapsuleId] = useState(capsuleId);
-  const { apiKey } = useContext(AuthContext);
+  const { apiKey } = useAuth();
   
   // Update currentCapsuleId when the prop changes
   useEffect(() => {
