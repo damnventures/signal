@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useContext } from 'react';
 import { getArguePrompt } from './ArguePrompt';
+import { AuthContext } from '../contexts/AuthContext';
 
 interface ArguePopupProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
   const [currentCapsuleId, setCurrentCapsuleId] = useState(capsuleId);
+  const { apiKey } = useContext(AuthContext);
   
   // Update currentCapsuleId when the prop changes
   useEffect(() => {
@@ -104,7 +106,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     setIsStreamingComplete(false);
   
     try {
-      const contextResponse = await fetch(`/api/capsules/${currentCapsuleId}/context`);
+      const contextUrl = apiKey
+        ? `/api/capsules/${currentCapsuleId}/context?userApiKey=${apiKey}`
+        : `/api/capsules/${currentCapsuleId}/context`;
+      const contextResponse = await fetch(contextUrl);
       if (!contextResponse.ok) {
         throw new Error('Failed to fetch context');
       }
@@ -178,7 +183,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [question, currentCapsuleId]);
+  }, [question, currentCapsuleId, apiKey]);
+
+
 
   const handleClear = useCallback(() => {
     setQuestion('');
