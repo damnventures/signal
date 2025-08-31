@@ -398,32 +398,54 @@ const HomePage = () => {
     });
 
     // If old format didn't work, try parsing as markdown sections
-    if (!foundOldFormat && text.includes('##')) {
+    if (!foundOldFormat && (text.includes('##') || text.includes('**'))) {
       console.log('[parseHighlights] Trying markdown section format...');
       
-      // Split by markdown headers (## or #)
-      const sections = text.split(/(?=^##?\s)/m).filter(section => section.trim() !== '');
-      console.log(`[parseHighlights] Found ${sections.length} markdown sections`);
+      let sections: string[] = [];
+      
+      // Try ## headers first
+      if (text.includes('##')) {
+        sections = text.split(/(?=^##?\s)/m).filter(section => section.trim() !== '');
+        console.log(`[parseHighlights] Found ${sections.length} ## markdown sections`);
+      }
+      // Try ** bold headers if no ## headers found
+      else if (text.includes('**') && sections.length === 0) {
+        sections = text.split(/(?=^\*\*[^*]+\*\*)/m).filter(section => section.trim() !== '');
+        console.log(`[parseHighlights] Found ${sections.length} ** bold header sections`);
+      }
       
       sections.forEach((section, index) => {
-        // Extract title from markdown header
-        const titleMatch = section.match(/^##?\s*(.+?)(?:\n|$)/);
+        let titleMatch: RegExpMatchArray | null = null;
+        let title = '';
+        let content = '';
+        
+        // Try ## header format first
+        titleMatch = section.match(/^##?\s*(.+?)(?:\n|$)/);
         if (titleMatch) {
-          const title = titleMatch[1].trim();
-          // Remove the title line and get the content
-          const content = section.replace(/^##?\s*.+?\n/, '').trim();
-          
-          if (content.length > 0) {
-            const newHighlight = {
-              title: title,
-              setup: '',
-              quote: content,
-              whyItMatters: '',
-              isCapsuleSummary: true // Mark as summary to use different display
-            };
-            highlights.push(newHighlight);
-            console.log(`[parseHighlights] Successfully parsed markdown section ${index}:`, newHighlight.title);
+          title = titleMatch[1].trim();
+          content = section.replace(/^##?\s*.+?\n/, '').trim();
+        }
+        // Try ** bold header format
+        else {
+          titleMatch = section.match(/^\*\*([^*]+)\*\*/);
+          if (titleMatch) {
+            title = titleMatch[1].trim();
+            content = section.replace(/^\*\*[^*]+\*\*\s*\n?/, '').trim();
           }
+        }
+        
+        if (title && content.length > 0) {
+          const newHighlight = {
+            title: title,
+            setup: '',
+            quote: content,
+            whyItMatters: '',
+            isCapsuleSummary: true // Mark as summary to use different display
+          };
+          highlights.push(newHighlight);
+          console.log(`[parseHighlights] Successfully parsed section ${index}:`, newHighlight.title);
+        } else {
+          console.warn(`[parseHighlights] Failed to parse section ${index}:`, section.substring(0, 100));
         }
       });
     }
@@ -1159,6 +1181,12 @@ const HomePage = () => {
               }}
               onBringToFront={handleBringToFront}
               initialZIndex={nextZIndex + 200}
+              onRefreshCapsule={() => {
+                if (selectedCapsuleId) {
+                  console.log('[HomePage] Refreshing capsule content after job completion');
+                  fetchCapsuleContent(apiKey, selectedCapsuleId);
+                }
+              }}
             />
           </>
         )}

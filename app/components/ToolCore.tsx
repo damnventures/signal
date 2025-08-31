@@ -13,13 +13,15 @@ interface ToolCoreProps {
   onArgueRequest: (question: string) => void;
   onBringToFront: (id: string) => void;
   initialZIndex: number;
+  onRefreshCapsule?: () => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
   capsuleId, 
   onArgueRequest, 
   onBringToFront, 
-  initialZIndex 
+  initialZIndex,
+  onRefreshCapsule
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -258,6 +260,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           execution={execution}
           onBringToFront={onBringToFront}
           initialZIndex={initialZIndex + 200}
+          onRefreshCapsule={onRefreshCapsule}
         />
       ))}
     </>

@@ -63,7 +63,12 @@ export async function processMediaWithWorker(
     const result = await response.json();
     console.log('✅ Worker success response:', result);
     
-    return result;
+    // Include the job name in the result for polling purposes
+    return {
+      ...result,
+      jobName: jobName, // Add the job name to the result for ToolProgress polling
+      originalParams: { url, capsuleId, jobName, userApiKey } // Include original params as backup
+    };
   } catch (error) {
     console.error('❌ Media processing error:', error);
     console.error('❌ Error details:', {
