@@ -194,7 +194,17 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     }
   }, [question, currentCapsuleId, apiKey]);
 
-
+  // Auto-submit when question is set from initialQuestion
+  useEffect(() => {
+    if (isOpen && question === initialQuestion && initialQuestion && !isLoading && !chatResponse) {
+      // Auto-submit after a short delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+        handleSubmit(fakeEvent);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, question, initialQuestion, isLoading, chatResponse, handleSubmit]);
 
   const handleClear = useCallback(() => {
     setQuestion('');

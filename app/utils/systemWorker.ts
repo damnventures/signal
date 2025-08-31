@@ -28,20 +28,43 @@ export async function processMediaWithWorker(
   jobName: string, 
   userApiKey: string
 ) {
+  console.log('🚀 SystemWorker: Starting media processing');
+  console.log('📍 Worker URL:', WORKER_URL);
+  console.log('🔗 URL to process:', url);
+  console.log('📦 Capsule ID:', capsuleId);
+  console.log('📝 Job Name:', jobName);
+  console.log('🔑 API Key:', userApiKey ? `...${userApiKey.slice(-4)}` : 'No API key provided');
+  
+  const requestBody = { url, capsuleId, jobName, userApiKey };
+  console.log('📤 Request body:', requestBody);
+  
   try {
+    console.log('📡 Making request to worker...');
     const response = await fetch(`${WORKER_URL}/process-media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, capsuleId, jobName, userApiKey })
+      body: JSON.stringify(requestBody)
     });
     
+    console.log('📥 Worker response status:', response.status);
+    console.log('📥 Worker response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      throw new Error(`Media processing failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ Worker error response:', errorText);
+      throw new Error(`Media processing failed: ${response.status} - ${errorText}`);
     }
     
-    return await response.json();
+    const result = await response.json();
+    console.log('✅ Worker success response:', result);
+    
+    return result;
   } catch (error) {
-    console.error('Media processing error:', error);
+    console.error('❌ Media processing error:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }
