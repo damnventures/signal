@@ -201,58 +201,52 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     <>
       {/* Bottom Left Search Bar */}
       <div 
-        className="tool-core-search-bar retro-window"
+        className="tool-core-search-bar"
         style={{
           position: 'fixed',
           bottom: '20px',
           left: '20px',
           width: '66.67%', // 2/3 of screen width
           zIndex: 1000,
-          background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
-          border: '1px solid black',
-          boxShadow: '8px 8px 0px #808080, 16px 16px 0px #404040',
-          borderRadius: '20px', // TV window style
         }}
       >
-        <div style={{ padding: '16px', fontSize: '12px', fontFamily: 'Geneva, sans-serif' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Drop a link, ask a question, or just chat..."
-                style={{
-                  flex: 1,
-                  padding: '4px',
-                  border: '2px inset #c0c0c0',
-                  background: 'white',
-                  fontSize: '12px',
-                  fontFamily: 'Geneva, sans-serif',
-                  color: 'black',
-                }}
-                disabled={isProcessing}
-              />
-              <button
-                type="submit"
-                disabled={isProcessing || !input.trim()}
-                style={{
-                  padding: '4px 8px',
-                  background: isProcessing || !input.trim() ? '#d0d0d0' : '#c0c0c0',
-                  border: '2px solid #000000',
-                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  cursor: isProcessing || !input.trim() ? 'default' : 'pointer',
-                  color: isProcessing || !input.trim() ? '#808080' : 'black',
-                  fontFamily: 'Geneva, sans-serif',
-                }}
-              >
-                {isProcessing ? 'Processing...' : 'Send'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <form onSubmit={handleSubmit} style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Drop a link, ask a question, or just chat..."
+              style={{
+                flex: 1,
+                padding: '4px',
+                border: '2px inset #c0c0c0',
+                background: 'white',
+                fontSize: '12px',
+                fontFamily: 'Geneva, sans-serif',
+                color: 'black',
+              }}
+              disabled={isProcessing}
+            />
+            <button
+              type="submit"
+              disabled={isProcessing || !input.trim()}
+              style={{
+                padding: '4px 8px',
+                background: isProcessing || !input.trim() ? '#d0d0d0' : '#c0c0c0',
+                border: '2px solid #000000',
+                boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: isProcessing || !input.trim() ? 'default' : 'pointer',
+                color: isProcessing || !input.trim() ? '#808080' : 'black',
+                fontFamily: 'Geneva, sans-serif',
+              }}
+            >
+              {isProcessing ? 'Processing...' : 'Send'}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Confirmations removed - auto-processing enabled */}
