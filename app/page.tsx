@@ -5,6 +5,7 @@ import DraggableWindow from './components/DraggableWindow';
 import AnimatedHeader from './components/AnimatedHeader';
 import Head from 'next/head';
 import ArguePopup from './components/ArguePopup';
+import ToolCore from './components/ToolCore';
 import AuthButton from './components/AuthButton';
 import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
@@ -1123,6 +1124,14 @@ const HomePage = () => {
                 <span>🎯</span>
               </button>
               
+              {/* Tool Core button */}
+              <button 
+                className="action-button tools-button" 
+                title="Smart Tools - Drop links, ask questions, or chat"
+              >
+                <span>🛠️</span>
+              </button>
+              
               <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
                 <img src="/shrinked.png" alt="Shrinked AI" />
               </button>
@@ -1134,6 +1143,17 @@ const HomePage = () => {
               capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
+            />
+
+            {/* Tool Core - Always active, handles its own UI */}
+            <ToolCore
+              capsuleId={selectedCapsuleId || ''}
+              onArgueRequest={(question: string) => {
+                setShowArguePopup(true);
+                // Could also pre-populate the argue popup with the question
+              }}
+              onBringToFront={handleBringToFront}
+              initialZIndex={nextZIndex + 200}
             />
           </>
         )}
