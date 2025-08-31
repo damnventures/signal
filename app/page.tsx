@@ -42,6 +42,7 @@ const HomePage = () => {
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showArguePopup, setShowArguePopup] = useState(false);
+  const [argueQuestion, setArgueQuestion] = useState('');
   const [authProcessed, setAuthProcessed] = useState(false);
   const [authInProgress, setAuthInProgress] = useState(false);
   const [capsules, setCapsules] = useState<Capsule[]>([]);
@@ -1139,18 +1140,22 @@ const HomePage = () => {
 
             <ArguePopup 
               isOpen={showArguePopup}
-              onClose={() => setShowArguePopup(false)}
+              onClose={() => {
+                setShowArguePopup(false);
+                setArgueQuestion(''); // Clear question when closing
+              }}
               capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
+              initialQuestion={argueQuestion}
             />
 
             {/* Tool Core - Always active, handles its own UI */}
             <ToolCore
               capsuleId={selectedCapsuleId || ''}
               onArgueRequest={(question: string) => {
+                setArgueQuestion(question);
                 setShowArguePopup(true);
-                // Could also pre-populate the argue popup with the question
               }}
               onBringToFront={handleBringToFront}
               initialZIndex={nextZIndex + 200}

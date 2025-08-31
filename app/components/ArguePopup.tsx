@@ -10,6 +10,7 @@ interface ArguePopupProps {
   capsuleId: string;
   onBringToFront: (id: string) => void;
   initialZIndex: number;
+  initialQuestion?: string;
 }
 
 const ArguePopup: React.FC<ArguePopupProps> = ({ 
@@ -17,7 +18,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   onClose, 
   capsuleId, 
   onBringToFront, 
-  initialZIndex 
+  initialZIndex,
+  initialQuestion = ''
 }) => {
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +35,13 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   useEffect(() => {
     setCurrentCapsuleId(capsuleId);
   }, [capsuleId]);
+
+  // Set initial question when popup opens
+  useEffect(() => {
+    if (isOpen && initialQuestion && !question) {
+      setQuestion(initialQuestion);
+    }
+  }, [isOpen, initialQuestion, question]);
   
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
