@@ -1,18 +1,14 @@
 import { WorkerResponse, MediaCollectionData } from '../core/types';
 
-// Ensure the worker URL is always absolute
-const WORKER_URL = process.env.NEXT_PUBLIC_SYSTEM_WORKER_URL || 'https://chars-intent-core.shrinked.workers.dev';
-const getAbsoluteWorkerUrl = (path: string) => {
-  const baseUrl = WORKER_URL.startsWith('http') ? WORKER_URL : `https://${WORKER_URL}`;
-  return `${baseUrl}${path}`;
-};
+// Use Next.js API proxy to avoid CORS issues
+const PROXY_URL = '/api/tools';
 
 export async function classifyIntent(input: string, capsuleId: string, context?: any): Promise<WorkerResponse> {
   try {
-    const response = await fetch(getAbsoluteWorkerUrl('/classify'), {
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input, capsuleId, context })
+      body: JSON.stringify({ action: 'classify', input, capsuleId, context })
     });
     
     if (!response.ok) {
@@ -34,7 +30,7 @@ export async function processMediaWithWorker(
   userApiKey: string
 ) {
   console.log('🚀 SystemWorker: Starting media processing');
-  console.log('📍 Worker URL:', WORKER_URL);
+  console.log('📍 Using API proxy:', PROXY_URL);
   console.log('🔗 URL to process:', url);
   console.log('📦 Capsule ID:', capsuleId);
   console.log('📝 Job Name:', jobName);
@@ -44,13 +40,15 @@ export async function processMediaWithWorker(
   console.log('📤 Request body:', requestBody);
   
   try {
-    const absoluteUrl = getAbsoluteWorkerUrl('/process-media');
-    console.log('📡 Making request to worker...');
-    console.log('🌐 Absolute URL:', absoluteUrl);
-    const response = await fetch(absoluteUrl, {
+    console.log('📡 Making request via proxy...');
+    console.log('🌐 Proxy URL:', PROXY_URL);
+    const proxyBody = { action: 'process-media', ...requestBody };
+    console.log('📤 Proxy request body:', proxyBody);
+    
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(proxyBody)
     });
     
     console.log('📥 Worker response status:', response.status);
@@ -78,10 +76,10 @@ export async function processMediaWithWorker(
 
 export async function communicateWithWorker(message: string, capsuleId: string, context?: any) {
   try {
-    const response = await fetch(getAbsoluteWorkerUrl('/communicate'), {
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, capsuleId, context })
+      body: JSON.stringify({ action: 'communicate', message, capsuleId, context })
     });
     
     return await response.json();
