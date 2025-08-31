@@ -5,23 +5,32 @@ const WORKER_URL = 'https://chars-intent-core.shrinked.workers.dev';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, ...data } = body;
+    const { action, userApiKey, ...data } = body;
 
     if (!action) {
       return NextResponse.json({ error: 'Action is required' }, { status: 400 });
     }
 
     console.log(`[Tools Proxy] Forwarding ${action} request to worker:`, data);
+    console.log(`[Tools Proxy] User API Key: ${userApiKey ? 'present' : 'not provided'}`);
 
     // Forward the request to the appropriate worker endpoint
     const workerEndpoint = `${WORKER_URL}/${action}`;
     console.log(`[Tools Proxy] Worker endpoint:`, workerEndpoint);
 
+    // Prepare headers - add user's API key if provided
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (userApiKey) {
+      headers['x-api-key'] = userApiKey;
+      console.log(`[Tools Proxy] Adding user API key to x-api-key header`);
+    }
+
     const workerResponse = await fetch(workerEndpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(data)
     });
 
