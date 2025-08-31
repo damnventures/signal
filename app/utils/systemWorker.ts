@@ -1,6 +1,6 @@
 import { WorkerResponse, MediaCollectionData } from '../core/types';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_SYSTEM_WORKER_URL || 'https://signal-system.your-subdomain.workers.dev';
+const WORKER_URL = process.env.NEXT_PUBLIC_SYSTEM_WORKER_URL || 'https://chars-intent-core.shrinked.workers.dev';
 
 export async function classifyIntent(input: string, capsuleId: string, context?: any): Promise<WorkerResponse> {
   try {

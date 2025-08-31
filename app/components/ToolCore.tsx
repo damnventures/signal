@@ -5,8 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToolState, generateToolId } from '../core/toolState';
 import { classifyIntent } from '../utils/systemWorker';
 import { ToolExecution, ToolConfirmation, MediaCollectionData } from '../core/types';
-import { MediaCollectorConfirmation } from './MediaCollectorConfirmation';
-import { ToolProgress } from './ToolProgress';
+import MediaCollectorConfirmation from './MediaCollectorConfirmation';
+import ToolProgress from './ToolProgress';
 
 interface ToolCoreProps {
   capsuleId: string;
