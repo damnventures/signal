@@ -1,10 +1,15 @@
 import { WorkerResponse, MediaCollectionData } from '../core/types';
 
+// Ensure the worker URL is always absolute
 const WORKER_URL = process.env.NEXT_PUBLIC_SYSTEM_WORKER_URL || 'https://chars-intent-core.shrinked.workers.dev';
+const getAbsoluteWorkerUrl = (path: string) => {
+  const baseUrl = WORKER_URL.startsWith('http') ? WORKER_URL : `https://${WORKER_URL}`;
+  return `${baseUrl}${path}`;
+};
 
 export async function classifyIntent(input: string, capsuleId: string, context?: any): Promise<WorkerResponse> {
   try {
-    const response = await fetch(`${WORKER_URL}/classify`, {
+    const response = await fetch(getAbsoluteWorkerUrl('/classify'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input, capsuleId, context })
@@ -39,8 +44,10 @@ export async function processMediaWithWorker(
   console.log('📤 Request body:', requestBody);
   
   try {
+    const absoluteUrl = getAbsoluteWorkerUrl('/process-media');
     console.log('📡 Making request to worker...');
-    const response = await fetch(`${WORKER_URL}/process-media`, {
+    console.log('🌐 Absolute URL:', absoluteUrl);
+    const response = await fetch(absoluteUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
@@ -71,7 +78,7 @@ export async function processMediaWithWorker(
 
 export async function communicateWithWorker(message: string, capsuleId: string, context?: any) {
   try {
-    const response = await fetch(`${WORKER_URL}/communicate`, {
+    const response = await fetch(getAbsoluteWorkerUrl('/communicate'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, capsuleId, context })

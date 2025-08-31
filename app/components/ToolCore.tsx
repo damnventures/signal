@@ -201,7 +201,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     <>
       {/* Bottom Left Search Bar */}
       <div 
-        className="tool-core-search-bar"
+        className="tool-core-search-bar retro-window"
         style={{
           position: 'fixed',
           bottom: '20px',
@@ -209,52 +209,50 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           width: '66.67%', // 2/3 of screen width
           zIndex: 1000,
           background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
-          border: '2px solid black',
-          borderRadius: '8px',
-          padding: '12px',
-          boxShadow: '4px 4px 0px #808080'
+          border: '1px solid black',
+          boxShadow: '8px 8px 0px #808080, 16px 16px 0px #404040',
+          borderRadius: '20px', // TV window style
         }}
       >
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="🔗 Drop a link, 🎯 ask a question, or 💬 just chat..."
-              style={{
-                flex: 1,
-                padding: '12px',
-                border: '2px inset #c0c0c0',
-                background: 'white',
-                fontSize: '14px',
-                fontFamily: 'Geneva, sans-serif',
-                color: 'black', // Ensure text is black
-                borderRadius: '4px'
-              }}
-              disabled={isProcessing}
-            />
-            <button
-              type="submit"
-              disabled={isProcessing || !input.trim()}
-              style={{
-                padding: '12px 16px',
-                background: isProcessing ? '#d0d0d0' : '#4CAF50',
-                border: '2px solid #000000',
-                boxShadow: '2px 2px 0px #808080',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: isProcessing ? 'default' : 'pointer',
-                color: isProcessing ? '#808080' : 'white',
-                fontFamily: 'Geneva, sans-serif',
-                borderRadius: '4px',
-                minWidth: '80px'
-              }}
-            >
-              {isProcessing ? '⏳' : '🚀'}
-            </button>
-          </div>
-        </form>
+        <div style={{ padding: '16px', fontSize: '12px', fontFamily: 'Geneva, sans-serif' }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Drop a link, ask a question, or just chat..."
+                style={{
+                  flex: 1,
+                  padding: '4px',
+                  border: '2px inset #c0c0c0',
+                  background: 'white',
+                  fontSize: '12px',
+                  fontFamily: 'Geneva, sans-serif',
+                  color: 'black',
+                }}
+                disabled={isProcessing}
+              />
+              <button
+                type="submit"
+                disabled={isProcessing || !input.trim()}
+                style={{
+                  padding: '4px 8px',
+                  background: isProcessing || !input.trim() ? '#d0d0d0' : '#c0c0c0',
+                  border: '2px solid #000000',
+                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: isProcessing || !input.trim() ? 'default' : 'pointer',
+                  color: isProcessing || !input.trim() ? '#808080' : 'black',
+                  fontFamily: 'Geneva, sans-serif',
+                }}
+              >
+                {isProcessing ? 'Processing...' : 'Send'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       {/* Confirmations removed - auto-processing enabled */}
