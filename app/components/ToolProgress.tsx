@@ -95,7 +95,7 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
       setPollingMessage('Waiting for job to appear in your jobs list...');
       
       // Start polling for the new Shrinked job
-      const jobName = execution.result?.jobName || execution.params?.jobName;
+      const jobName = execution.result?.jobName || execution.input?.jobName;
       if (jobName) {
         startShrinkedJobPolling(jobName);
       } else {
@@ -109,7 +109,7 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [execution.status, execution.toolId, currentPhase, execution.result, execution.params]);
+  }, [execution.status, execution.toolId, currentPhase, execution.result, execution.input]);
 
   const startShrinkedJobPolling = useCallback(async (jobName: string) => {
     const pollForJob = async () => {
