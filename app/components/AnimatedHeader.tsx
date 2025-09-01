@@ -44,6 +44,12 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
   // Function to break response into meaningful chunks for streaming animation
   const createResponseChunks = useCallback((response: string) => {
+    // Check if response contains HTML - if so, don't chunk to avoid breaking tags
+    if (response.includes('<') && response.includes('>')) {
+      console.log('[AnimatedHeader] HTML detected, skipping chunking for instant display');
+      return [response]; // Return as single chunk for instant display
+    }
+    
     // Split by sentences first
     const sentences = response.split(/([.!?]+\s*)/);
     const chunks: string[] = [];
@@ -115,6 +121,15 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   // Handle streaming animation progression
   useEffect(() => {
     if (!streamingResponse || !responseShowing || responseChunks.length === 0) return;
+    
+    // If only one chunk (HTML content), finish streaming immediately
+    if (responseChunks.length === 1) {
+      setStreamingResponse(false);
+      if (onResponseComplete) {
+        onResponseComplete();
+      }
+      return;
+    }
     
     // Use timing that matches welcome sequence: 2000ms for first, 1500ms for others
     const delay = currentResponseChunk === 0 ? 2000 : 1500;

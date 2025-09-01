@@ -35,6 +35,15 @@ export interface MediaCollectionData {
   jobName?: string;
 }
 
+export interface BouncerState {
+  stage: 1 | 2 | 3 | 4 | 5;
+  attempts: number;
+  userResponses: string[];
+  bouncerPersonality: 'sassy' | 'impressed' | 'annoyed' | 'warming' | 'victory';
+  email: string;
+  isActive: boolean;
+}
+
 export enum IntentType {
   COLLECT = 'tool',
   ARGUE = 'argue', 

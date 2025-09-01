@@ -6,6 +6,7 @@ import { useToolState, generateToolId } from '../core/toolState';
 import { classifyIntent } from '../utils/systemWorker';
 import { ToolExecution, ToolConfirmation, MediaCollectionData } from '../core/types';
 import { getCommunicatePrompt } from './CommunicatePrompt';
+import { BouncerState } from '../core/types';
 // MediaCollectorConfirmation removed - auto-processing enabled
 import ToolProgress from './ToolProgress';
 
@@ -30,7 +31,9 @@ const ToolCore: React.FC<ToolCoreProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const { apiKey } = useAuth();
+  const [bouncerState, setBouncerState] = useState<BouncerState | null>(null);
+  const [awaitingEmail, setAwaitingEmail] = useState(false);
+  const { apiKey, user } = useAuth();
   
   const {
     pendingConfirmations,
@@ -70,6 +73,29 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     setIsProcessing(true);
     
     try {
+      // Check if we're in a special state first
+      if (awaitingEmail) {
+        // User is providing their email
+        const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
+        const emailMatch = userInput.match(emailRegex);
+        
+        if (emailMatch) {
+          handleEmailCheck(emailMatch[0]);
+        } else {
+          if (onShowResponse) {
+            onShowResponse("That doesn't look like an email address. Try again with your email (e.g., user@example.com).");
+          }
+        }
+        return;
+      }
+
+      if (bouncerState && bouncerState.isActive) {
+        // User is in bouncer conversation
+        handleBouncerConversation(userInput);
+        return;
+      }
+
+      // Normal classification flow
       const classification = await classifyIntent(userInput, capsuleId);
       const contextualMessage = createContextualMessage(
         classification.intent, 
@@ -101,11 +127,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           break;
           
         case 'login':
-          // Handle login intent with both communication response AND login action
-          await Promise.all([
-            handleCommunication(contextualMessage),
-            handleLogin()
-          ]);
+          // Handle login intent - this will trigger the bouncer flow for non-auth users
+          handleLogin();
           break;
       }
     } catch (error) {
@@ -114,7 +137,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       setIsProcessing(false);
       setInput('');
     }
-  }, [capsuleId, onArgueRequest, createContextualMessage]);
+  }, [capsuleId, onArgueRequest, createContextualMessage, awaitingEmail, bouncerState]);
 
   const handleCommunication = useCallback(async (message: string) => {
     try {
@@ -155,9 +178,113 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     }
   }, [capsuleId, apiKey, onShowResponse]);
 
-  const handleLogin = useCallback(async () => {
+  const handleEmailCheck = useCallback(async (email: string) => {
     try {
-      console.log('[ToolCore] Handling login intent');
+      console.log('[ToolCore] Checking email in database:', email);
+      
+      const response = await fetch('/api/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Email check failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('[ToolCore] Email check result:', result);
+
+      if (result.found) {
+        // Email found in DB - proceed with normal login
+        await handleDirectLogin();
+      } else {
+        // Email NOT found - activate bouncer mode
+        await activateBouncer(email);
+      }
+    } catch (error) {
+      console.error('[ToolCore] Email check error:', error);
+      if (onShowResponse) {
+        onShowResponse("Something went wrong checking your email. Please try again.");
+      }
+    }
+  }, [onShowResponse]);
+
+  const activateBouncer = useCallback(async (email: string) => {
+    const initialBouncerState: BouncerState = {
+      stage: 1,
+      attempts: 0,
+      userResponses: [],
+      bouncerPersonality: 'sassy',
+      email,
+      isActive: true
+    };
+
+    setBouncerState(initialBouncerState);
+    setAwaitingEmail(false);
+
+    if (onShowResponse) {
+      onShowResponse("Oh great, another one who thinks they deserve Craig access. What makes YOU special, exactly?");
+    }
+  }, [onShowResponse]);
+
+  const handleBouncerConversation = useCallback(async (message: string) => {
+    if (!bouncerState) return;
+
+    try {
+      console.log('[ToolCore] Handling bouncer conversation:', message);
+      
+      const response = await fetch('/api/bouncer', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(apiKey && { 'x-api-key': apiKey })
+        },
+        body: JSON.stringify({ 
+          message,
+          bouncerState,
+          capsuleName: capsuleName || 'selected capsule',
+          userApiKey: apiKey
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Bouncer conversation failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('[ToolCore] Bouncer response:', result);
+
+      // Update bouncer state
+      if (result.newBouncerState) {
+        setBouncerState(result.newBouncerState);
+      }
+
+      // Show bouncer response
+      if (onShowResponse && result.bouncerResponse) {
+        onShowResponse(result.bouncerResponse);
+      }
+
+      // Check if login should proceed
+      if (result.shouldLogin) {
+        console.log('[ToolCore] Bouncer approved login!');
+        setBouncerState(null); // Clear bouncer state
+        setTimeout(() => {
+          handleDirectLogin();
+        }, 2000); // Give user time to read victory message
+      }
+
+    } catch (error) {
+      console.error('[ToolCore] Bouncer conversation error:', error);
+      if (onShowResponse) {
+        onShowResponse("The bouncer seems to have lost their voice. Try again.");
+      }
+    }
+  }, [bouncerState, capsuleName, apiKey, onShowResponse]);
+
+  const handleDirectLogin = useCallback(async () => {
+    try {
+      console.log('[ToolCore] Handling direct login');
       
       // Use the same login logic as AuthContext
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
@@ -166,7 +293,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       const loginUrl = `${baseUrl}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}&state=${state}`;
       
       if (onShowResponse) {
-        onShowResponse(`👋 Ready to login! <a href="${loginUrl}" style="color: #007AFF; text-decoration: underline;">Click here to sign in with Google</a> or I'll open it for you in 2 seconds.`);
+        onShowResponse(`Ready to login! <a href="${loginUrl}" style="color: #007AFF; text-decoration: underline;">Click here to sign in with Google</a> or I'll open it for you in 2 seconds.`);
       }
       
       // Store origin for proper redirect handling
@@ -189,6 +316,20 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       }
     }
   }, [onShowResponse]);
+
+  const handleLogin = useCallback(async () => {
+    // If user is authenticated, just proceed with login
+    if (user) {
+      await handleDirectLogin();
+      return;
+    }
+
+    // For non-authenticated users, start the email check process
+    setAwaitingEmail(true);
+    if (onShowResponse) {
+      onShowResponse("I need your email first to see if you're on the list. What's your email address?");
+    }
+  }, [user, onShowResponse, handleDirectLogin]);
 
   const generateJobTitle = useCallback((urls: string[], originalInput: string) => {
     // Extract domain and clean up the title
