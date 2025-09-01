@@ -128,10 +128,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           
         case 'login':
           // Handle login intent - this will trigger the bouncer flow for non-auth users
-          await Promise.all([
-            handleCommunication("Starting login process..."),
-            Promise.resolve(handleLogin())
-          ]);
+          await handleLogin();
           break;
       }
     } catch (error) {
@@ -327,10 +324,12 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       return;
     }
 
-    // Simplified: For non-authenticated users, just go straight to login
-    // The bouncer system was over-engineered - let's keep it simple
-    await handleDirectLogin();
-  }, [user, handleDirectLogin]);
+    // For non-authenticated users, ask for their email to start the bouncer/login flow.
+    setAwaitingEmail(true);
+    if (onShowResponse) {
+      onShowResponse("What's your email address? I'll check if you have access.");
+    }
+  }, [user, handleDirectLogin, onShowResponse]);
 
   const generateJobTitle = useCallback((urls: string[], originalInput: string) => {
     // Extract domain and clean up the title
