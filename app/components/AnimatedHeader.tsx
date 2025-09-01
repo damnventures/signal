@@ -97,16 +97,16 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     if (responseMessage && loadingComplete && !showingResponse) {
       setShowingResponse(true);
       setStreamingResponse(true);
+      setResponseShowing(true);
       
       // Break response into chunks
       const chunks = createResponseChunks(responseMessage);
       setResponseChunks(chunks);
       setCurrentResponseChunk(0);
       
-      // Start streaming animation immediately
+      // Start with diff animation showing first chunk
       setShowDiff(true);
       setTimeout(() => {
-        setResponseShowing(true);
         setShowDiff(false);
       }, 1000);
     }
@@ -116,60 +116,22 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   useEffect(() => {
     if (!streamingResponse || !responseShowing || responseChunks.length === 0) return;
     
-    // First chunk shows immediately when responseShowing becomes true
-    if (currentResponseChunk === 0) {
-      const timer = setTimeout(() => {
-        if (currentResponseChunk < responseChunks.length - 1) {
-          setShowDiff(true);
-          setCurrentResponseChunk(prev => prev + 1);
-          setTimeout(() => setShowDiff(false), 1000);
-        } else {
-          // Finished streaming all chunks
-          setStreamingResponse(false);
-          // Clear response after 3 seconds
-          setTimeout(() => {
-            setShowDiff(true);
-            setTimeout(() => {
-              setShowingResponse(false);
-              setResponseShowing(false);
-              setShowDiff(false);
-              setResponseChunks([]);
-              setCurrentResponseChunk(0);
-              if (onResponseComplete) {
-                onResponseComplete();
-              }
-            }, 1000);
-          }, 3000);
-        }
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
+    // Use timing that matches welcome sequence: 2000ms for first, 1500ms for others
+    const delay = currentResponseChunk === 0 ? 2000 : 1500;
     
-    // Subsequent chunks
     const timer = setTimeout(() => {
       if (currentResponseChunk < responseChunks.length - 1) {
         setShowDiff(true);
         setCurrentResponseChunk(prev => prev + 1);
         setTimeout(() => setShowDiff(false), 1000);
       } else {
-        // Finished streaming all chunks
+        // Finished streaming all chunks - just stop streaming, don't clear
         setStreamingResponse(false);
-        // Clear response after 3 seconds
-        setTimeout(() => {
-          setShowDiff(true);
-          setTimeout(() => {
-            setShowingResponse(false);
-            setResponseShowing(false);
-            setShowDiff(false);
-            setResponseChunks([]);
-            setCurrentResponseChunk(0);
-            if (onResponseComplete) {
-              onResponseComplete();
-            }
-          }, 1000);
-        }, 3000);
+        if (onResponseComplete) {
+          onResponseComplete();
+        }
       }
-    }, 1500);
+    }, delay);
     
     return () => clearTimeout(timer);
   }, [currentResponseChunk, responseChunks, streamingResponse, responseShowing, onResponseComplete]);
@@ -334,31 +296,24 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
           />
           <p className="main-text">
             {showingResponse && responseMessage ? (
-              responseShowing ? (
-                streamingResponse ? (
-                  // Show chunked response with diff animation
-                  currentResponseChunk > 0 ? (
-                    <Diff
-                      oldContent={responseChunks[currentResponseChunk - 1] || ''}
-                      newContent={responseChunks[currentResponseChunk] || ''}
-                      showDiff={showDiff}
-                    />
-                  ) : (
-                    <Diff
-                      oldContent={variants[variants.length - 1]}
-                      newContent={responseChunks[0] || ''}
-                      showDiff={showDiff}
-                    />
-                  )
+              streamingResponse ? (
+                // Show chunked response with diff animation
+                currentResponseChunk > 0 ? (
+                  <Diff
+                    oldContent={responseChunks.slice(0, currentResponseChunk).join('')}
+                    newContent={responseChunks.slice(0, currentResponseChunk + 1).join('')}
+                    showDiff={showDiff}
+                  />
                 ) : (
-                  <span dangerouslySetInnerHTML={{ __html: responseMessage }} />
+                  <Diff
+                    oldContent={variants[variants.length - 1]}
+                    newContent={responseChunks[0] || ''}
+                    showDiff={showDiff}
+                  />
                 )
               ) : (
-                <Diff
-                  oldContent={variants[variants.length - 1]}
-                  newContent={responseMessage}
-                  showDiff={showDiff}
-                />
+                // Show final complete response without flashing
+                <span dangerouslySetInnerHTML={{ __html: responseMessage }} />
               )
             ) : loadingComplete && variantIndex === variants.length - 1 ? (
               getFinalContent()

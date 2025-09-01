@@ -1178,6 +1178,7 @@ const HomePage = () => {
             {/* Tool Core - Always active, handles its own UI */}
             <ToolCore
               capsuleId={selectedCapsuleId || ''}
+              capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
               onArgueRequest={(question: string) => {
                 setArgueQuestion(question);
                 setShowArguePopup(true);

@@ -11,6 +11,7 @@ import ToolProgress from './ToolProgress';
 
 interface ToolCoreProps {
   capsuleId: string;
+  capsuleName?: string;
   onArgueRequest: (question: string) => void;
   onBringToFront: (id: string) => void;
   initialZIndex: number;
@@ -20,6 +21,7 @@ interface ToolCoreProps {
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
   capsuleId, 
+  capsuleName,
   onArgueRequest, 
   onBringToFront, 
   initialZIndex,
@@ -40,6 +42,28 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     getActiveExecutions
   } = useToolState();
 
+  // Helper function to create contextual communication messages
+  const createContextualMessage = useCallback((intent: string, action: string, originalInput: string, data: any) => {
+    const capsuleRef = capsuleName ? `"${capsuleName}"` : 'selected capsule';
+    
+    switch (intent) {
+      case 'tool':
+        if (action === 'collect_media') {
+          const urlCount = data.urls?.length || 0;
+          const platforms = data.platforms?.join(', ') || 'media';
+          return `Processing ${urlCount} ${platforms} ${urlCount === 1 ? 'link' : 'links'} into ${capsuleRef}. ${originalInput}`;
+        }
+        break;
+      case 'argue':
+        return `Starting argument session with ${capsuleRef} content. ${originalInput}`;
+      case 'login':
+        return originalInput; // Keep login messages as-is
+      default:
+        return originalInput;
+    }
+    return originalInput;
+  }, [capsuleName]);
+
   const handleUserInput = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
     
@@ -47,16 +71,28 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     
     try {
       const classification = await classifyIntent(userInput, capsuleId);
+      const contextualMessage = createContextualMessage(
+        classification.intent, 
+        classification.action, 
+        userInput, 
+        classification.data
+      );
       
       switch (classification.intent) {
         case 'tool':
           if (classification.action === 'collect_media') {
-            await handleMediaCollection(classification.data, userInput);
+            await Promise.all([
+              handleCommunication(contextualMessage),
+              handleMediaCollection(classification.data, userInput)
+            ]);
           }
           break;
           
         case 'argue':
-          onArgueRequest(classification.data.question);
+          await Promise.all([
+            handleCommunication(contextualMessage),
+            Promise.resolve(onArgueRequest(classification.data.question))
+          ]);
           break;
           
         case 'communicate':
@@ -65,8 +101,11 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           break;
           
         case 'login':
-          // Handle login intent
-          await handleLogin();
+          // Handle login intent with both communication response AND login action
+          await Promise.all([
+            handleCommunication(contextualMessage),
+            handleLogin()
+          ]);
           break;
       }
     } catch (error) {
@@ -75,7 +114,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       setIsProcessing(false);
       setInput('');
     }
-  }, [capsuleId, onArgueRequest]);
+  }, [capsuleId, onArgueRequest, createContextualMessage]);
 
   const handleCommunication = useCallback(async (message: string) => {
     try {
