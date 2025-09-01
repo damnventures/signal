@@ -10,6 +10,8 @@ interface AnimatedHeaderProps {
   initialPosition: { x: number; y: number };
   onLoadingComplete: () => void;
   className?: string;
+  responseMessage?: string;
+  onResponseComplete?: () => void;
 }
 
 const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
@@ -19,11 +21,15 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   initialPosition,
   onLoadingComplete,
   className,
+  responseMessage,
+  onResponseComplete,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [loadingComplete, setLoadingComplete] = useState(false);
+  const [showingResponse, setShowingResponse] = useState(false);
+  const [responseShowing, setResponseShowing] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
   const variants = [
@@ -33,8 +39,37 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
   ];
 
+  // Handle response message changes
+  useEffect(() => {
+    if (responseMessage && loadingComplete && !showingResponse) {
+      setShowingResponse(true);
+      setShowDiff(true);
+      
+      // Show the response after diff animation
+      setTimeout(() => {
+        setResponseShowing(true);
+        setShowDiff(false);
+      }, 1000);
+      
+      // Clear response after 4 seconds
+      setTimeout(() => {
+        setShowDiff(true);
+        setTimeout(() => {
+          setShowingResponse(false);
+          setResponseShowing(false);
+          setShowDiff(false);
+          if (onResponseComplete) {
+            onResponseComplete();
+          }
+        }, 1000);
+      }, 4000);
+    }
+  }, [responseMessage, loadingComplete, showingResponse, onResponseComplete]);
+
   // Cycle through variants with pause
   useEffect(() => {
+    if (showingResponse) return; // Don't cycle while showing response
+    
     const delay = variantIndex === 0 ? 2000 : 1500;
     const timer = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
@@ -47,7 +82,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       }
     }, delay);
     return () => clearTimeout(timer);
-  }, [variantIndex, onLoadingComplete, variants.length]);
+  }, [variantIndex, onLoadingComplete, variants.length, showingResponse]);
 
   // Measure dimensions of current variant
   useEffect(() => {
@@ -190,7 +225,17 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
             }}
           />
           <p className="main-text">
-            {loadingComplete && variantIndex === variants.length - 1 ? (
+            {showingResponse && responseMessage ? (
+              responseShowing ? (
+                <span dangerouslySetInnerHTML={{ __html: responseMessage }} />
+              ) : (
+                <Diff
+                  oldContent={variants[variants.length - 1]}
+                  newContent={responseMessage}
+                  showDiff={showDiff}
+                />
+              )
+            ) : loadingComplete && variantIndex === variants.length - 1 ? (
               getFinalContent()
             ) : variantIndex > 0 ? (
               <Diff

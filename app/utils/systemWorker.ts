@@ -109,6 +109,18 @@ function fallbackClassification(input: string): WorkerResponse {
     };
   }
   
+  // Check for login intent
+  const loginWords = ['login', 'signin', 'sign in', 'log in', 'authenticate', 'auth'];
+  if (loginWords.some(word => input.toLowerCase().includes(word))) {
+    return {
+      intent: 'login',
+      action: 'show_login',
+      confidence: 0.8,
+      data: { message: input },
+      requiresConfirmation: false
+    };
+  }
+  
   const questionWords = ['what', 'why', 'how', 'argue', 'think'];
   if (questionWords.some(word => input.toLowerCase().includes(word))) {
     return {

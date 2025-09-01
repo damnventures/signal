@@ -14,6 +14,7 @@ interface ToolCoreProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   onRefreshCapsule?: () => void;
+  onShowResponse?: (message: string) => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
@@ -21,7 +22,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   onArgueRequest, 
   onBringToFront, 
   initialZIndex,
-  onRefreshCapsule
+  onRefreshCapsule,
+  onShowResponse
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -57,8 +59,13 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           break;
           
         case 'communicate':
-          // Handle general communication
-          console.log('General communication:', classification.data);
+          // Handle general communication with Cloudflare worker
+          await handleCommunication(classification.data.message);
+          break;
+          
+        case 'login':
+          // Handle login intent
+          await handleLogin();
           break;
       }
     } catch (error) {
@@ -68,6 +75,68 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       setInput('');
     }
   }, [capsuleId, onArgueRequest]);
+
+  const handleCommunication = useCallback(async (message: string) => {
+    try {
+      console.log('[ToolCore] Handling communication:', message);
+      
+      const response = await fetch('/api/tools', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(apiKey && { 'x-api-key': apiKey })
+        },
+        body: JSON.stringify({ 
+          action: 'communicate', 
+          message,
+          capsuleId 
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('[ToolCore] Communication response:', result);
+        
+        if (onShowResponse && result.response) {
+          onShowResponse(result.response);
+        }
+      } else {
+        console.error('[ToolCore] Communication failed:', response.status);
+        if (onShowResponse) {
+          onShowResponse("I'm having trouble responding right now. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error('[ToolCore] Communication error:', error);
+      if (onShowResponse) {
+        onShowResponse("I encountered an error. Please try again.");
+      }
+    }
+  }, [capsuleId, apiKey, onShowResponse]);
+
+  const handleLogin = useCallback(async () => {
+    try {
+      console.log('[ToolCore] Handling login intent');
+      
+      // Generate login URL (same as button logic)
+      const loginUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.shrinked.ai'}/auth/google`;
+      
+      if (onShowResponse) {
+        onShowResponse(`👋 You can login here: <a href="${loginUrl}" target="_blank" style="color: #007AFF; text-decoration: underline;">Sign in with Google</a>`);
+      }
+      
+      // Optional: Open in new window after showing message
+      setTimeout(() => {
+        window.open(loginUrl, '_blank');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('[ToolCore] Login error:', error);
+      if (onShowResponse) {
+        onShowResponse("I encountered an error with login. Please try the login button.");
+      }
+    }
+  }, [onShowResponse]);
 
   const generateJobTitle = useCallback((urls: string[], originalInput: string) => {
     // Extract domain and clean up the title
@@ -206,7 +275,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         className="tool-core-search-bar"
         style={{
           position: 'fixed',
-          bottom: '20px',
+          bottom: '25px', // Slightly higher to align center with right menu buttons (30px height)
           left: '20px',
           width: '66.67%', // 2/3 of screen width
           zIndex: 1000,

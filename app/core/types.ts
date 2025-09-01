@@ -20,7 +20,7 @@ export interface ToolConfirmation {
 }
 
 export interface WorkerResponse {
-  intent: 'tool' | 'argue' | 'communicate';
+  intent: 'tool' | 'argue' | 'communicate' | 'login';
   action: string;
   confidence: number;
   data: any;
@@ -38,5 +38,6 @@ export interface MediaCollectionData {
 export enum IntentType {
   COLLECT = 'tool',
   ARGUE = 'argue', 
-  COMMUNICATE = 'communicate'
+  COMMUNICATE = 'communicate',
+  LOGIN = 'login'
 }

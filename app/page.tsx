@@ -43,6 +43,7 @@ const HomePage = () => {
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showArguePopup, setShowArguePopup] = useState(false);
   const [argueQuestion, setArgueQuestion] = useState('');
+  const [headerResponseMessage, setHeaderResponseMessage] = useState<string>('');
   const [authProcessed, setAuthProcessed] = useState(false);
   const [authInProgress, setAuthInProgress] = useState(false);
   const [capsules, setCapsules] = useState<Capsule[]>([]);
@@ -978,6 +979,8 @@ const HomePage = () => {
                 initialPosition={calculateHeaderPosition()}
                 onLoadingComplete={handleHeaderLoadingComplete}
                 className="animated-header-window"
+                responseMessage={headerResponseMessage}
+                onResponseComplete={() => setHeaderResponseMessage('')}
               />
             )}
 
@@ -1186,6 +1189,10 @@ const HomePage = () => {
                   console.log('[HomePage] Refreshing capsule content after job completion');
                   fetchCapsuleContent(apiKey, selectedCapsuleId);
                 }
+              }}
+              onShowResponse={(message: string) => {
+                console.log('[HomePage] Showing response in header:', message);
+                setHeaderResponseMessage(message);
               }}
             />
           </>
