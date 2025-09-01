@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToolState, generateToolId } from '../core/toolState';
 import { classifyIntent } from '../utils/systemWorker';
 import { ToolExecution, ToolConfirmation, MediaCollectionData } from '../core/types';
+import { getCommunicatePrompt } from './CommunicatePrompt';
 // MediaCollectorConfirmation removed - auto-processing enabled
 import ToolProgress from './ToolProgress';
 
@@ -89,7 +90,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         body: JSON.stringify({ 
           action: 'communicate', 
           message,
-          capsuleId 
+          capsuleId,
+          systemPrompt: getCommunicatePrompt()
         })
       });
 
@@ -118,14 +120,25 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     try {
       console.log('[ToolCore] Handling login intent');
       
-      // Generate login URL (same as button logic)
-      const loginUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.shrinked.ai'}/auth/google`;
+      // Use the same login logic as AuthContext
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
+      const redirectUrl = `${window.location.origin}/api/auth/callback`;
+      const state = encodeURIComponent(window.location.origin);
+      const loginUrl = `${baseUrl}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}&state=${state}`;
       
       if (onShowResponse) {
-        onShowResponse(`👋 You can login here: <a href="${loginUrl}" target="_blank" style="color: #007AFF; text-decoration: underline;">Sign in with Google</a>`);
+        onShowResponse(`👋 Ready to login! <a href="${loginUrl}" style="color: #007AFF; text-decoration: underline;">Click here to sign in with Google</a> or I'll open it for you in 2 seconds.`);
       }
       
-      // Optional: Open in new window after showing message
+      // Store origin for proper redirect handling
+      try {
+        document.cookie = `auth_redirect_origin=${encodeURIComponent(window.location.origin)}; domain=.shrinked.ai; path=/; max-age=600; SameSite=Lax`;
+      } catch (e) {
+        console.warn('Failed to set cross-domain cookie:', e);
+      }
+      localStorage.setItem('auth_redirect_origin', window.location.origin);
+      
+      // Open login after showing message
       setTimeout(() => {
         window.open(loginUrl, '_blank');
       }, 2000);
@@ -133,7 +146,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     } catch (error) {
       console.error('[ToolCore] Login error:', error);
       if (onShowResponse) {
-        onShowResponse("I encountered an error with login. Please try the login button.");
+        onShowResponse("Something went wrong with login setup. Try the login button in the top-right corner.");
       }
     }
   }, [onShowResponse]);

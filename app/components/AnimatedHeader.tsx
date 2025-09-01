@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DraggableWindow from './DraggableWindow';
 
 interface AnimatedHeaderProps {
@@ -30,6 +30,9 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [loadingComplete, setLoadingComplete] = useState(false);
   const [showingResponse, setShowingResponse] = useState(false);
   const [responseShowing, setResponseShowing] = useState(false);
+  const [responseChunks, setResponseChunks] = useState<string[]>([]);
+  const [currentResponseChunk, setCurrentResponseChunk] = useState(0);
+  const [streamingResponse, setStreamingResponse] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
   const variants = [
@@ -39,32 +42,137 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
   ];
 
-  // Handle response message changes
+  // Function to break response into meaningful chunks for streaming animation
+  const createResponseChunks = useCallback((response: string) => {
+    // Split by sentences first
+    const sentences = response.split(/([.!?]+\s*)/);
+    const chunks: string[] = [];
+    let currentChunk = '';
+    
+    sentences.forEach((sentence, index) => {
+      const trimmed = sentence.trim();
+      if (trimmed) {
+        currentChunk += sentence;
+        
+        // Create a chunk when:
+        // - We hit sentence-ending punctuation and have reasonable length (20+ chars)
+        // - Current chunk is getting long (80+ chars)
+        // - We hit a natural break (comma followed by space and capital letter)
+        if (
+          (sentence.match(/[.!?]+\s*$/) && currentChunk.length > 20) ||
+          currentChunk.length > 80 ||
+          (sentence.match(/,\s+[A-Z]/) && currentChunk.length > 30)
+        ) {
+          chunks.push(currentChunk.trim());
+          currentChunk = '';
+        }
+      }
+    });
+    
+    // Add any remaining content
+    if (currentChunk.trim()) {
+      chunks.push(currentChunk.trim());
+    }
+    
+    // Ensure we have at least 2 chunks for animation
+    if (chunks.length === 1 && chunks[0].length > 40) {
+      const singleChunk = chunks[0];
+      const midPoint = Math.floor(singleChunk.length / 2);
+      // Find a good break point near the middle
+      let breakPoint = singleChunk.lastIndexOf(' ', midPoint + 20);
+      if (breakPoint === -1 || breakPoint < midPoint - 20) {
+        breakPoint = singleChunk.indexOf(' ', midPoint);
+      }
+      if (breakPoint !== -1) {
+        chunks[0] = singleChunk.substring(0, breakPoint + 1);
+        chunks.push(singleChunk.substring(breakPoint + 1));
+      }
+    }
+    
+    return chunks.filter(chunk => chunk.trim().length > 0);
+  }, []);
+
+  // Handle response message changes with streaming animation
   useEffect(() => {
     if (responseMessage && loadingComplete && !showingResponse) {
       setShowingResponse(true);
-      setShowDiff(true);
+      setStreamingResponse(true);
       
-      // Show the response after diff animation
+      // Break response into chunks
+      const chunks = createResponseChunks(responseMessage);
+      setResponseChunks(chunks);
+      setCurrentResponseChunk(0);
+      
+      // Start streaming animation immediately
+      setShowDiff(true);
       setTimeout(() => {
         setResponseShowing(true);
         setShowDiff(false);
       }, 1000);
-      
-      // Clear response after 4 seconds
-      setTimeout(() => {
-        setShowDiff(true);
-        setTimeout(() => {
-          setShowingResponse(false);
-          setResponseShowing(false);
-          setShowDiff(false);
-          if (onResponseComplete) {
-            onResponseComplete();
-          }
-        }, 1000);
-      }, 4000);
     }
-  }, [responseMessage, loadingComplete, showingResponse, onResponseComplete]);
+  }, [responseMessage, loadingComplete, showingResponse, onResponseComplete, createResponseChunks]);
+
+  // Handle streaming animation progression
+  useEffect(() => {
+    if (!streamingResponse || !responseShowing || responseChunks.length === 0) return;
+    
+    // First chunk shows immediately when responseShowing becomes true
+    if (currentResponseChunk === 0) {
+      const timer = setTimeout(() => {
+        if (currentResponseChunk < responseChunks.length - 1) {
+          setShowDiff(true);
+          setCurrentResponseChunk(prev => prev + 1);
+          setTimeout(() => setShowDiff(false), 1000);
+        } else {
+          // Finished streaming all chunks
+          setStreamingResponse(false);
+          // Clear response after 3 seconds
+          setTimeout(() => {
+            setShowDiff(true);
+            setTimeout(() => {
+              setShowingResponse(false);
+              setResponseShowing(false);
+              setShowDiff(false);
+              setResponseChunks([]);
+              setCurrentResponseChunk(0);
+              if (onResponseComplete) {
+                onResponseComplete();
+              }
+            }, 1000);
+          }, 3000);
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+    
+    // Subsequent chunks
+    const timer = setTimeout(() => {
+      if (currentResponseChunk < responseChunks.length - 1) {
+        setShowDiff(true);
+        setCurrentResponseChunk(prev => prev + 1);
+        setTimeout(() => setShowDiff(false), 1000);
+      } else {
+        // Finished streaming all chunks
+        setStreamingResponse(false);
+        // Clear response after 3 seconds
+        setTimeout(() => {
+          setShowDiff(true);
+          setTimeout(() => {
+            setShowingResponse(false);
+            setResponseShowing(false);
+            setShowDiff(false);
+            setResponseChunks([]);
+            setCurrentResponseChunk(0);
+            if (onResponseComplete) {
+              onResponseComplete();
+            }
+          }, 1000);
+        }, 3000);
+      }
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [currentResponseChunk, responseChunks, streamingResponse, responseShowing, onResponseComplete]);
 
   // Cycle through variants with pause
   useEffect(() => {
@@ -227,7 +335,24 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
           <p className="main-text">
             {showingResponse && responseMessage ? (
               responseShowing ? (
-                <span dangerouslySetInnerHTML={{ __html: responseMessage }} />
+                streamingResponse ? (
+                  // Show chunked response with diff animation
+                  currentResponseChunk > 0 ? (
+                    <Diff
+                      oldContent={responseChunks[currentResponseChunk - 1] || ''}
+                      newContent={responseChunks[currentResponseChunk] || ''}
+                      showDiff={showDiff}
+                    />
+                  ) : (
+                    <Diff
+                      oldContent={variants[variants.length - 1]}
+                      newContent={responseChunks[0] || ''}
+                      showDiff={showDiff}
+                    />
+                  )
+                ) : (
+                  <span dangerouslySetInnerHTML={{ __html: responseMessage }} />
+                )
               ) : (
                 <Diff
                   oldContent={variants[variants.length - 1]}
