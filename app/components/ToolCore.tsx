@@ -235,6 +235,13 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     try {
       console.log('[ToolCore] Handling bouncer conversation:', message);
       
+      // Add user message to bouncer state history
+      const updatedBouncerState = {
+        ...bouncerState,
+        attempts: bouncerState.attempts + 1,
+        userResponses: [...bouncerState.userResponses, message]
+      };
+      
       const response = await fetch('/api/bouncer', {
         method: 'POST',
         headers: { 
@@ -243,7 +250,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         },
         body: JSON.stringify({ 
           message,
-          bouncerState,
+          bouncerState: updatedBouncerState,
           capsuleName: capsuleName || 'selected capsule',
           userApiKey: apiKey
         })

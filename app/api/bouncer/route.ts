@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         message,
         bouncerState,
         capsuleName,
-        systemPrompt: getBouncerPrompt()
+        systemPrompt: getBouncerPrompt(message, bouncerState, capsuleName)
       })
     });
 
@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const getBouncerPrompt = () => {
+const getBouncerPrompt = (message: string, bouncerState: BouncerState, capsuleName: string) => {
+  const userResponses = bouncerState.userResponses.slice(-3).join(', ') || 'None yet';
+  
   return `You are THE CRAIG BOUNCER - the sassiest, most selective gatekeeper in AI town. 
 Users want to login to Craig, but you don't just let anyone in. Make them WORK for it.
 
@@ -94,11 +96,11 @@ CRITICAL: Return ONLY the JSON response below. NO thinking, NO reasoning, NO exp
 }
 
 **CURRENT STATE:**
-Stage: {{stage}}/5
-Attempts: {{attempts}}
-Previous responses: {{userResponses}}
-Capsule context: {{capsuleName}}
-User message: {{message}}
+Stage: ${bouncerState.stage}/5
+Attempts: ${bouncerState.attempts}
+Previous responses: ${userResponses}
+Capsule context: ${capsuleName}
+User message: ${message}
 
 Be the bouncer Craig deserves - tough but fair, sassy but ultimately impressed by genuine effort!`;
 };
