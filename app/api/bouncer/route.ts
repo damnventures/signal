@@ -41,7 +41,31 @@ export async function POST(request: NextRequest) {
     const result = await response.json();
     console.log('[Bouncer] Worker response:', result);
 
-    return NextResponse.json(result, {
+    // Handle the case where worker returns the response wrapped in markdown
+    let cleanResult = result;
+    if (result.response && typeof result.response === 'string' && result.response.includes('```json')) {
+      try {
+        // Extract JSON from markdown code block
+        const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanResult = JSON.parse(jsonMatch[1]);
+        } else {
+          // Try to parse the response directly if no markdown wrapper
+          cleanResult = JSON.parse(result.response);
+        }
+      } catch (parseError) {
+        console.error('[Bouncer] Failed to parse worker response:', parseError);
+        return NextResponse.json({
+          bouncerResponse: "I'm having trouble thinking straight. Try again.",
+          action: "STAY",
+          newStage: 1,
+          personality: "confused",
+          shouldLogin: false
+        });
+      }
+    }
+
+    return NextResponse.json(cleanResult, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',

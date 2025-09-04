@@ -224,8 +224,20 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     setBouncerState(initialBouncerState);
     setAwaitingEmail(false);
 
+    // Generate varied initial messages based on email or random selection
+    const initialMessages = [
+      "Oh great, another one who thinks they deserve Craig access. What makes YOU special, exactly?",
+      "Let me guess... you're 'different' and 'really need access', right? Prove it.",
+      "Another hopeful soul at my digital doorstep. You're going to have to do better than just showing up.",
+      "Well, well, well... what do we have here? Another wannabe Craig user. Impress me.",
+      "You want in? This isn't some open house. Tell me why you're worth my time.",
+      "Here we go again... another person who thinks they deserve VIP access. Make your case."
+    ];
+    
+    const randomMessage = initialMessages[Math.floor(Math.random() * initialMessages.length)];
+
     if (onShowResponse) {
-      onShowResponse("Oh great, another one who thinks they deserve Craig access. What makes YOU special, exactly?");
+      onShowResponse(randomMessage);
     }
   }, [onShowResponse]);
 
