@@ -163,7 +163,21 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         console.log('[ToolCore] Communication response:', result);
         
         if (onShowResponse && result.response) {
-          onShowResponse(result.response);
+          // Clean up response by removing thinking tags if they appear
+          let cleanResponse = result.response;
+          if (typeof cleanResponse === 'string') {
+            // Remove <think>...</think> blocks
+            cleanResponse = cleanResponse.replace(/<think>[\s\S]*?<\/think>/g, '');
+            // Remove any remaining thinking patterns
+            cleanResponse = cleanResponse.replace(/^\s*<think>[\s\S]*/g, '');
+            cleanResponse = cleanResponse.trim();
+          }
+          
+          if (cleanResponse) {
+            onShowResponse(cleanResponse);
+          } else {
+            onShowResponse("I'm having trouble responding right now. Please try again.");
+          }
         }
       } else {
         console.error('[ToolCore] Communication failed:', response.status);

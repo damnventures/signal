@@ -110,7 +110,7 @@ function fallbackClassification(input: string): WorkerResponse {
   }
   
   // Check for login intent
-  const loginWords = ['login', 'signin', 'sign in', 'log in', 'authenticate', 'auth'];
+  const loginWords = ['login', 'signin', 'sign in', 'log in', 'authenticate', 'auth', 'invite', 'invitation', 'access', 'get in'];
   if (loginWords.some(word => input.toLowerCase().includes(word))) {
     return {
       intent: 'login',
