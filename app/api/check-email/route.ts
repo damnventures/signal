@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-
-const MONGODB_URI = `mongodb+srv://wjsrsspe:${process.env.MONGODB_PRIVATE_KEY}@cluster0.mongodb.net`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,38 +8,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    if (!process.env.MONGODB_PRIVATE_KEY) {
-      console.error('[CheckEmail] MongoDB private key not found in environment');
-      return NextResponse.json({ error: 'Database configuration error' }, { status: 500 });
+    if (!process.env.BACKEND_API_URL) {
+      console.error('[CheckEmail] Backend API URL not found in environment');
+      return NextResponse.json({ error: 'Backend API configuration error' }, { status: 500 });
     }
 
-    console.log('[CheckEmail] Checking email in MongoDB:', email);
+    console.log('[CheckEmail] Checking email availability:', email);
 
-    const client = new MongoClient(MONGODB_URI);
+    // Proxy request to backend API
+    const url = new URL('/users/validate-email', process.env.BACKEND_API_URL);
+    url.searchParams.set('email', email.toLowerCase());
     
-    try {
-      await client.connect();
-      const db = client.db(); // Use default database
-      
-      // Check profiles collection for the email
-      const profile = await db.collection('profiles').findOne({ email: email.toLowerCase() });
-      
-      console.log('[CheckEmail] Profile found:', profile ? 'YES' : 'NO');
-      
-      return NextResponse.json({
-        found: !!profile,
-        email: email.toLowerCase(),
-        profileId: profile?._id
-      });
-      
-    } finally {
-      await client.close();
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      console.error('[CheckEmail] Backend API error:', errorData);
+      return NextResponse.json(
+        { error: errorData.message || 'Email validation failed' },
+        { status: response.status }
+      );
     }
+
+    const data = await response.json();
+    console.log('[CheckEmail] Email availability result:', data);
+
+    // Transform backend response to match expected format
+    return NextResponse.json({
+      found: !data.available, // found=true means email is taken (not available)
+      email: data.email,
+      available: data.available
+    });
     
   } catch (error) {
     console.error('[CheckEmail] Error:', error);
     return NextResponse.json(
-      { error: 'Database check failed' },
+      { error: 'Email validation failed' },
       { status: 500 }
     );
   }

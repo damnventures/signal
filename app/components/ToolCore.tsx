@@ -76,11 +76,12 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       // Check if we're in a special state first
       if (awaitingEmail) {
         // User is providing their email
-        const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
-        const emailMatch = userInput.match(emailRegex);
+        // Sanitize input by trimming whitespace and removing internal spaces
+        const potentialEmail = userInput.trim().replace(/\s/g, '');
+        const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$/;
         
-        if (emailMatch) {
-          handleEmailCheck(emailMatch[0]);
+        if (emailRegex.test(potentialEmail)) {
+          handleEmailCheck(potentialEmail);
         } else {
           if (onShowResponse) {
             onShowResponse("That doesn't look like an email address. Try again with your email (e.g., user@example.com).");
