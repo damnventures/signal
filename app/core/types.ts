@@ -25,6 +25,7 @@ export interface WorkerResponse {
   confidence: number;
   data: any;
   requiresConfirmation: boolean;
+  launchMessage?: string;
 }
 
 export interface MediaCollectionData {
