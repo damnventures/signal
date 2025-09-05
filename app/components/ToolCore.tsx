@@ -227,11 +227,21 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         if (onShowResponse && result.response) {
           let cleanResponse = result.response;
           if (typeof cleanResponse === 'string') {
-            // Remove <think>...</think> blocks but preserve other content
-            const thinkBlockRegex = /<think>[\s\S]*?<\/think>/gi;
-            cleanResponse = cleanResponse.replace(thinkBlockRegex, '').trim();
+            // Remove <think>...</think> blocks but preserve other content (improved cleaning)
+            const originalLength = cleanResponse.length;
             
-            console.log('[ToolCore] Cleaned communication response:', cleanResponse.substring(0, 100));
+            // Handle complete <think>...</think> blocks
+            const completeThinkRegex = /<think>[\s\S]*?<\/think>/gi;
+            cleanResponse = cleanResponse.replace(completeThinkRegex, '').trim();
+            
+            // Handle unclosed <think> tags (remove everything from <think> to end)
+            const openThinkRegex = /<think>[\s\S]*$/gi;
+            cleanResponse = cleanResponse.replace(openThinkRegex, '').trim();
+            
+            // Handle orphaned </think> tags
+            cleanResponse = cleanResponse.replace(/<\/think>/gi, '').trim();
+            
+            console.log(`[ToolCore] Cleaned communication response: ${originalLength} -> ${cleanResponse.length} chars:`, cleanResponse.substring(0, 100));
           }
           
           if (cleanResponse && cleanResponse.length > 0) {

@@ -217,7 +217,7 @@ body {
 }
 
 .window-content {
-    padding: 40px 30px 30px 30px;
+    padding: 30px 30px 30px 30px;
     background: #ffffff;
 }
 
@@ -299,7 +299,7 @@ body {
     }
     
     .window-content {
-        padding: 30px 20px 20px 20px;
+        padding: 20px 20px 20px 20px;
     }
     
     .main-heading {
@@ -777,19 +777,19 @@ body {
 
 /* More precise loading dots animation */
 @keyframes dot-animation {
-  0% { opacity: 1; content: '...'; }
-  33% { opacity: 1; content: '.'; }
-  66% { opacity: 1; content: '..'; }
-  100% { opacity: 1; content: '...'; }
+  0% { content: '.'; }
+  33% { content: '..'; }
+  66% { content: '...'; }
+  100% { content: '.'; }
 }
 
 .thinking-indicator .loading-dots {
   display: inline-block;
-  width: 20px;
+  width: 15px;
   text-align: left;
 }
 
 .thinking-indicator .loading-dots::after {
-  content: '...';
+  content: '.';
   animation: dot-animation 1.2s infinite;
 }
