@@ -108,18 +108,22 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       switch (classification.intent) {
         case 'tool':
           if (classification.action === 'collect_media') {
-            await Promise.all([
-              handleCommunication(contextualMessage),
-              handleMediaCollection(classification.data, userInput)
-            ]);
+            // Show worker-generated launch message
+            if (onShowResponse && classification.launchMessage) {
+              onShowResponse(classification.launchMessage);
+            }
+            // Launch the media collection tool
+            await handleMediaCollection(classification.data, userInput);
           }
           break;
           
         case 'argue':
-          await Promise.all([
-            handleCommunication(contextualMessage),
-            Promise.resolve(onArgueRequest(classification.data.question))
-          ]);
+          // Show worker-generated launch message
+          if (onShowResponse && classification.launchMessage) {
+            onShowResponse(classification.launchMessage);
+          }
+          // Launch the argue popup
+          onArgueRequest(classification.data.question);
           break;
           
         case 'communicate':
@@ -128,6 +132,16 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           break;
           
         case 'login':
+          // Show worker-generated launch message or fallback
+          if (onShowResponse) {
+            if (classification.launchMessage) {
+              onShowResponse(classification.launchMessage);
+            } else if (user) {
+              onShowResponse("You're already authenticated. Let me set up the login flow anyway to refresh your session.");
+            } else {
+              onShowResponse("Time to get you logged in. Let me check your email and see if you're worthy of Craig access.");
+            }
+          }
           // Handle login intent - this will trigger the bouncer flow for non-auth users
           await handleLogin();
           break;
