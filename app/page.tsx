@@ -247,14 +247,19 @@ const HomePage = () => {
       "Processing text blocks and identifying key quotes...",
       "Structuring insights into presentable format..."
     ],
+    thinking: [
+      "Processing user request...",
+      "Analyzing input and context...",
+      "Generating response..."
+    ],
     idle: [
-      "System ready - All components loaded",
+      "System ready - All components loaded", 
       "Monitoring user interactions...",
       "Background processes: Caching optimized"
     ]
   };
 
-  const updateStatusMessage = useCallback((phase: 'signal' | 'insights' | 'idle') => {
+  const updateStatusMessage = useCallback((phase: 'signal' | 'insights' | 'thinking' | 'idle') => {
     const messages = statusMessages[phase];
     let currentIndex = 0;
     
@@ -276,6 +281,12 @@ const HomePage = () => {
           currentIndex = (currentIndex + 1) % messages.length;
         }, 8000); // Slower rotation for idle messages
       }, 10000);
+    } else if (phase === 'thinking') {
+      // For thinking phase, cycle through messages faster to show activity
+      statusIntervalRef.current = setInterval(() => {
+        setStatusMessage(messages[currentIndex]);
+        currentIndex = (currentIndex + 1) % messages.length;
+      }, 2000); // Faster rotation for thinking messages
     } else {
       // Set up immediate interval for signal and insights phases
       statusIntervalRef.current = setInterval(() => {
@@ -297,6 +308,17 @@ const HomePage = () => {
         clearTimeout(idleTimeoutRef.current);
       }
     };
+  }, [updateStatusMessage]);
+
+  // Functions to control thinking state for ToolCore integration
+  const startThinking = useCallback(() => {
+    setLoadingPhase('insights'); // Change from idle to active state
+    updateStatusMessage('thinking');
+  }, [updateStatusMessage]);
+
+  const stopThinking = useCallback(() => {
+    setLoadingPhase('idle');
+    updateStatusMessage('idle');
   }, [updateStatusMessage]);
 
   const initializePlayers = useCallback(() => {
@@ -1198,6 +1220,8 @@ const HomePage = () => {
                 console.log('[HomePage] Showing response in header:', message);
                 setHeaderResponseMessage(message);
               }}
+              onStartThinking={startThinking}
+              onStopThinking={stopThinking}
             />
           </>
         )}

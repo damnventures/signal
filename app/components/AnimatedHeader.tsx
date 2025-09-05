@@ -33,6 +33,8 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [responseChunks, setResponseChunks] = useState<string[]>([]);
   const [currentResponseChunk, setCurrentResponseChunk] = useState(0);
   const [streamingResponse, setStreamingResponse] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 'auto', height: 'auto' });
+  const [isAnimatingSize, setIsAnimatingSize] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
   const variants = [
@@ -250,23 +252,58 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
     return () => clearTimeout(timer);
   }, [variantIndex, onLoadingComplete, variants.length, showingResponse]);
 
-  // Measure dimensions of current variant
+  // Function to measure content dimensions and animate window resize
+  const measureContentAndResize = useCallback((content: string) => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.style.padding = '40px 30px 30px 30px'; // Match window-content padding
+    tempDiv.style.fontSize = '18px';
+    tempDiv.style.fontFamily = "'Geneva', sans-serif";
+    tempDiv.style.lineHeight = '1.4';
+    tempDiv.style.textAlign = 'center';
+    tempDiv.style.color = '#000000';
+    tempDiv.style.maxWidth = '480px'; // Match window max-width
+    tempDiv.style.minWidth = '280px'; // Ensure minimum width
+    tempDiv.style.wordWrap = 'break-word';
+    document.body.appendChild(tempDiv);
+    
+    const width = Math.max(320, Math.min(480, Math.ceil(tempDiv.scrollWidth + 60))); // Add some buffer
+    const height = Math.ceil(tempDiv.scrollHeight + 20); // Add some buffer for padding
+    document.body.removeChild(tempDiv);
+    
+    // Animate to new dimensions with smooth easing
+    setIsAnimatingSize(true);
+    setWindowDimensions({ 
+      width: `${width}px`, 
+      height: `${height}px` 
+    });
+    
+    // Reset animation state after transition
+    setTimeout(() => {
+      setIsAnimatingSize(false);
+    }, 500); // Match CSS transition duration
+    
+    setDimensions({ width, height });
+  }, []);
+
+  // Measure dimensions of current variant and animate resize
   useEffect(() => {
-    if (measureRef.current) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = variants[variantIndex];
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.visibility = 'hidden';
-      tempDiv.style.padding = '0 8px';
-      tempDiv.style.fontSize = '24px';
-      tempDiv.style.fontFamily = "'Geneva', sans-serif";
-      document.body.appendChild(tempDiv);
-      const width = Math.ceil(tempDiv.scrollWidth);
-      const height = Math.ceil(tempDiv.scrollHeight);
-      document.body.removeChild(tempDiv);
-      setDimensions({ width, height });
+    if (showingResponse && responseMessage) {
+      if (streamingResponse && responseChunks.length > 0) {
+        // For streaming responses, measure cumulative content
+        const currentContent = responseChunks.slice(0, currentResponseChunk + 1).join('');
+        measureContentAndResize(currentContent);
+      } else {
+        // For final response, measure complete content
+        measureContentAndResize(responseMessage);
+      }
+    } else if (!showingResponse && variants[variantIndex]) {
+      // For welcome variants
+      measureContentAndResize(variants[variantIndex]);
     }
-  }, [variantIndex]);
+  }, [variantIndex, showingResponse, responseMessage, streamingResponse, currentResponseChunk, responseChunks, measureContentAndResize]);
 
   // Diff component for highlighting changes
   interface Segment {
@@ -375,7 +412,14 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       onBringToFront={onBringToFront}
       initialZIndex={initialZIndex}
       initialPosition={initialPosition}
-      style={{ pointerEvents: loadingComplete ? 'auto' : 'none' }}
+      style={{ 
+        pointerEvents: loadingComplete ? 'auto' : 'none',
+        width: windowDimensions.width,
+        height: windowDimensions.height,
+        transition: isAnimatingSize ? 'width 0.4s cubic-bezier(0.4, 0.0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }}
       className={className}
     >
       <div className="window-content">

@@ -18,6 +18,8 @@ interface ToolCoreProps {
   initialZIndex: number;
   onRefreshCapsule?: () => void;
   onShowResponse?: (message: string) => void;
+  onStartThinking?: () => void;
+  onStopThinking?: () => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
@@ -27,7 +29,9 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   onBringToFront, 
   initialZIndex,
   onRefreshCapsule,
-  onShowResponse
+  onShowResponse,
+  onStartThinking,
+  onStopThinking
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,6 +75,17 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     if (!userInput.trim()) return;
     
     setIsProcessing(true);
+    
+    // Start thinking state in status line
+    if (onStartThinking) {
+      onStartThinking();
+    }
+    
+    // Show loading animation in header immediately
+    if (onShowResponse) {
+      // Start with basic loading message, the dots will be animated via CSS
+      onShowResponse('<span style="opacity: 0.7; font-style: italic;" class="thinking-indicator">thinking<span class="loading-dots">...</span></span>');
+    }
     
     try {
       // Check if we're in a special state first
@@ -178,6 +193,11 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     } finally {
       setIsProcessing(false);
       setInput('');
+      
+      // Stop thinking state in status line
+      if (onStopThinking) {
+        onStopThinking();
+      }
     }
   }, [capsuleId, onArgueRequest, createContextualMessage, awaitingEmail, bouncerState, user]);
   

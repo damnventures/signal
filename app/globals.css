@@ -757,3 +757,39 @@ body {
   font-size: 13px;
   line-height: 1.4;
 }
+
+/* Thinking/loading dots animation */
+@keyframes loading-dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 80% { content: '...'; }
+  100% { content: '.'; }
+}
+
+.loading-dots {
+  animation: loading-dots 1.5s infinite;
+}
+
+.loading-dots::after {
+  content: '...';
+  animation: loading-dots 1.5s infinite;
+}
+
+/* More precise loading dots animation */
+@keyframes dot-animation {
+  0% { opacity: 1; content: '...'; }
+  33% { opacity: 1; content: '.'; }
+  66% { opacity: 1; content: '..'; }
+  100% { opacity: 1; content: '...'; }
+}
+
+.thinking-indicator .loading-dots {
+  display: inline-block;
+  width: 20px;
+  text-align: left;
+}
+
+.thinking-indicator .loading-dots::after {
+  content: '...';
+  animation: dot-animation 1.2s infinite;
+}
