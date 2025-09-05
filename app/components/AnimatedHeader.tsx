@@ -44,13 +44,60 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
   // Function to break response into meaningful chunks for streaming animation
   const createResponseChunks = useCallback((response: string) => {
-    // Check if response contains HTML - if so, don't chunk to avoid breaking tags
-    if (response.includes('<') && response.includes('>')) {
-      console.log('[AnimatedHeader] HTML detected, skipping chunking for instant display');
+    // Check if response contains complex HTML that shouldn't be chunked
+    // Allow simple spans like clickable-tag spans but block complex HTML
+    const hasComplexHtml = response.includes('<div') || response.includes('<p>') || 
+                          response.includes('<img') || response.includes('<iframe') || 
+                          response.includes('<script') || response.includes('<form') ||
+                          (response.includes('<span') && !response.includes("class='clickable-tag'"));
+    
+    if (hasComplexHtml) {
+      console.log('[AnimatedHeader] Complex HTML detected, skipping chunking for instant display');
       return [response]; // Return as single chunk for instant display
     }
     
-    // Split by sentences first
+    // For responses with simple HTML links, be more careful about chunking
+    const hasSimpleHtml = response.includes('<a ') || response.includes('</a>');
+    
+    if (hasSimpleHtml) {
+      // Split more conservatively for HTML content - avoid breaking in the middle of tags
+      const sentences = response.split(/(\. )/);
+      const chunks: string[] = [];
+      let currentChunk = '';
+      
+      sentences.forEach((sentence) => {
+        if (sentence.trim()) {
+          currentChunk += sentence;
+          
+          // Only create chunks at sentence boundaries to avoid breaking HTML
+          if (sentence === '. ' && currentChunk.length > 30) {
+            chunks.push(currentChunk.trim());
+            currentChunk = '';
+          }
+        }
+      });
+      
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+      }
+      
+      // For HTML content, ensure we have meaningful chunks
+      const meaningfulChunks = chunks.filter(chunk => chunk.length > 10);
+      if (meaningfulChunks.length >= 2) {
+        return meaningfulChunks;
+      }
+      // If we couldn't create good chunks, split by length instead
+      if (response.length > 80) {
+        const midPoint = Math.floor(response.length / 2);
+        const breakPoint = response.lastIndexOf(' ', midPoint + 20) || response.indexOf(' ', midPoint);
+        if (breakPoint > 20 && breakPoint < response.length - 20) {
+          return [response.substring(0, breakPoint + 1), response.substring(breakPoint + 1)];
+        }
+      }
+      return [response]; // Fallback to single chunk
+    }
+    
+    // Regular text processing without HTML
     const sentences = response.split(/([.!?]+\s*)/);
     const chunks: string[] = [];
     let currentChunk = '';
@@ -80,22 +127,56 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       chunks.push(currentChunk.trim());
     }
     
-    // Ensure we have at least 2 chunks for animation
-    if (chunks.length === 1 && chunks[0].length > 40) {
+    // Ensure we have at least 2 chunks for animation - be more aggressive about chunking
+    if (chunks.length === 1 && chunks[0].length > 25) {
       const singleChunk = chunks[0];
       const midPoint = Math.floor(singleChunk.length / 2);
-      // Find a good break point near the middle
-      let breakPoint = singleChunk.lastIndexOf(' ', midPoint + 20);
-      if (breakPoint === -1 || breakPoint < midPoint - 20) {
-        breakPoint = singleChunk.indexOf(' ', midPoint);
+      
+      // Try multiple break strategies
+      let breakPoint = -1;
+      
+      // First, try to break at sentence boundaries
+      const sentenceBreaks = ['. ', '! ', '? '];
+      for (const sentenceEnd of sentenceBreaks) {
+        const pos = singleChunk.indexOf(sentenceEnd, Math.max(20, midPoint - 30));
+        if (pos > 20 && pos < singleChunk.length - 10) {
+          breakPoint = pos + sentenceEnd.length - 1;
+          break;
+        }
       }
-      if (breakPoint !== -1) {
-        chunks[0] = singleChunk.substring(0, breakPoint + 1);
-        chunks.push(singleChunk.substring(breakPoint + 1));
+      
+      // If no sentence break, try comma breaks
+      if (breakPoint === -1) {
+        const commaPos = singleChunk.indexOf(', ', Math.max(15, midPoint - 20));
+        if (commaPos > 15 && commaPos < singleChunk.length - 10) {
+          breakPoint = commaPos + 1;
+        }
+      }
+      
+      // Last resort: break at word boundary
+      if (breakPoint === -1) {
+        breakPoint = singleChunk.lastIndexOf(' ', midPoint + 15);
+        if (breakPoint < 15 || breakPoint > singleChunk.length - 10) {
+          breakPoint = singleChunk.indexOf(' ', midPoint);
+        }
+      }
+      
+      if (breakPoint > 15 && breakPoint < singleChunk.length - 5) {
+        chunks[0] = singleChunk.substring(0, breakPoint + 1).trim();
+        chunks.push(singleChunk.substring(breakPoint + 1).trim());
       }
     }
     
-    return chunks.filter(chunk => chunk.trim().length > 0);
+    const filteredChunks = chunks.filter(chunk => chunk.trim().length > 0);
+    
+    // Debug logging
+    if (filteredChunks.length > 1) {
+      console.log('[AnimatedHeader] Created', filteredChunks.length, 'chunks for streaming animation');
+    } else {
+      console.log('[AnimatedHeader] Single chunk - no streaming animation');
+    }
+    
+    return filteredChunks;
   }, []);
 
   // Handle response message changes with streaming animation
