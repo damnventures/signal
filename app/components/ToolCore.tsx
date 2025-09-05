@@ -76,7 +76,6 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       // Check if we're in a special state first
       if (awaitingEmail) {
         // User is providing their email
-        // Sanitize input by trimming whitespace and removing internal spaces
         const potentialEmail = userInput.trim().replace(/\s/g, '');
         const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$/;
         
@@ -89,15 +88,18 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         }
         return;
       }
-
+  
       if (bouncerState && bouncerState.isActive) {
         // User is in bouncer conversation
         handleBouncerConversation(userInput);
         return;
       }
-
-      // Normal classification flow
+  
+      // MAIN CLASSIFICATION FLOW - this is where tools + communication happen
+      console.log('[ToolCore] Starting classification for:', userInput);
       const classification = await classifyIntent(userInput, capsuleId);
+      console.log('[ToolCore] Classification result:', classification);
+      
       const contextualMessage = createContextualMessage(
         classification.intent, 
         classification.action, 
@@ -105,58 +107,84 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         classification.data
       );
       
+      // CRITICAL: Handle each intent type properly
       switch (classification.intent) {
         case 'tool':
           if (classification.action === 'collect_media') {
-            // Show worker-generated launch message
+            console.log('[ToolCore] Media collection intent detected');
+            
+            // 1. Show launch message (communication response)
             if (onShowResponse && classification.launchMessage) {
+              console.log('[ToolCore] Showing launch message:', classification.launchMessage);
               onShowResponse(classification.launchMessage);
             }
-            // Launch the media collection tool
+            
+            // 2. Launch the media collection tool (tool execution)
+            console.log('[ToolCore] Starting media collection tool');
             await handleMediaCollection(classification.data, userInput);
           }
           break;
           
         case 'argue':
-          // Show worker-generated launch message
+          console.log('[ToolCore] Argue intent detected');
+          
+          // 1. Show launch message (communication response)
           if (onShowResponse && classification.launchMessage) {
+            console.log('[ToolCore] Showing argue launch message:', classification.launchMessage);
             onShowResponse(classification.launchMessage);
           }
-          // Launch the argue popup
+          
+          // 2. Launch the argue popup (tool execution)
+          console.log('[ToolCore] Opening argue popup');
           onArgueRequest(classification.data.question);
           break;
           
+        case 'login':
+          console.log('[ToolCore] Login intent detected');
+          
+          // 1. Show launch message (communication response)
+          if (onShowResponse) {
+            const message = classification.launchMessage || 
+              (user ? "You're already authenticated. Let me refresh your session anyway." :
+               "Time to get you logged in. Let me check your email and see if you're worthy of Craig access.");
+            console.log('[ToolCore] Showing login launch message:', message);
+            onShowResponse(message);
+          }
+          
+          // 2. Handle login process (tool execution)
+          console.log('[ToolCore] Starting login process');
+          await handleLogin();
+          break;
+          
         case 'communicate':
-          // Handle general communication with Cloudflare worker
+          console.log('[ToolCore] Communication intent detected');
+          
+          // This is PURE communication - no tool launch, just AI response
           await handleCommunication(classification.data.message);
           break;
           
-        case 'login':
-          // Show worker-generated launch message or fallback
-          if (onShowResponse) {
-            if (classification.launchMessage) {
-              onShowResponse(classification.launchMessage);
-            } else if (user) {
-              onShowResponse("You're already authenticated. Let me set up the login flow anyway to refresh your session.");
-            } else {
-              onShowResponse("Time to get you logged in. Let me check your email and see if you're worthy of Craig access.");
-            }
-          }
-          // Handle login intent - this will trigger the bouncer flow for non-auth users
-          await handleLogin();
+        default:
+          console.warn('[ToolCore] Unknown intent:', classification.intent);
+          // Fallback to communication
+          await handleCommunication(userInput);
           break;
       }
+      
     } catch (error) {
-      console.error('Failed to process input:', error);
+      console.error('[ToolCore] Failed to process input:', error);
+      if (onShowResponse) {
+        onShowResponse("Something went wrong processing that. Try again or be more specific.");
+      }
     } finally {
       setIsProcessing(false);
       setInput('');
     }
-  }, [capsuleId, onArgueRequest, createContextualMessage, awaitingEmail, bouncerState]);
-
+  }, [capsuleId, onArgueRequest, createContextualMessage, awaitingEmail, bouncerState, user]);
+  
+  // This function should handle PURE communication (no tool launch)
   const handleCommunication = useCallback(async (message: string) => {
     try {
-      console.log('[ToolCore] Handling communication:', message);
+      console.log('[ToolCore] Handling pure communication:', message);
       
       const response = await fetch('/api/tools', {
         method: 'POST',
@@ -171,39 +199,41 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           systemPrompt: getCommunicatePrompt()
         })
       });
-
+  
       if (response.ok) {
         const result = await response.json();
         console.log('[ToolCore] Communication response:', result);
         
         if (onShowResponse && result.response) {
-          // Clean up response by removing thinking tags if they appear
           let cleanResponse = result.response;
           if (typeof cleanResponse === 'string') {
-            // Remove <think>...</think> blocks
-            cleanResponse = cleanResponse.replace(/<think>[\s\S]*?<\/think>/g, '');
-            // Remove any remaining thinking patterns
-            cleanResponse = cleanResponse.replace(/^\s*<think>[\s\S]*/g, '');
-            cleanResponse = cleanResponse.trim();
+            // Remove <think>...</think> blocks but preserve other content
+            const thinkBlockRegex = /<think>[\s\S]*?<\/think>/gi;
+            cleanResponse = cleanResponse.replace(thinkBlockRegex, '').trim();
+            
+            console.log('[ToolCore] Cleaned communication response:', cleanResponse.substring(0, 100));
           }
           
-          if (cleanResponse) {
+          if (cleanResponse && cleanResponse.length > 0) {
             onShowResponse(cleanResponse);
           } else {
-            onShowResponse("I'm having trouble responding right now. Please try again.");
+            console.warn('[ToolCore] Communication response became empty after cleaning');
+            // Try to extract content before <think> tags
+            const beforeThink = result.response.split('<think>')[0].trim();
+            if (beforeThink && beforeThink.length > 10) {
+              onShowResponse(beforeThink);
+            } else {
+              onShowResponse("I started overthinking that response. Can you rephrase your question?");
+            }
           }
         }
       } else {
         console.error('[ToolCore] Communication failed:', response.status);
-        if (onShowResponse) {
-          onShowResponse("I'm having trouble responding right now. Please try again.");
-        }
+        onShowResponse("I'm having trouble responding right now. Please try again.");
       }
     } catch (error) {
       console.error('[ToolCore] Communication error:', error);
-      if (onShowResponse) {
-        onShowResponse("I encountered an error. Please try again.");
-      }
+      onShowResponse("I encountered an error. Please try again.");
     }
   }, [capsuleId, apiKey, onShowResponse]);
 
