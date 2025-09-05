@@ -120,7 +120,7 @@ Example valid response:
   "shouldLogin": false
 }
 
-The bouncerResponse field should contain ONLY your direct words as the bouncer - never analysis or bullet points.
+The bouncerResponse field should contain ONLY your direct words as the bouncer - never analysis or bullet points. Make responses at least 2-3 sentences with personality and context.
 
 **CURRENT STATE:**
 Stage: ${bouncerState.stage}/5
