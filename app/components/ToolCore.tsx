@@ -83,7 +83,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           handleEmailCheck(potentialEmail);
         } else {
           if (onShowResponse) {
-            onShowResponse("That doesn't look like an email address. Try again with your email (e.g., user@example.com).");
+            onShowResponse?.("That doesn't look like an email address. Try again with your email (e.g., user@example.com).");
           }
         }
         return;
@@ -173,7 +173,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     } catch (error) {
       console.error('[ToolCore] Failed to process input:', error);
       if (onShowResponse) {
-        onShowResponse("Something went wrong processing that. Try again or be more specific.");
+        onShowResponse?.("Something went wrong processing that. Try again or be more specific.");
       }
     } finally {
       setIsProcessing(false);
@@ -223,17 +223,17 @@ const ToolCore: React.FC<ToolCoreProps> = ({
             if (beforeThink && beforeThink.length > 10) {
               onShowResponse(beforeThink);
             } else {
-              onShowResponse("I started overthinking that response. Can you rephrase your question?");
+              onShowResponse?.("I started overthinking that response. Can you rephrase your question?");
             }
           }
         }
       } else {
         console.error('[ToolCore] Communication failed:', response.status);
-        onShowResponse("I'm having trouble responding right now. Please try again.");
+        onShowResponse?.("I'm having trouble responding right now. Please try again.");
       }
     } catch (error) {
       console.error('[ToolCore] Communication error:', error);
-      onShowResponse("I encountered an error. Please try again.");
+      onShowResponse?.("I encountered an error. Please try again.");
     }
   }, [capsuleId, apiKey, onShowResponse]);
 
@@ -264,7 +264,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     } catch (error) {
       console.error('[ToolCore] Email check error:', error);
       if (onShowResponse) {
-        onShowResponse("Something went wrong checking your email. Please try again.");
+        onShowResponse?.("Something went wrong checking your email. Please try again.");
       }
     }
   }, [onShowResponse]);
@@ -355,7 +355,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     } catch (error) {
       console.error('[ToolCore] Bouncer conversation error:', error);
       if (onShowResponse) {
-        onShowResponse("The bouncer seems to have lost their voice. Try again.");
+        onShowResponse?.("The bouncer seems to have lost their voice. Try again.");
       }
     }
   }, [bouncerState, capsuleName, apiKey, onShowResponse]);
@@ -390,7 +390,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     } catch (error) {
       console.error('[ToolCore] Login error:', error);
       if (onShowResponse) {
-        onShowResponse("Something went wrong with login setup. Try the login button in the top-right corner.");
+        onShowResponse?.("Something went wrong with login setup. Try the login button in the top-right corner.");
       }
     }
   }, [onShowResponse]);
@@ -405,7 +405,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     // For non-authenticated users, ask for their email to start the bouncer/login flow.
     setAwaitingEmail(true);
     if (onShowResponse) {
-      onShowResponse("What's your email address? I'll check if you have access.");
+      onShowResponse?.("What's your email address? I'll check if you have access.");
     }
   }, [user, handleDirectLogin, onShowResponse]);
 
