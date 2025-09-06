@@ -459,8 +459,8 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
               getFinalContent()
             ) : variantIndex > 0 ? (
               <Diff
-                oldContent={variants[Math.max(0, variantIndex - 1)]}
-                newContent={variants[variantIndex]}
+                oldContent={variants.slice(0, variantIndex).join(' ')}
+                newContent={variants.slice(0, variantIndex + 1).join(' ')}
                 showDiff={showDiff}
               />
             ) : (
