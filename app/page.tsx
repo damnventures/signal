@@ -6,7 +6,6 @@ import AnimatedHeader from './components/AnimatedHeader';
 import Head from 'next/head';
 import ArguePopup from './components/ArguePopup';
 import ToolCore from './components/ToolCore';
-import AuthButton from './components/AuthButton';
 import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
@@ -52,6 +51,13 @@ const HomePage = () => {
   const [isFetchingCapsuleContent, setIsFetchingCapsuleContent] = useState(false);
   const [isFetchingCapsules, setIsFetchingCapsules] = useState(false);
   const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+
+  const startDemo = useCallback(() => {
+    setShowDemo(true);
+    const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
+    setSelectedCapsuleId(defaultCapsuleId);
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
@@ -537,7 +543,8 @@ const HomePage = () => {
             title: capsuleName,
             setup: '',
             quote: data.highlights.length > 800 ? 
-              data.highlights.substring(0, 800) + '...\n\n[Click to view full analysis]' : 
+              data.highlights.substring(0, 800) + '...\n\n[Click to view full analysis]'
+              : 
               data.highlights,
             whyItMatters: '',
             isCapsuleSummary: true // Special flag for different display
@@ -735,7 +742,7 @@ const HomePage = () => {
   }, [authFetch, accessToken]); // Added accessToken dependency
 
   useEffect(() => {
-    if (!isLoading && !authInProgress && selectedCapsuleId) {
+    if (showDemo && !isLoading && !authInProgress && selectedCapsuleId) {
       // For non-auth users, wait for capsules fetch to complete to prevent concurrent requests
       if (!apiKey && !accessToken && isFetchingCapsules) {
         console.log(`[HomePage] Non-auth user - waiting for capsules fetch to complete before fetching capsule content`);
@@ -751,7 +758,7 @@ const HomePage = () => {
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress]); // Added isFetchingCapsules dependency
+  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress, showDemo, fetchCapsuleContent]);
 
   // Handle capsule selection based on auth state
   useEffect(() => {
@@ -764,14 +771,11 @@ const HomePage = () => {
           setHighlightsData([]);
           setCapsuleContent("");
         }
-      } else if (!selectedCapsuleId) {
-        // No user and no capsule selected - set default
-        const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
-        console.log(`[HomePage] Setting default capsule for non-authenticated user: ${defaultCapsuleId}`);
-        setSelectedCapsuleId(defaultCapsuleId);
+      } else if (!selectedCapsuleId && !showDemo) {
+        // No user and no capsule selected, and not in demo mode - do nothing.
       }
     }
-  }, [isLoading, user, authInProgress, selectedCapsuleId]);
+  }, [isLoading, user, authInProgress, selectedCapsuleId, showDemo]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     if (hasHeaderCompleted) {
@@ -781,33 +785,40 @@ const HomePage = () => {
     
     console.log('[HomePage] Setting header as completed');
     setHasHeaderCompleted(true);
-    setShowCards(true);
-    setHighlightCard(0);
     setLoadingPhase('insights');
     updateStatusMessage('insights');
     
-    console.log(`[HomePage] handleHeaderLoadingComplete called, apiKey: ${apiKey ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
-    if (apiKey || accessToken) {
-      console.log(`[HomePage] About to call fetchCapsules with apiKey: ${apiKey ? '...' + apiKey.slice(-4) : 'none'}, accessToken: ${accessToken ? 'present' : 'none'}`);
-      fetchCapsules(apiKey);
-    } else {
-      console.log(`[HomePage] No user API key available, calling fetchCapsules with null (will use default API key)`);
-      fetchCapsules(null);
-    }
+    if (showDemo) {
+        setShowCards(true);
+        setHighlightCard(0);
+        
+        console.log(`[HomePage] handleHeaderLoadingComplete called, apiKey: ${apiKey ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
+        if (apiKey || accessToken) {
+          console.log(`[HomePage] About to call fetchCapsules with apiKey: ${apiKey ? '...' + apiKey.slice(-4) : 'none'}, accessToken: ${accessToken ? 'present' : 'none'}`);
+          fetchCapsules(apiKey);
+        } else {
+          console.log(`[HomePage] No user API key available, calling fetchCapsules with null (will use default API key)`);
+          fetchCapsules(null);
+        }
 
-    setTimeout(() => setHighlightCard(null), 300);
-    setTimeout(() => {
-      setShowVideo(true);
-      setIsPageLoading(false);
-      setLoadingPhase('idle');
-      updateStatusMessage('idle');
-      
-      // Set up idle timeout for extended messages
-      idleTimeoutRef.current = setTimeout(() => {
+        setTimeout(() => setHighlightCard(null), 300);
+        setTimeout(() => {
+          setShowVideo(true);
+          setIsPageLoading(false);
+          setLoadingPhase('idle');
+          updateStatusMessage('idle');
+          
+          // Set up idle timeout for extended messages
+          idleTimeoutRef.current = setTimeout(() => {
+            updateStatusMessage('idle');
+          }, 10000);
+        }, highlightsData.length * 300);
+    } else {
+        setIsPageLoading(false);
+        setLoadingPhase('idle');
         updateStatusMessage('idle');
-      }, 10000);
-    }, highlightsData.length * 300);
-  }, [hasHeaderCompleted, highlightsData.length, updateStatusMessage, apiKey, accessToken, fetchCapsules]);
+    }
+  }, [hasHeaderCompleted, highlightsData.length, updateStatusMessage, apiKey, accessToken, fetchCapsules, showDemo]);
 
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
@@ -1009,7 +1020,7 @@ const HomePage = () => {
               />
             )}
 
-            {showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && !isLoading && !authInProgress && !isFetchingCapsuleContent && (
+            {showDemo && showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && !isLoading && !authInProgress && !isFetchingCapsuleContent && (
               <DraggableWindow
                 id="no-content-card"
                 onBringToFront={handleBringToFront}
@@ -1023,7 +1034,7 @@ const HomePage = () => {
               </DraggableWindow>
             )}
 
-            {showCards && highlightsData.map((highlight, index) => (
+            {showDemo && showCards && highlightsData.map((highlight, index) => (
               <DraggableWindow
                 key={`highlight-${index}`}
                 id={`highlight-${index}`}
@@ -1053,7 +1064,7 @@ const HomePage = () => {
 
             {(() => {
               console.log(`[HomePage] Video render check: showVideo=${showVideo}, fetchedOriginalLinks.length=${fetchedOriginalLinks.length}, links:`, fetchedOriginalLinks);
-              return showVideo && fetchedOriginalLinks.length > 0;
+              return showDemo && showVideo && fetchedOriginalLinks.length > 0;
             })() && (
               <DraggableWindow
                 id="original-links"
@@ -1154,10 +1165,6 @@ const HomePage = () => {
               </div>
             </DraggableWindow>
 
-            <div className="auth-button-container">
-              <AuthButton />
-            </div>
-
             <div className="fixed-buttons-container">
               <button
                 className={`action-button ${isPageLoading ? 'blinking' : ''}`}
@@ -1222,6 +1229,7 @@ const HomePage = () => {
               }}
               onStartThinking={startThinking}
               onStopThinking={stopThinking}
+              onStartDemo={startDemo}
             />
           </>
         )}

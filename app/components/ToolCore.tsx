@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +20,7 @@ interface ToolCoreProps {
   onShowResponse?: (message: string) => void;
   onStartThinking?: () => void;
   onStopThinking?: () => void;
+  onStartDemo?: () => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
@@ -31,7 +32,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   onRefreshCapsule,
   onShowResponse,
   onStartThinking,
-  onStopThinking
+  onStopThinking,
+  onStartDemo
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -73,6 +75,14 @@ const ToolCore: React.FC<ToolCoreProps> = ({
 
   const handleUserInput = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
+
+    if (userInput.trim().toLowerCase() === 'demo') {
+      if (onStartDemo) {
+        onStartDemo();
+      }
+      setInput('');
+      return;
+    }
     
     setIsProcessing(true);
     
@@ -199,7 +209,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         onStopThinking();
       }
     }
-  }, [capsuleId, onArgueRequest, createContextualMessage, awaitingEmail, bouncerState, user]);
+  }, [capsuleId, onArgueRequest, createContextualMessage, awaitingEmail, bouncerState, user, onStartDemo]);
   
   // This function should handle PURE communication (no tool launch)
   const handleCommunication = useCallback(async (message: string) => {
