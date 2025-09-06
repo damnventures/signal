@@ -76,13 +76,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   const handleUserInput = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
 
-    if (userInput.trim().toLowerCase().startsWith('demo')) {
-      if (onStartDemo) {
-        onStartDemo();
-      }
-      setInput('');
-      return;
-    }
+    
     
     setIsProcessing(true);
     
@@ -134,6 +128,13 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       
       // CRITICAL: Handle each intent type properly
       switch (classification.intent) {
+        case 'demo':
+          console.log('[ToolCore] Demo intent detected');
+          if (onStartDemo) {
+            onStartDemo();
+          }
+          break;
+          
         case 'tool':
           if (classification.action === 'collect_media') {
             console.log('[ToolCore] Media collection intent detected');
