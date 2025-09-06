@@ -456,16 +456,14 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
                 <span dangerouslySetInnerHTML={{ __html: responseMessage }} />
               )
             ) : loadingComplete && variantIndex === variants.length - 1 ? (
-              getFinalContent()
-            ) : variantIndex > 0 ? (
-              <Diff
-                oldContent={variants.slice(0, variantIndex).join(' ')}
-                newContent={variants.slice(0, variantIndex + 1).join(' ')}
-                showDiff={showDiff}
-              />
-            ) : (
-              <span dangerouslySetInnerHTML={{ __html: variants[0] }} />
-            )}
+      getFinalContent()
+    ) : (
+      <Diff
+        oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1]}
+        newContent={variants[variantIndex]}
+        showDiff={showDiff}
+      />
+    )}
           </p>
         </div>
       </div>
