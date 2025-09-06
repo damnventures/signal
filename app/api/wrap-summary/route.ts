@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const WRAP_WORKER_URL = process.env.WRAP_WORKER_URL || 'https://wrap-worker.vanyacherepukhin.workers.dev';
+const WRAP_WORKER_URL = process.env.WRAP_WORKER_URL || 'https://wrap.shrinked.workers.dev/';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
 
 interface Capsule {

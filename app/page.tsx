@@ -898,6 +898,18 @@ const HomePage = () => {
                 setIsPageLoading(false);
                 setLoadingPhase('idle');
                 updateStatusMessage('idle');
+                
+                // Fetch wrap summary after status is set to idle
+                if (user) {
+                  console.log(`[HomePage] Fetching wrap summary for authenticated user after idle`);
+                  setTimeout(() => {
+                    fetchWrapSummary(user).then((summary) => {
+                      setStatusMessage(summary);
+                    }).catch(error => {
+                      console.error('[HomePage] Error fetching initial wrap summary:', error);
+                    });
+                  }, 2000); // Wait 2 more seconds after idle state
+                }
               }, 1000);
             }
           }, 100);
