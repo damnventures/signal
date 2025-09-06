@@ -153,6 +153,13 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           
         case 'argue':
           console.log('[ToolCore] Argue intent detected');
+
+          if (!user && !apiKey) {
+            console.log('[ToolCore] Non-authenticated user, starting demo for argue');
+            if (onStartDemo) {
+              onStartDemo();
+            }
+          }
           
           // 1. Show launch message (communication response)
           if (onShowResponse && classification.launchMessage) {
