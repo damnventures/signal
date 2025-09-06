@@ -11,6 +11,7 @@ import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
 import DemoWelcomeWindow from './components/DemoWelcomeWindow';
+import WrapTool from './components/WrapTool';
 
 interface Highlight {
   title: string;
@@ -54,6 +55,9 @@ const HomePage = () => {
   const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [showDemoWelcomeWindow, setShowDemoWelcomeWindow] = useState(false);
+  const [wrapStateHash, setWrapStateHash] = useState<string>('');
+  const [lastWrapSummary, setLastWrapSummary] = useState<string>('');
+  const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -61,6 +65,101 @@ const HomePage = () => {
     setSelectedCapsuleId(defaultCapsuleId);
     setHasHeaderCompleted(false); // Reset header completed state
   }, []);
+
+  const fetchWrapSummary = useCallback(async (userProfile: any, hasAuth: boolean = true): Promise<string> => {
+    // For non-authenticated users, always return simple welcome
+    if (!hasAuth || !userProfile || (!accessToken && !apiKey)) {
+      return `Welcome ${userProfile?.email || userProfile?.username || 'User'}!`;
+    }
+
+    try {
+      console.log('[HomePage] Fetching wrap summary for authenticated user...');
+      const response = await fetch('/api/wrap-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken,
+          apiKey,
+          lastStateHash: wrapStateHash
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.summary) {
+          console.log('[HomePage] Wrap summary received:', result.summary);
+          setWrapStateHash(result.stateHash);
+          setLastWrapSummary(result.summary);
+          return result.summary;
+        }
+      }
+    } catch (error) {
+      console.error('[HomePage] Error fetching wrap summary:', error);
+    }
+
+    // Fallback to welcome message for authenticated users too
+    return `Welcome ${userProfile.email || userProfile.username}!`;
+  }, [accessToken, apiKey, wrapStateHash]);
+
+  // Periodic check for capsule state changes (every 5 minutes for authenticated users)
+  useEffect(() => {
+    if (!user || (!accessToken && !apiKey)) {
+      // Clear any existing interval if user logs out
+      if (wrapCheckIntervalRef.current) {
+        clearInterval(wrapCheckIntervalRef.current);
+        wrapCheckIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Set up periodic state check
+    const checkForStateChanges = async () => {
+      try {
+        console.log('[HomePage] Checking for capsule state changes...');
+        const response = await fetch('/api/wrap-summary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken,
+            apiKey,
+            lastStateHash: wrapStateHash
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.stateChanged && result.summary && result.summary !== lastWrapSummary) {
+            console.log('[HomePage] Capsule state changed, updating summary');
+            setStatusMessage(result.summary);
+            setLastWrapSummary(result.summary);
+            setWrapStateHash(result.stateHash);
+          } else {
+            console.log('[HomePage] No capsule state changes detected');
+          }
+        }
+      } catch (error) {
+        console.error('[HomePage] Error checking capsule state changes:', error);
+      }
+    };
+
+    // Initial check after 30 seconds (to avoid immediate duplicate with auth flow)
+    const initialTimeout = setTimeout(checkForStateChanges, 30000);
+    
+    // Then check every 5 minutes
+    wrapCheckIntervalRef.current = setInterval(checkForStateChanges, 5 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      if (wrapCheckIntervalRef.current) {
+        clearInterval(wrapCheckIntervalRef.current);
+        wrapCheckIntervalRef.current = null;
+      }
+    };
+  }, [user, accessToken, apiKey, wrapStateHash, lastWrapSummary]);
 
   useEffect(() => {
     setIsClient(true);
@@ -167,7 +266,8 @@ const HomePage = () => {
           const userId = userProfile.userId || userProfile.id || userProfile._id;
           console.log('[Auth] Direct profile fetch successful:', userProfile.email, 'userId:', userId);
           setUserData(userProfile, token); // No API key, but we have user data
-          setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! (Using default access)`);
+          const wrapMessage = await fetchWrapSummary(userProfile);
+          setStatusMessage(wrapMessage);
         } else {
           console.warn('[Auth] Direct profile fetch also failed, clearing auth');
           logout();
@@ -198,7 +298,8 @@ const HomePage = () => {
           if (userProfile) {
             setUserData(userProfile, token, newApiKey);
             console.log('[Auth] Successfully authenticated user with API key');
-            setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! ${existing ? 'Using existing' : 'Created new'} token.`);
+            const wrapMessage = await fetchWrapSummary(userProfile);
+            setStatusMessage(wrapMessage);
             return true;
           } else {
             console.warn('[Auth] No user profile returned from API');
@@ -216,7 +317,8 @@ const HomePage = () => {
             if (userProfile) {
               // We have user data but no API key - still authenticate the user
               setUserData(userProfile, token);
-              setStatusMessage(`Welcome ${userProfile.email || userProfile.username}! (Using default access)`);
+              const wrapMessage = await fetchWrapSummary(userProfile);
+              setStatusMessage(wrapMessage);
               return true;
             }
           } catch (parseError) {
@@ -226,7 +328,8 @@ const HomePage = () => {
           // If user is already stored locally, keep them logged in without API key
           if (user) {
             setUserData(user, token);
-            setStatusMessage(`Welcome ${user.email || user.username}! (Using default access)`);
+            const wrapMessage = await fetchWrapSummary(user);
+            setStatusMessage(wrapMessage);
             return true; // User is still authenticated
           } else {
             setStatusMessage('Authentication failed: Unable to verify identity');
@@ -243,7 +346,7 @@ const HomePage = () => {
     if (isClient) {
       handleAuth();
     }
-  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData, logout]);
+  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData, logout, fetchWrapSummary]);
 
   const statusMessages = {
     signal: [
@@ -1263,6 +1366,20 @@ const HomePage = () => {
                   >
                     <span>🎯</span>
                   </button>
+                  
+                  {/* Wrap button - for authenticated users only */}
+                  {user && (
+                    <WrapTool
+                      showAsButton={true}
+                      className="action-button wrap-button"
+                      onSummaryUpdate={(summary) => {
+                        setStatusMessage(summary);
+                        setLastWrapSummary(summary);
+                      }}
+                      onStateHashUpdate={setWrapStateHash}
+                      lastStateHash={wrapStateHash}
+                    />
+                  )}
                   
                   {/* Tool Core button */}
                   <button 
