@@ -1200,6 +1200,7 @@ const HomePage = () => {
                 initialZIndex={cardZIndexes['status-window'] || nextZIndex + 1}
                 isDraggable={false}
                 className="status-window"
+                initialPosition={{ x: 0, y: 0 }}
               >
                 <div className="window-content">
                   <p className="main-text status-message-text">{statusMessage}</p>
