@@ -134,9 +134,15 @@ const HomePage = () => {
           const result = await response.json();
           if (result.stateChanged && result.summary && result.summary !== lastWrapSummary) {
             console.log('[HomePage] Capsule state changed, updating summary');
+            // Clear status intervals when periodic check updates summary
+            if (statusIntervalRef.current) {
+              clearInterval(statusIntervalRef.current);
+              statusIntervalRef.current = null;
+            }
             setStatusMessage(result.summary);
             setLastWrapSummary(result.summary);
             setWrapStateHash(result.stateHash);
+            console.log('[HomePage] Periodic check updated status and cleared intervals');
           } else {
             console.log('[HomePage] No capsule state changes detected');
           }
@@ -904,7 +910,13 @@ const HomePage = () => {
                   console.log(`[HomePage] Fetching wrap summary for authenticated user after idle`);
                   setTimeout(() => {
                     fetchWrapSummary(user).then((summary) => {
+                      // Clear any existing status intervals before setting wrap summary
+                      if (statusIntervalRef.current) {
+                        clearInterval(statusIntervalRef.current);
+                        statusIntervalRef.current = null;
+                      }
                       setStatusMessage(summary);
+                      console.log('[HomePage] Set wrap summary and cleared status intervals');
                     }).catch(error => {
                       console.error('[HomePage] Error fetching initial wrap summary:', error);
                     });
@@ -1385,8 +1397,14 @@ const HomePage = () => {
                       showAsButton={true}
                       className="action-button wrap-button"
                       onSummaryUpdate={(summary) => {
+                        // Clear status intervals when wrap tool updates summary
+                        if (statusIntervalRef.current) {
+                          clearInterval(statusIntervalRef.current);
+                          statusIntervalRef.current = null;
+                        }
                         setStatusMessage(summary);
                         setLastWrapSummary(summary);
+                        console.log('[HomePage] Wrap tool updated status and cleared intervals');
                       }}
                       onStateHashUpdate={setWrapStateHash}
                       lastStateHash={wrapStateHash}

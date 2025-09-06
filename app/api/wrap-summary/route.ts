@@ -8,8 +8,11 @@ interface Capsule {
   name: string;
   content?: string;
   highlights?: string;
+  summaryContext?: string;
   createdAt?: string;
   updatedAt?: string;
+  status?: string;
+  fileCount?: number;
 }
 
 interface WrapRequest {
@@ -67,7 +70,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
   }
 }
 
-async function fetchCapsuleContent(capsuleId: string, accessToken: string, apiKey?: string): Promise<string> {
+async function fetchEnhancedCapsule(capsuleId: string, accessToken: string, apiKey?: string): Promise<any> {
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -81,21 +84,23 @@ async function fetchCapsuleContent(capsuleId: string, accessToken: string, apiKe
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/capsules/${capsuleId}/signal`, {
+    // Get the full capsule state with all processed content
+    const response = await fetch(`${API_BASE_URL}/capsules/${capsuleId}`, {
       headers,
       cache: 'no-store'
     });
 
     if (response.ok) {
-      const data = await response.json();
-      return data.highlights || data.signal || '';
+      const capsule = await response.json();
+      console.log('[wrap-summary] Enhanced capsule data:', Object.keys(capsule));
+      return capsule;
     } else {
-      console.warn('[wrap-summary] Failed to fetch content for capsule:', capsuleId);
-      return '';
+      console.warn('[wrap-summary] Failed to fetch enhanced capsule:', capsuleId);
+      return null;
     }
   } catch (error) {
-    console.warn('[wrap-summary] Error fetching capsule content:', capsuleId, error);
-    return '';
+    console.warn('[wrap-summary] Error fetching enhanced capsule:', capsuleId, error);
+    return null;
   }
 }
 
@@ -130,22 +135,36 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Enhance capsules with content (for first few capsules to avoid timeout)
+    // Enhance capsules with full state data (processed content)
     const enhancedCapsules: Capsule[] = [];
     const maxCapsulesWithContent = 5; // Limit to avoid timeouts
 
     for (let i = 0; i < Math.min(capsules.length, maxCapsulesWithContent); i++) {
       const capsule = capsules[i];
-      console.log('[wrap-summary] Fetching content for capsule:', capsule.name);
+      console.log('[wrap-summary] Fetching enhanced data for capsule:', capsule.name);
       
-      const content = await fetchCapsuleContent(capsule._id, accessToken || '', apiKey);
-      enhancedCapsules.push({
-        ...capsule,
-        content: content || capsule.highlights || ''
-      });
+      const enhancedCapsule = await fetchEnhancedCapsule(capsule._id, accessToken || '', apiKey);
+      if (enhancedCapsule) {
+        // Use processed fields from the enhanced capsule data
+        enhancedCapsules.push({
+          ...capsule,
+          content: enhancedCapsule.summaryContext || enhancedCapsule.highlights || capsule.highlights || '',
+          highlights: enhancedCapsule.highlights || capsule.highlights || '',
+          summaryContext: enhancedCapsule.summaryContext || '',
+          // Include other useful fields that might be present
+          status: enhancedCapsule.status,
+          fileCount: enhancedCapsule.fileIds?.length || 0
+        });
+      } else {
+        // Fallback to basic capsule data
+        enhancedCapsules.push({
+          ...capsule,
+          content: capsule.highlights || ''
+        });
+      }
     }
 
-    // Add remaining capsules without content if there are more
+    // Add remaining capsules without enhanced data if there are more
     if (capsules.length > maxCapsulesWithContent) {
       enhancedCapsules.push(...capsules.slice(maxCapsulesWithContent));
     }
