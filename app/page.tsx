@@ -103,6 +103,37 @@ const HomePage = () => {
     return `Welcome ${userProfile.email || userProfile.username}!`;
   }, [accessToken, apiKey, wrapStateHash]);
 
+  // Animate status message with typewriter effect (like Argue tool)
+  const animateStatusMessage = useCallback((fullMessage: string) => {
+    // Clear any existing intervals
+    if (statusIntervalRef.current) {
+      clearInterval(statusIntervalRef.current);
+      statusIntervalRef.current = null;
+    }
+
+    const words = fullMessage.split(' ');
+    let currentIndex = 0;
+    
+    // Show message in chunks of 3-4 words for better flow
+    const animateChunk = () => {
+      if (currentIndex >= words.length) return;
+      
+      const chunkSize = Math.random() > 0.5 ? 3 : 4; // Vary chunk size 3-4 words
+      const chunk = words.slice(0, currentIndex + chunkSize).join(' ');
+      setStatusMessage(chunk);
+      
+      currentIndex += chunkSize;
+      
+      if (currentIndex < words.length) {
+        // Continue with next chunk after a brief delay
+        setTimeout(animateChunk, 200 + Math.random() * 100); // 200-300ms between chunks
+      }
+    };
+    
+    // Start animation
+    animateChunk();
+  }, []);
+
   // Periodic check for capsule state changes (every 5 minutes for authenticated users)
   useEffect(() => {
     if (!user || (!accessToken && !apiKey)) {
@@ -273,7 +304,7 @@ const HomePage = () => {
           console.log('[Auth] Direct profile fetch successful:', userProfile.email, 'userId:', userId);
           setUserData(userProfile, token); // No API key, but we have user data
           const wrapMessage = await fetchWrapSummary(userProfile);
-          setStatusMessage(wrapMessage);
+          animateStatusMessage(wrapMessage);
         } else {
           console.warn('[Auth] Direct profile fetch also failed, clearing auth');
           logout();
@@ -305,7 +336,7 @@ const HomePage = () => {
             setUserData(userProfile, token, newApiKey);
             console.log('[Auth] Successfully authenticated user with API key');
             const wrapMessage = await fetchWrapSummary(userProfile);
-            setStatusMessage(wrapMessage);
+            animateStatusMessage(wrapMessage);
             return true;
           } else {
             console.warn('[Auth] No user profile returned from API');
@@ -324,7 +355,7 @@ const HomePage = () => {
               // We have user data but no API key - still authenticate the user
               setUserData(userProfile, token);
               const wrapMessage = await fetchWrapSummary(userProfile);
-              setStatusMessage(wrapMessage);
+              animateStatusMessage(wrapMessage);
               return true;
             }
           } catch (parseError) {
@@ -335,7 +366,7 @@ const HomePage = () => {
           if (user) {
             setUserData(user, token);
             const wrapMessage = await fetchWrapSummary(user);
-            setStatusMessage(wrapMessage);
+            animateStatusMessage(wrapMessage);
             return true; // User is still authenticated
           } else {
             setStatusMessage('Authentication failed: Unable to verify identity');
@@ -915,7 +946,7 @@ const HomePage = () => {
                         clearInterval(statusIntervalRef.current);
                         statusIntervalRef.current = null;
                       }
-                      setStatusMessage(summary);
+                      animateStatusMessage(summary);
                       console.log('[HomePage] Set wrap summary and cleared status intervals');
                     }).catch(error => {
                       console.error('[HomePage] Error fetching initial wrap summary:', error);
@@ -1402,7 +1433,7 @@ const HomePage = () => {
                           clearInterval(statusIntervalRef.current);
                           statusIntervalRef.current = null;
                         }
-                        setStatusMessage(summary);
+                        animateStatusMessage(summary);
                         setLastWrapSummary(summary);
                         console.log('[HomePage] Wrap tool updated status and cleared intervals');
                       }}
