@@ -516,9 +516,7 @@ body {
   to { background-color: initial; }
 }
 
-.tool-core-search-bar {
-    flex-grow: 1;
-}
+
 
 .fixed-buttons-container {
     position: fixed;

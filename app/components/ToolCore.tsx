@@ -596,7 +596,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       <div 
         className="tool-core-search-bar"
       >
-        <form onSubmit={handleSubmit} style={{ marginBottom: '16px' }}>
+        <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <input
               type="text"
