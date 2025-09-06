@@ -76,7 +76,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   const handleUserInput = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
 
-    if (userInput.trim().toLowerCase() === 'demo') {
+    if (userInput.trim().toLowerCase().startsWith('demo')) {
       if (onStartDemo) {
         onStartDemo();
       }
