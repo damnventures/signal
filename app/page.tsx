@@ -57,6 +57,7 @@ const HomePage = () => {
     setShowDemo(true);
     const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
     setSelectedCapsuleId(defaultCapsuleId);
+    setHasHeaderCompleted(false); // Reset header completed state
   }, []);
 
   useEffect(() => {
