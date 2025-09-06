@@ -820,6 +820,12 @@ const HomePage = () => {
     }
   }, [hasHeaderCompleted, highlightsData.length, updateStatusMessage, apiKey, accessToken, fetchCapsules, showDemo]);
 
+  useEffect(() => {
+    if (showDemo && highlightsData.length > 0) {
+        handleHeaderLoadingComplete();
+    }
+  }, [showDemo, highlightsData, handleHeaderLoadingComplete]);
+
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
       ...prevZIndexes,
