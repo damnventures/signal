@@ -10,6 +10,7 @@ import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
+import DemoWelcomeWindow from './components/DemoWelcomeWindow';
 
 interface Highlight {
   title: string;
@@ -52,6 +53,7 @@ const HomePage = () => {
   const [isFetchingCapsules, setIsFetchingCapsules] = useState(false);
   const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+  const [showDemoWelcomeWindow, setShowDemoWelcomeWindow] = useState(false);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -1193,6 +1195,7 @@ const HomePage = () => {
                   onStartThinking={startThinking}
                   onStopThinking={stopThinking}
                   onStartDemo={startDemo}
+                  onShowDemoWelcomeCard={() => setShowDemoWelcomeWindow(true)}
                 />
               </div>
 
@@ -1255,6 +1258,16 @@ const HomePage = () => {
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
               initialQuestion={argueQuestion}
             />
+
+            {showDemoWelcomeWindow && (
+              <DemoWelcomeWindow
+                id="demo-welcome-window"
+                onBringToFront={handleBringToFront}
+                initialZIndex={nextZIndex + 300}
+                initialPosition={{ x: 50, y: 50 }} // Adjust position as needed
+                onClose={() => setShowDemoWelcomeWindow(false)}
+              />
+            )}
           </>
         )}
       </main>

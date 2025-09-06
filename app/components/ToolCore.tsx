@@ -21,6 +21,7 @@ interface ToolCoreProps {
   onStartThinking?: () => void;
   onStopThinking?: () => void;
   onStartDemo?: () => void;
+  onShowDemoWelcomeCard?: () => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
@@ -33,7 +34,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   onShowResponse,
   onStartThinking,
   onStopThinking,
-  onStartDemo
+  onStartDemo,
+  onShowDemoWelcomeCard
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -130,8 +132,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       switch (classification.intent) {
         case 'demo':
           console.log('[ToolCore] Demo intent detected');
-          if (onShowResponse) {
-            onShowResponse("Alright, let's get this show on the road. Firing up the demo sequence.");
+          if (onShowDemoWelcomeCard) {
+            onShowDemoWelcomeCard();
           }
           if (onStartDemo) {
             onStartDemo();

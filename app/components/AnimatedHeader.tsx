@@ -37,11 +37,11 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [isAnimatingSize, setIsAnimatingSize] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
-    const variants = [
-    "Welcome to my humble abode. I am Craig, your personal AI assistant.",
-    "You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content.",
-    "Alternatively, you can just say 'demo' to see an automated version of what I can do.",
-    "Once you're in, you'll be able to add your own content. But first, you have to prove your worth."
+      const variants = [
+    "Good morning, Vanya! Checking your signals...",
+    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
+    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
+    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
   ];
 
   // Function to break response into meaningful chunks for streaming animation
@@ -457,12 +457,14 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
               )
             ) : loadingComplete && variantIndex === variants.length - 1 ? (
       getFinalContent()
-    ) : (
+    ) : variantIndex > 0 ? (
       <Diff
-        oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
-        newContent={variants.slice(0, variantIndex + 1).join(' ')}
+        oldContent={variants[Math.max(0, variantIndex - 1)]}
+        newContent={variants[variantIndex]}
         showDiff={showDiff}
       />
+    ) : (
+      <span dangerouslySetInnerHTML={{ __html: variants[0] }} />
     )}
           </p>
         </div>
