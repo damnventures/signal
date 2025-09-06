@@ -20,7 +20,7 @@ export interface ToolConfirmation {
 }
 
 export interface WorkerResponse {
-  intent: 'tool' | 'argue' | 'communicate' | 'login';
+  intent: 'tool' | 'argue' | 'communicate' | 'login' | 'demo';
   action: string;
   confidence: number;
   data: any;
