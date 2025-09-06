@@ -242,7 +242,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         const result = await response.json();
         console.log('[ToolCore] Communication response:', result);
         
-        if (onShowResponse && result.response) {
+        if (onShowResponse && 'response' in result) {
           let cleanResponse = result.response;
           if (typeof cleanResponse === 'string') {
             // Remove <think>...</think> blocks but preserve other content (improved cleaning)
