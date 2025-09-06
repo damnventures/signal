@@ -731,6 +731,10 @@ const HomePage = () => {
         setCapsules(data);
         if (data.length > 0) {
           setSelectedCapsuleId(data[0]._id);
+          // For authenticated users, ensure video rendering is enabled
+          setTimeout(() => {
+            setShowVideo(true);
+          }, 500);
         }
         setShowCapsulesWindow(true);
       } else {
@@ -745,9 +749,10 @@ const HomePage = () => {
   }, [authFetch, accessToken]); // Added accessToken dependency
 
   useEffect(() => {
-    if (showDemo && !isLoading && !authInProgress && selectedCapsuleId) {
-      // For non-auth users, wait for capsules fetch to complete to prevent concurrent requests
-      if (!apiKey && !accessToken && isFetchingCapsules) {
+    // Load capsule content when selectedCapsuleId changes (both for demo and authenticated users)
+    if (!isLoading && !authInProgress && selectedCapsuleId) {
+      // For non-auth users in demo mode, wait for capsules fetch to complete to prevent concurrent requests
+      if (!apiKey && !accessToken && !user && showDemo && isFetchingCapsules) {
         console.log(`[HomePage] Non-auth user - waiting for capsules fetch to complete before fetching capsule content`);
         return;
       }
@@ -758,18 +763,45 @@ const HomePage = () => {
         return;
       }
       
-      console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}`);
+      console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}, user: ${user ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress, showDemo, fetchCapsuleContent]);
+  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress, showDemo, user, fetchCapsuleContent]);
 
   // Handle capsule selection based on auth state
   useEffect(() => {
     if (!isLoading && !authInProgress) {
       if (user) {
-        // User is authenticated - clear default capsule, let capsules list set the selected one
+        // User is authenticated - show their content automatically
+        console.log(`[HomePage] User authenticated, showing user content`);
+        if (!showDemo) {
+          setShowDemo(true);
+          setShowHeader(true);
+          console.log(`[HomePage] Starting demo for authenticated user`);
+          // Trigger header completion automatically for authenticated users
+          setTimeout(() => {
+            if (!hasHeaderCompleted) {
+              console.log(`[HomePage] Auto-completing header for authenticated user`);
+              setHasHeaderCompleted(true);
+              setLoadingPhase('insights');
+              updateStatusMessage('insights');
+              setShowCards(true);
+              
+              // Fetch user's capsules immediately
+              console.log(`[HomePage] Fetching user capsules immediately`);
+              fetchCapsules(apiKey);
+              
+              setTimeout(() => {
+                setIsPageLoading(false);
+                setLoadingPhase('idle');
+                updateStatusMessage('idle');
+              }, 1000);
+            }
+          }, 100);
+        }
+        // Clear default capsule only, let fetchCapsules load user capsules
         if (selectedCapsuleId === '6887e02fa01e2f4073d3bb51') {
-          console.log(`[HomePage] User authenticated, clearing default capsule`);
+          console.log(`[HomePage] Clearing demo capsule for authenticated user`);
           setSelectedCapsuleId(null);
           setHighlightsData([]);
           setCapsuleContent("");
@@ -1029,7 +1061,7 @@ const HomePage = () => {
               />
             )}
 
-            {showDemo && showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && !isLoading && !authInProgress && !isFetchingCapsuleContent && (
+            {(showDemo || user) && showCards && highlightsData.length === 0 && !capsuleContent.startsWith('Unable') && !isLoading && !authInProgress && !isFetchingCapsuleContent && (
               <DraggableWindow
                 id="no-content-card"
                 onBringToFront={handleBringToFront}
@@ -1043,7 +1075,7 @@ const HomePage = () => {
               </DraggableWindow>
             )}
 
-            {showDemo && showCards && highlightsData.map((highlight, index) => (
+            {(showDemo || user) && showCards && highlightsData.map((highlight, index) => (
               <DraggableWindow
                 key={`highlight-${index}`}
                 id={`highlight-${index}`}
@@ -1073,7 +1105,7 @@ const HomePage = () => {
 
             {(() => {
               console.log(`[HomePage] Video render check: showVideo=${showVideo}, fetchedOriginalLinks.length=${fetchedOriginalLinks.length}, links:`, fetchedOriginalLinks);
-              return showDemo && showVideo && fetchedOriginalLinks.length > 0;
+              return (showDemo || user) && showVideo && fetchedOriginalLinks.length > 0;
             })() && (
               <DraggableWindow
                 id="original-links"
