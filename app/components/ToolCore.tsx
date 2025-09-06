@@ -130,6 +130,10 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       switch (classification.intent) {
         case 'demo':
           console.log('[ToolCore] Demo intent detected');
+          if (onShowResponse && classification.launchMessage) {
+            console.log('[ToolCore] Showing demo launch message:', classification.launchMessage);
+            onShowResponse(classification.launchMessage);
+          }
           if (onStartDemo) {
             onStartDemo();
           }
@@ -592,13 +596,6 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       {/* Bottom Left Search Bar */}
       <div 
         className="tool-core-search-bar"
-        style={{
-          position: 'fixed',
-          bottom: '25px', // Slightly higher to align center with right menu buttons (30px height)
-          left: '20px',
-          width: '66.67%', // 2/3 of screen width
-          zIndex: 1000,
-        }}
       >
         <form onSubmit={handleSubmit} style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

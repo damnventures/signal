@@ -516,6 +516,10 @@ body {
   to { background-color: initial; }
 }
 
+.tool-core-search-bar {
+    flex-grow: 1;
+}
+
 .fixed-buttons-container {
     position: fixed;
     bottom: 20px;
@@ -555,25 +559,22 @@ body {
 }
 
 .status-window {
-    position: fixed !important;
-    bottom: 22px !important;
-    right: 140px !important;
-    z-index: 999 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    height: 28px !important; /* A few pixels smaller in height */
-    border: 2px solid #000000 !important;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0;
+    overflow: visible;
+    height: 28px; /* A few pixels smaller in height */
+    border: 2px solid #000000;
     box-shadow: 
         2px 2px 0px #808080,
-        4px 4px 0px #404040 !important;
+        4px 4px 0px #404040;
     /* Override .window class styles completely */
-    width: auto !important;
-    max-width: none !important;
-    min-width: auto !important;
-    background: #ffffff !important;
+    width: auto;
+    max-width: none;
+    min-width: auto;
+    background: #ffffff;
 }
 
 .status-window .window-content {

@@ -1159,47 +1159,82 @@ const HomePage = () => {
               />
             )}
 
-            <DraggableWindow
-              id="status-window"
-              onBringToFront={handleBringToFront}
-              initialZIndex={cardZIndexes['status-window'] || nextZIndex + 1}
-              initialPosition={calculateStatusWindowPosition()}
-              isDraggable={false}
-              className="status-window"
-            >
-              <div className="window-content">
-                <p className="main-text status-message-text">{statusMessage}</p>
-              </div>
-            </DraggableWindow>
+            <div style={{
+              position: 'fixed',
+              bottom: '20px',
+              left: '20px',
+              right: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              zIndex: 1000
+            }}>
+              {/* Tool Core - Always active, handles its own UI */}
+              <ToolCore
+                capsuleId={selectedCapsuleId || ''}
+                capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
+                onArgueRequest={(question: string) => {
+                  setArgueQuestion(question);
+                  setShowArguePopup(true);
+                }}
+                onBringToFront={handleBringToFront}
+                initialZIndex={nextZIndex + 200}
+                onRefreshCapsule={() => {
+                  if (selectedCapsuleId) {
+                    console.log('[HomePage] Refreshing capsule content after job completion');
+                    fetchCapsuleContent(apiKey, selectedCapsuleId);
+                  }
+                }}
+                onShowResponse={(message: string) => {
+                  console.log('[HomePage] Showing response in header:', message);
+                  setHeaderResponseMessage(message);
+                }}
+                onStartThinking={startThinking}
+                onStopThinking={stopThinking}
+                onStartDemo={startDemo}
+              />
 
-            <div className="fixed-buttons-container">
-              <button
-                className={`action-button ${isPageLoading ? 'blinking' : ''}`}
-                onClick={() => window.location.reload()}
+              <DraggableWindow
+                id="status-window"
+                onBringToFront={handleBringToFront}
+                initialZIndex={cardZIndexes['status-window'] || nextZIndex + 1}
+                isDraggable={false}
+                className="status-window"
               >
-                <img src="/signal.png" alt="Refresh" />
-              </button>
-              
-              {/* New Argue button */}
-              <button 
-                className="action-button argue-button" 
-                onClick={() => setShowArguePopup(true)}
-                title="Open Argue Tool"
-              >
-                <span>🎯</span>
-              </button>
-              
-              {/* Tool Core button */}
-              <button 
-                className="action-button tools-button" 
-                title="Smart Tools - Drop links, ask questions, or chat"
-              >
-                <span>🛠️</span>
-              </button>
-              
-              <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
-                <img src="/shrinked.png" alt="Shrinked AI" />
-              </button>
+                <div className="window-content">
+                  <p className="main-text status-message-text">{statusMessage}</p>
+                </div>
+              </DraggableWindow>
+
+              <div className="fixed-buttons-container" style={{position: 'relative', bottom: 'auto', right: 'auto'}}>
+                <button
+                  className={`action-button ${isPageLoading ? 'blinking' : ''}`}
+                  onClick={() => window.location.reload()}
+                >
+                  <img src="/signal.png" alt="Refresh" />
+                </button>
+                
+                {/* New Argue button */}
+                <button 
+                  className="action-button argue-button" 
+                  onClick={() => setShowArguePopup(true)}
+                  title="Open Argue Tool"
+                >
+                  <span>🎯</span>
+                </button>
+                
+                {/* Tool Core button */}
+                <button 
+                  className="action-button tools-button" 
+                  title="Smart Tools - Drop links, ask questions, or chat"
+                >
+                  <span>🛠️</span>
+                </button>
+                
+                <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
+                  <img src="/shrinked.png" alt="Shrinked AI" />
+                </button>
+              </div>
             </div>
 
             <ArguePopup 
@@ -1212,31 +1247,6 @@ const HomePage = () => {
               onBringToFront={handleBringToFront}
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
               initialQuestion={argueQuestion}
-            />
-
-            {/* Tool Core - Always active, handles its own UI */}
-            <ToolCore
-              capsuleId={selectedCapsuleId || ''}
-              capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
-              onArgueRequest={(question: string) => {
-                setArgueQuestion(question);
-                setShowArguePopup(true);
-              }}
-              onBringToFront={handleBringToFront}
-              initialZIndex={nextZIndex + 200}
-              onRefreshCapsule={() => {
-                if (selectedCapsuleId) {
-                  console.log('[HomePage] Refreshing capsule content after job completion');
-                  fetchCapsuleContent(apiKey, selectedCapsuleId);
-                }
-              }}
-              onShowResponse={(message: string) => {
-                console.log('[HomePage] Showing response in header:', message);
-                setHeaderResponseMessage(message);
-              }}
-              onStartThinking={startThinking}
-              onStopThinking={stopThinking}
-              onStartDemo={startDemo}
             />
           </>
         )}
