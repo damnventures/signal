@@ -39,9 +39,9 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 
       const variants = [
     "Welcome to my humble abode. I am Craig, your personal AI assistant.",
-    "You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content.",
-    "Alternatively, you can just say 'demo' to see an automated version of what I can do.",
-    "Once you're in, you'll be able to add your own content. But first, you have to prove your worth."
+    "Welcome to my humble abode. I am Craig, your personal AI assistant. You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content.",
+    "Welcome to my humble abode. I am Craig, your personal AI assistant. You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content. Alternatively, you can just say 'demo' to see an automated version of what I can do.",
+    "Welcome to my humble abode. I am Craig, your personal AI assistant. You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content. Alternatively, you can just say 'demo' to see an automated version of what I can do. Once you're in, you'll be able to add your own content. But first, you have to prove your worth."
   ];
 
   // Function to break response into meaningful chunks for streaming animation
