@@ -38,10 +38,10 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const measureRef = useRef<HTMLDivElement | null>(null);
 
   const variants = [
-    "Good morning, Vanya! Checking your signals...",
-    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
-    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
-    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
+    "Welcome to my humble abode. I am Craig, your personal AI assistant.",
+    "You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content.",
+    "Alternatively, you can just say 'demo' to see an automated version of what I can do.",
+    "Once you're in, you'll be able to add your own content. But first, you have to prove your worth."
   ];
 
   // Function to break response into meaningful chunks for streaming animation

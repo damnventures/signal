@@ -130,9 +130,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       switch (classification.intent) {
         case 'demo':
           console.log('[ToolCore] Demo intent detected');
-          if (onShowResponse && classification.launchMessage) {
-            console.log('[ToolCore] Showing demo launch message:', classification.launchMessage);
-            onShowResponse(classification.launchMessage);
+          if (onShowResponse) {
+            onShowResponse("Alright, let's get this show on the road. Firing up the demo sequence.");
           }
           if (onStartDemo) {
             onStartDemo();
