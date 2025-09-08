@@ -82,7 +82,8 @@ const HomePage = () => {
         body: JSON.stringify({
           accessToken,
           apiKey,
-          lastStateHash: wrapStateHash
+          lastStateHash: wrapStateHash,
+          username: user?.email?.split('@')[0] || user?.username || 'user'
         }),
       });
 
@@ -157,7 +158,8 @@ const HomePage = () => {
           body: JSON.stringify({
             accessToken,
             apiKey,
-            lastStateHash: wrapStateHash
+            lastStateHash: wrapStateHash,
+            username: user?.email?.split('@')[0] || user?.username || 'user'
           }),
         });
 

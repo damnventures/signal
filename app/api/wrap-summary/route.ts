@@ -20,6 +20,7 @@ interface WrapRequest {
   accessToken?: string;
   apiKey?: string;
   lastStateHash?: string;
+  username?: string;
 }
 
 interface WrapResponse {
@@ -139,7 +140,7 @@ async function getUserProfile(accessToken: string, apiKey?: string): Promise<any
 export async function POST(request: NextRequest) {
   try {
     const body: WrapRequest = await request.json();
-    const { accessToken, apiKey, lastStateHash } = body;
+    const { accessToken, apiKey, lastStateHash, username } = body;
 
     if (!accessToken && !apiKey) {
       return NextResponse.json({
@@ -149,9 +150,9 @@ export async function POST(request: NextRequest) {
 
     console.log('[wrap-summary] Processing request...');
 
-    // Get user profile for personalization
-    const userProfile = await getUserProfile(accessToken || '', apiKey);
-    const username = userProfile?.email?.split('@')[0] || userProfile?.username || 'user';
+    // Use username from frontend (already extracted from user profile there)
+    const finalUsername = username || 'user';
+    console.log('[wrap-summary] DEBUG: Using username:', finalUsername);
 
     // Fetch user's capsules
     const capsules = await fetchUserCapsules(accessToken || '', apiKey);
@@ -215,7 +216,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         capsules: enhancedCapsules,
-        userId: username,
+        userId: finalUsername,
         lastStateHash,
         systemPrompt: getWrapPrompt()
       }),
