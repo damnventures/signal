@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getWrapPrompt } from '../../components/WrapPrompt';
 
 const WRAP_WORKER_URL = process.env.WRAP_WORKER_URL || 'https://wrap.shrinked.workers.dev/';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.shrinked.ai';
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
       enhancedCapsules.push(...capsules.slice(maxCapsulesWithContent));
     }
 
-    // Call Wrap worker
+    // Call Wrap worker with frontend prompt (like Argue)
     console.log('[wrap-summary] Calling wrap worker with', enhancedCapsules.length, 'capsules');
     
     const wrapResponse = await fetch(WRAP_WORKER_URL, {
@@ -180,7 +181,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         capsules: enhancedCapsules,
         userId: 'user', // Could extract from token if needed
-        lastStateHash
+        lastStateHash,
+        systemPrompt: getWrapPrompt()
       }),
     });
 

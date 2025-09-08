@@ -936,21 +936,24 @@ const HomePage = () => {
                 setLoadingPhase('idle');
                 updateStatusMessage('idle');
                 
-                // Show wrap welcome window for authenticated user instead of status message
+                // Show wrap welcome window immediately for authenticated user
                 if (user) {
                   console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
+                  // Show window immediately with loading state
+                  setShowDemoWelcomeWindow(true);
+                  
                   setTimeout(() => {
+                    console.log('[HomePage] Fetching wrap summary...');
                     fetchWrapSummary(user).then((summary) => {
+                      console.log('[HomePage] Got wrap summary:', summary);
                       setLastWrapSummary(summary);
-                      setShowDemoWelcomeWindow(true); // Show welcome window with wrap summary
-                      console.log('[HomePage] Triggered wrap welcome window');
+                      // Window will automatically update due to prop change
                     }).catch(error => {
                       console.error('[HomePage] Error fetching wrap summary:', error);
-                      // Show fallback welcome
-                      setLastWrapSummary(`Good morning, ${user.email.split('@')[0]}! Your capsules are ready for analysis.`);
-                      setShowDemoWelcomeWindow(true);
+                      // Show fallback wrap summary
+                      setLastWrapSummary(`Good morning, ${user.email.split('@')[0]}! Your capsules are loaded and ready for analysis.`);
                     });
-                  }, 1500); // Show welcome window after idle
+                  }, 1000); // Start fetching after 1 second
                 }
               }, 1000);
             }

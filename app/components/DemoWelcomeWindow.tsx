@@ -26,14 +26,24 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
 
-  // Use wrap summary for authenticated users, or demo variants for non-auth users
+  // For authenticated users, show loading then wrap summary
+  // For non-auth users, show demo variants
   const getMessageVariants = () => {
-    if (wrapSummary && userEmail) {
-      // Authenticated user - show wrap summary with typewriter effect
-      return [
-        `Good morning, ${userEmail.split('@')[0]}! Checking your signals...`,
-        wrapSummary
-      ];
+    if (userEmail) {
+      // Authenticated user flow
+      if (!wrapSummary) {
+        // Still loading wrap summary
+        return [
+          `Good morning, ${userEmail.split('@')[0]}! Checking your signals...`,
+          `Good morning, ${userEmail.split('@')[0]}! Running wrap() on your capsules...`
+        ];
+      } else {
+        // Got wrap summary - show it
+        return [
+          `Good morning, ${userEmail.split('@')[0]}! Checking your signals...`,
+          wrapSummary
+        ];
+      }
     } else {
       // Non-authenticated user - show demo variants
       return [
@@ -137,6 +147,15 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   };
 
   // Cycle through variants with pause
+  // Watch for prop changes (wrap summary arriving)
+  useEffect(() => {
+    if (userEmail && wrapSummary) {
+      // Reset animation when wrap summary arrives
+      setVariantIndex(0);
+      setShowDiff(false);
+    }
+  }, [wrapSummary, userEmail]);
+
   useEffect(() => {
     const delay = variantIndex === 0 ? 2000 : 1500;
     const timer = setTimeout(() => {
@@ -145,13 +164,19 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         setVariantIndex(prev => prev + 1);
         setTimeout(() => setShowDiff(false), 1000);
       } else {
-        // Animation complete, close after a delay
-        setTimeout(onClose, 3000); // Close after 3 seconds
+        // Animation complete
+        if (userEmail) {
+          // For authenticated users, don't auto-close - let them close manually
+          console.log('[DemoWelcomeWindow] Animation complete for auth user');
+        } else {
+          // For demo users, close after delay
+          setTimeout(onClose, 3000);
+        }
       }
     }, delay);
     
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose]);
+  }, [variantIndex, variants.length, onClose, userEmail]);
 
   // Update displayed message
   useEffect(() => {
