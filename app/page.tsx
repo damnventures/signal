@@ -936,22 +936,21 @@ const HomePage = () => {
                 setLoadingPhase('idle');
                 updateStatusMessage('idle');
                 
-                // Fetch wrap summary after status is set to idle
+                // Show wrap welcome window for authenticated user instead of status message
                 if (user) {
-                  console.log(`[HomePage] Fetching wrap summary for authenticated user after idle`);
+                  console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
                   setTimeout(() => {
                     fetchWrapSummary(user).then((summary) => {
-                      // Clear any existing status intervals before setting wrap summary
-                      if (statusIntervalRef.current) {
-                        clearInterval(statusIntervalRef.current);
-                        statusIntervalRef.current = null;
-                      }
-                      animateStatusMessage(summary);
-                      console.log('[HomePage] Set wrap summary and cleared status intervals');
+                      setLastWrapSummary(summary);
+                      setShowDemoWelcomeWindow(true); // Show welcome window with wrap summary
+                      console.log('[HomePage] Triggered wrap welcome window');
                     }).catch(error => {
-                      console.error('[HomePage] Error fetching initial wrap summary:', error);
+                      console.error('[HomePage] Error fetching wrap summary:', error);
+                      // Show fallback welcome
+                      setLastWrapSummary(`Good morning, ${user.email.split('@')[0]}! Your capsules are ready for analysis.`);
+                      setShowDemoWelcomeWindow(true);
                     });
-                  }, 2000); // Wait 2 more seconds after idle state
+                  }, 1500); // Show welcome window after idle
                 }
               }, 1000);
             }
@@ -1476,6 +1475,8 @@ const HomePage = () => {
                 initialZIndex={nextZIndex + 300}
                 initialPosition={{ x: 50, y: 50 }} // Adjust position as needed
                 onClose={() => setShowDemoWelcomeWindow(false)}
+                wrapSummary={user ? lastWrapSummary : null}
+                userEmail={user?.email}
               />
             )}
           </>

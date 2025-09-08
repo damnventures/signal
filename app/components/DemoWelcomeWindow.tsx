@@ -9,6 +9,8 @@ interface DemoWelcomeWindowProps {
   initialZIndex: number;
   initialPosition: { x: number; y: number };
   onClose: () => void;
+  wrapSummary?: string | null;
+  userEmail?: string;
 }
 
 const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
@@ -17,17 +19,33 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   initialZIndex,
   initialPosition,
   onClose,
+  wrapSummary,
+  userEmail,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
 
-  const variants = [
-    "Good morning, Vanya! Checking your signals...",
-    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
-    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
-    "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
-  ];
+  // Use wrap summary for authenticated users, or demo variants for non-auth users
+  const getMessageVariants = () => {
+    if (wrapSummary && userEmail) {
+      // Authenticated user - show wrap summary with typewriter effect
+      return [
+        `Good morning, ${userEmail.split('@')[0]}! Checking your signals...`,
+        wrapSummary
+      ];
+    } else {
+      // Non-authenticated user - show demo variants
+      return [
+        "Good morning, Vanya! Checking your signals...",
+        "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
+        "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
+        "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
+      ];
+    }
+  };
+
+  const variants = getMessageVariants();
 
   // Diff component for highlighting changes
   interface Segment {
