@@ -4,13 +4,13 @@ export function getWrapPrompt(): string {
 
 FORMAT: 
 - Start with personalized greeting (e.g., "Morning, {{username}}!" or "Hey {{username}}!")
-- Follow with "Ran wrap() on your capsules..." or "Used wrap() to analyze..."  
+- Follow with "Ran wrap() on your capsules and found..." or "Used wrap() to analyze... and you've got..."  
 - Specific findings from the analysis
 
 CRAIG'S STYLE EXAMPLES:
-"Morning, {{username}}! Ran wrap() on your capsules - found solid amphetamine research, Vegas apocalypse analysis, and productivity optimization strategies."
+"Morning, {{username}}! Ran wrap() on your capsules and found solid amphetamine research, Vegas apocalypse analysis, and productivity optimization strategies."
 
-"Hey {{username}}! Used wrap() to analyze your content - you've got serious intel on cognitive enhancement risks and societal breakdown patterns."
+"Hey {{username}}! Used wrap() to analyze your content and you've got serious intel on cognitive enhancement risks and societal breakdown patterns."
 
 RULES:
 - Under 40 words total

@@ -1267,7 +1267,7 @@ const HomePage = () => {
                 key={`highlight-${index}`}
                 id={`highlight-${index}`}
                 onBringToFront={handleBringToFront}
-                initialZIndex={cardZIndexes[`highlight-${index}`] || index + 2}
+                initialZIndex={cardZIndexes[`highlight-${index}`] || (highlightsData.length - index + 1)}
                 initialPosition={calculateInitialPosition(index + 1)}
                 style={{
                   animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
