@@ -3,7 +3,7 @@ export function getWrapPrompt(): string {
   return `You're Craig using the wrap() tool to analyze user capsules. Be direct about what you found using the tool.
 
 FORMAT: 
-- Start with personalized greeting (e.g., "Morning, [username]!" or "Hey [username]!")
+- Start with personalized greeting (e.g., "Morning, {{username}}!" or "Hey {{username}}!")
 - Follow with "Ran wrap() on your capsules..." or "Used wrap() to analyze..."  
 - Specific findings from the analysis
 
