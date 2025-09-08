@@ -202,6 +202,17 @@ const HomePage = () => {
     setIsClient(true);
   }, []);
 
+  // Hide header for authenticated users (they get DemoWelcomeWindow instead)
+  useEffect(() => {
+    if (user && isClient) {
+      console.log('[HomePage] Hiding header for authenticated user');
+      setShowHeader(false);
+    } else if (!user && isClient) {
+      console.log('[HomePage] Showing header for non-authenticated user');
+      setShowHeader(true);
+    }
+  }, [user, isClient]);
+
   // Handle auth flow: check if logged in, fetch/create token
   useEffect(() => {
     const handleAuth = async () => {
@@ -386,12 +397,20 @@ const HomePage = () => {
   }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData, logout, fetchWrapSummary]);
 
   const statusMessages = {
-    signal: [
+    signal: user ? [
+      "Loading your capsules...",
+      "Fetching personal content collection...",
+      "Organizing your knowledge base..."
+    ] : [
       "Fetching data sources and parsing context...",
       "Loading signal data from API endpoints...",
       "Retrieving file metadata and content links..."
     ],
-    insights: [
+    insights: user ? [
+      "Extracting highlights from your capsules...",
+      "Processing your personal insights...",
+      "Preparing your content for analysis..."
+    ] : [
       "Extracting highlights from markdown content...",
       "Processing text blocks and identifying key quotes...",
       "Structuring insights into presentable format..."
@@ -916,48 +935,53 @@ const HomePage = () => {
         console.log(`[HomePage] User authenticated, showing user content`);
         if (!showDemo) {
           setShowDemo(true);
-          setShowHeader(true);
+          setShowHeader(false); // Don't show AnimatedHeader for authenticated users
           console.log(`[HomePage] Starting demo for authenticated user`);
-          // Trigger header completion automatically for authenticated users
+          // Start proper loading sequence for authenticated users
+          console.log(`[HomePage] Starting loading sequence for authenticated user`);
+          
+          // Phase 1: Signal phase - show welcome window + load capsules
+          setLoadingPhase('signal');
+          updateStatusMessage('signal');
+          
+          // Show wrap welcome window immediately
+          if (user) {
+            console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
+            setShowDemoWelcomeWindow(true);
+            
+            // Fetch wrap summary in background
+            setTimeout(() => {
+              console.log('[HomePage] Fetching wrap summary...');
+              fetchWrapSummary(user).then((summary) => {
+                console.log('[HomePage] Got wrap summary:', summary);
+                setLastWrapSummary(summary);
+              }).catch(error => {
+                console.error('[HomePage] Error fetching wrap summary:', error);
+                setLastWrapSummary(`Good morning, ${user.email.split('@')[0]}! Your capsules are loaded and ready for analysis.`);
+              });
+            }, 1000);
+          }
+          
+          // Phase 2: After 3 seconds, move to insights phase + show capsules + fetch data
           setTimeout(() => {
-            if (!hasHeaderCompleted) {
-              console.log(`[HomePage] Auto-completing header for authenticated user`);
-              setHasHeaderCompleted(true);
-              setLoadingPhase('insights');
-              updateStatusMessage('insights');
-              setShowCards(true);
-              
-              // Fetch user's capsules immediately
-              console.log(`[HomePage] Fetching user capsules immediately`);
-              fetchCapsules(apiKey);
-              
-              setTimeout(() => {
-                setIsPageLoading(false);
-                setLoadingPhase('idle');
-                updateStatusMessage('idle');
-                
-                // Show wrap welcome window immediately for authenticated user
-                if (user) {
-                  console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
-                  // Show window immediately with loading state
-                  setShowDemoWelcomeWindow(true);
-                  
-                  setTimeout(() => {
-                    console.log('[HomePage] Fetching wrap summary...');
-                    fetchWrapSummary(user).then((summary) => {
-                      console.log('[HomePage] Got wrap summary:', summary);
-                      setLastWrapSummary(summary);
-                      // Window will automatically update due to prop change
-                    }).catch(error => {
-                      console.error('[HomePage] Error fetching wrap summary:', error);
-                      // Show fallback wrap summary
-                      setLastWrapSummary(`Good morning, ${user.email.split('@')[0]}! Your capsules are loaded and ready for analysis.`);
-                    });
-                  }, 1000); // Start fetching after 1 second
-                }
-              }, 1000);
-            }
-          }, 100);
+            console.log(`[HomePage] Moving to insights phase - showing capsules`);
+            setHasHeaderCompleted(true);
+            setLoadingPhase('insights');
+            updateStatusMessage('insights');
+            setShowCards(true);
+            
+            // Fetch user's capsules
+            console.log(`[HomePage] Fetching user capsules`);
+            fetchCapsules(apiKey);
+            
+            // Phase 3: After 4 more seconds, show highlights + video + move to idle
+            setTimeout(() => {
+              console.log(`[HomePage] Moving to idle phase - showing highlights and video`);
+              setIsPageLoading(false);
+              setLoadingPhase('idle');
+              updateStatusMessage('idle');
+            }, 4000); // Give time for highlights to load
+          }, 3000); // Wait for welcome window to be seen
         }
         // Clear default capsule only, let fetchCapsules load user capsules
         if (selectedCapsuleId === '6887e02fa01e2f4073d3bb51') {
