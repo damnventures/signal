@@ -105,6 +105,37 @@ async function fetchEnhancedCapsule(capsuleId: string, accessToken: string, apiK
   }
 }
 
+async function getUserProfile(accessToken: string, apiKey?: string): Promise<any> {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (apiKey) {
+      headers['x-api-key'] = apiKey;
+    }
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      headers,
+      cache: 'no-store'
+    });
+
+    if (response.ok) {
+      return await response.json();
+    } else {
+      console.warn('[wrap-summary] Failed to fetch user profile');
+      return null;
+    }
+  } catch (error) {
+    console.warn('[wrap-summary] Error fetching user profile:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: WrapRequest = await request.json();
@@ -117,6 +148,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[wrap-summary] Processing request...');
+
+    // Get user profile for personalization
+    const userProfile = await getUserProfile(accessToken || '', apiKey);
+    const username = userProfile?.email?.split('@')[0] || userProfile?.username || 'user';
 
     // Fetch user's capsules
     const capsules = await fetchUserCapsules(accessToken || '', apiKey);
@@ -180,7 +215,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         capsules: enhancedCapsules,
-        userId: 'user', // Could extract from token if needed
+        userId: username,
         lastStateHash,
         systemPrompt: getWrapPrompt()
       }),

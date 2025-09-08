@@ -12,6 +12,7 @@ interface AnimatedHeaderProps {
   className?: string;
   responseMessage?: string;
   onResponseComplete?: () => void;
+  isAuthenticated?: boolean;
 }
 
 const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
@@ -23,6 +24,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   className,
   responseMessage,
   onResponseComplete,
+  isAuthenticated = false,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
@@ -37,7 +39,11 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [isAnimatingSize, setIsAnimatingSize] = useState(false);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
-      const variants = [
+      const variants = isAuthenticated ? [
+    // For authenticated users, skip the intro and go straight to ready state
+    "Ready to analyze your content."
+  ] : [
+    // For non-authenticated users, show the full intro sequence
     "Welcome to my humble abode. I am Craig, your personal AI assistant.",
     "Welcome to my humble abode. I am Craig, your personal AI assistant. You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content.",
     "Welcome to my humble abode. I am Craig, your personal AI assistant. You can try to log in by convincing me you're worthy. Or, you can ask me any question about Vanya's demo content. Alternatively, you can just say 'demo' to see an automated version of what I can do.",

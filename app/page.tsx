@@ -1035,11 +1035,11 @@ const HomePage = () => {
     const headerHeight = 100;
 
     if (isDesktop) {
-      return { x: 100 + offset, y: 100 + headerHeight + offset };
+      return { x: 100 + offset, y: 170 + headerHeight + offset }; // Moved down 70px to avoid welcome window overlap
     } else {
       const cardWidth = 320;
       const centerX = (window.innerWidth - cardWidth) / 2;
-      return { x: centerX + offset, y: 80 + headerHeight + offset };
+      return { x: centerX + offset, y: 150 + headerHeight + offset }; // Moved down 70px to avoid welcome window overlap
     }
   }, []);
 
@@ -1218,6 +1218,7 @@ const HomePage = () => {
                   // Don't auto-clear responses - let them persist until next action
                   console.log('[HomePage] Response animation completed, keeping message visible');
                 }}
+                isAuthenticated={!!user}
               />
             )}
 

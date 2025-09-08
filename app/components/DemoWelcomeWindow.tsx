@@ -32,15 +32,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     if (userEmail) {
       // Authenticated user flow
       if (!wrapSummary) {
-        // Still loading wrap summary
+        // Still loading wrap summary - show minimal loading state
         return [
-          `Good morning, ${userEmail.split('@')[0]}! Checking your signals...`,
-          `Good morning, ${userEmail.split('@')[0]}! Running wrap() on your capsules...`
+          "Analyzing your capsules..."
         ];
       } else {
-        // Got wrap summary - show it
+        // Got wrap summary - show the AI-generated message (which includes greeting)
         return [
-          `Good morning, ${userEmail.split('@')[0]}! Checking your signals...`,
           wrapSummary
         ];
       }
