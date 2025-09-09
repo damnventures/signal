@@ -11,6 +11,7 @@ interface DemoWelcomeWindowProps {
   onClose: () => void;
   wrapSummary?: string | null;
   userEmail?: string;
+  demoMessage?: string | null; // For demo users
 }
 
 const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
@@ -21,12 +22,14 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   onClose,
   wrapSummary,
   userEmail,
+  demoMessage,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
 
   // For authenticated users, show loading then wrap summary
+  // For demo users, show demo message
   // For non-auth users, show demo variants
   const getMessageVariants = () => {
     if (userEmail) {
@@ -42,8 +45,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
           wrapSummary
         ];
       }
+    } else if (demoMessage) {
+      // Demo user flow - show the demo launch message
+      return [
+        demoMessage
+      ];
     } else {
-      // Non-authenticated user - show demo variants
+      // Non-authenticated user - show default demo variants
       return [
         "Good morning, Vanya! Checking your signals...",
         "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
@@ -166,15 +174,18 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         if (userEmail) {
           // For authenticated users, don't auto-close - let them close manually
           console.log('[DemoWelcomeWindow] Animation complete for auth user');
+        } else if (demoMessage) {
+          // For demo users with demo message, don't auto-close - let them close manually
+          console.log('[DemoWelcomeWindow] Animation complete for demo user - keeping window open');
         } else {
-          // For demo users, close after delay
+          // For regular non-auth users (default demo variants), close after delay
           setTimeout(onClose, 3000);
         }
       }
     }, delay);
     
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, userEmail]);
+  }, [variantIndex, variants.length, onClose, userEmail, demoMessage]);
 
   // Update displayed message
   useEffect(() => {

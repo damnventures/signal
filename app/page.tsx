@@ -60,12 +60,19 @@ const HomePage = () => {
   const [lastWrapSummary, setLastWrapSummary] = useState<string>('');
   const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [showStore, setShowStore] = useState(false);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
     const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
     setSelectedCapsuleId(defaultCapsuleId);
     setHasHeaderCompleted(false); // Reset header completed state
+  }, []);
+
+  const handleDemoRequest = useCallback((message: string) => {
+    console.log('[HomePage] Setting demo message:', message);
+    setDemoMessage(message);
+    setShowDemoWelcomeWindow(true);
   }, []);
 
   const fetchWrapSummary = useCallback(async (userProfile: any, hasAuth: boolean = true): Promise<string> => {
@@ -1417,6 +1424,7 @@ const HomePage = () => {
                   onStopThinking={stopThinking}
                   onStartDemo={startDemo}
                   onShowDemoWelcomeCard={() => setShowDemoWelcomeWindow(true)}
+                  onDemoRequest={handleDemoRequest}
                 />
               </div>
 
@@ -1510,6 +1518,7 @@ const HomePage = () => {
                 onClose={() => setShowDemoWelcomeWindow(false)}
                 wrapSummary={user ? lastWrapSummary : null}
                 userEmail={user?.email}
+                demoMessage={!user ? demoMessage : null}
               />
             )}
 

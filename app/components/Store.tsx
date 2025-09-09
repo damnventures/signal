@@ -30,14 +30,27 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  // Placeholder integrations data (6 per row)
-  const integrations = Array.from({ length: 18 }, (_, index) => ({
-    id: `integration-${index + 1}`,
-    name: `Integration ${index + 1}`,
-    description: `Description for integration ${index + 1}`,
-    icon: '🔗', // Placeholder icon
-    category: 'General'
-  }));
+  // Sources/Capsules data (6 per row)
+  const sources = [
+    { id: '1', name: 'YC Reducto AI', author: 'Y Combinator', icon: 'cd' },
+    { id: '2', name: 'Slack Conversations', author: 'Workspace Team', icon: 'cd' },
+    { id: '3', name: 'Meeting Notes Q3', author: 'John Smith', icon: 'cd' },
+    { id: '4', name: 'Research Papers', author: 'MIT Research', icon: 'cd' },
+    { id: '5', name: 'Podcast Transcripts', author: 'Joe Rogan', icon: 'cd' },
+    { id: '6', name: 'Code Reviews', author: 'Engineering', icon: 'cd' },
+    { id: '7', name: 'Customer Feedback', author: 'Support Team', icon: 'cd' },
+    { id: '8', name: 'Design Systems', author: 'Design Team', icon: 'cd' },
+    { id: '9', name: 'API Documentation', author: 'Platform', icon: 'cd' },
+    { id: '10', name: 'Sales Calls', author: 'Sales Team', icon: 'cd' },
+    { id: '11', name: 'Twitter Threads', author: 'Social Media', icon: 'cd' },
+    { id: '12', name: 'YouTube Videos', author: 'Content Team', icon: 'cd' },
+    { id: '13', name: 'Blog Articles', author: 'Marketing', icon: 'cd' },
+    { id: '14', name: 'User Interviews', author: 'Product Team', icon: 'cd' },
+    { id: '15', name: 'Industry Reports', author: 'Research', icon: 'cd' },
+    { id: '16', name: 'Conference Talks', author: 'Speakers', icon: 'cd' },
+    { id: '17', name: 'Books Summary', author: 'Library', icon: 'cd' },
+    { id: '18', name: 'Email Threads', author: 'Communications', icon: 'cd' }
+  ];
 
   if (!isOpen) return null;
 
@@ -65,22 +78,22 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
 
         {/* Status Bar */}
         <div className="store-status-bar">
-          <div className="status-left">{integrations.length} items</div>
-          <div className="status-center">Available integrations and tools</div>
+          <div className="status-left">{sources.length} items</div>
+          <div className="status-center">Available sources and capsules</div>
           <div className="status-right">Ready to connect</div>
         </div>
 
         {/* Content */}
         <div className="store-content">
           <div className="store-grid">
-            {integrations.map((integration) => (
-              <div key={integration.id} className="integration-card">
-                <div className="integration-icon">
-                  {integration.icon}
+            {sources.map((source) => (
+              <div key={source.id} className="source-card">
+                <div className="source-icon">
+                  💿
                 </div>
-                <div className="integration-info">
-                  <h3 className="integration-name">{integration.name}</h3>
-                  <p className="integration-description">{integration.description}</p>
+                <div className="source-info">
+                  <div className="source-name">{source.name}</div>
+                  <div className="source-author">{source.author}</div>
                 </div>
               </div>
             ))}
@@ -131,6 +144,15 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           background: #e0e0e0;
           border-bottom: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          background-image: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 1px,
+            #d0d0d0 1px,
+            #d0d0d0 2px,
+            transparent 2px,
+            transparent 3px
+          );
         }
 
         .store-title-text {
@@ -205,57 +227,59 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           margin: 0;
         }
 
-        .integration-card {
+        .source-card {
           background: #ffffff;
           border: 1px solid #000000;
           border-radius: 0;
-          padding: 12px 8px;
+          padding: 16px 12px;
           text-align: center;
           cursor: pointer;
           transition: background-color 0.1s ease;
-          min-height: 100px;
+          min-height: 120px;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           align-items: center;
           box-shadow: 1px 1px 0 #c0c0c0;
         }
 
-        .integration-card:hover {
+        .source-card:hover {
           background: #e0e0e0;
         }
 
-        .integration-card:active {
+        .source-card:active {
           background: #d0d0d0;
           box-shadow: inset 1px 1px 2px #a0a0a0;
         }
 
-        .integration-icon {
-          font-size: 24px;
-          margin-bottom: 8px;
+        .source-icon {
+          font-size: 32px;
+          margin-bottom: 12px;
+          filter: grayscale(0.3) brightness(0.9);
         }
 
-        .integration-info {
-          flex: 1;
+        .source-info {
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          align-items: center;
+          gap: 4px;
         }
 
-        .integration-name {
-          margin: 0 0 4px 0;
+        .source-name {
           font-size: 11px;
           font-weight: bold;
           color: #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          text-align: center;
+          line-height: 1.2;
         }
 
-        .integration-description {
-          margin: 0;
+        .source-author {
           font-size: 9px;
-          color: #000000;
-          line-height: 1.2;
+          color: #666666;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          text-align: center;
+          line-height: 1.1;
         }
 
         /* Responsive adjustments */

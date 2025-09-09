@@ -22,6 +22,7 @@ interface ToolCoreProps {
   onStopThinking?: () => void;
   onStartDemo?: () => void;
   onShowDemoWelcomeCard?: () => void;
+  onDemoRequest?: (message: string) => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({ 
@@ -35,7 +36,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   onStartThinking,
   onStopThinking,
   onStartDemo,
-  onShowDemoWelcomeCard
+  onShowDemoWelcomeCard,
+  onDemoRequest
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -130,16 +132,6 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       
       // CRITICAL: Handle each intent type properly
       switch (classification.intent) {
-        case 'demo':
-          console.log('[ToolCore] Demo intent detected');
-          if (onShowDemoWelcomeCard) {
-            onShowDemoWelcomeCard();
-          }
-          if (onStartDemo) {
-            onStartDemo();
-          }
-          break;
-          
         case 'tool':
           if (classification.action === 'collect_media') {
             console.log('[ToolCore] Media collection intent detected');
@@ -192,6 +184,25 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           // 2. Handle login process (tool execution)
           console.log('[ToolCore] Starting login process');
           await handleLogin();
+          break;
+          
+        case 'demo':
+          console.log('[ToolCore] Demo intent detected');
+          
+          // 1. Show special demo window with the demo message
+          if (onDemoRequest && classification.launchMessage) {
+            console.log('[ToolCore] Showing demo window with message:', classification.launchMessage);
+            onDemoRequest(classification.launchMessage);
+          } else if (onShowDemoWelcomeCard) {
+            console.log('[ToolCore] Showing demo welcome window (fallback)');
+            onShowDemoWelcomeCard();
+          }
+          
+          // 2. Start the demo (tool execution - loads demo content)
+          console.log('[ToolCore] Starting demo');
+          if (onStartDemo) {
+            onStartDemo();
+          }
           break;
           
         case 'communicate':
