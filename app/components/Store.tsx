@@ -8,6 +8,8 @@ interface StoreProps {
 }
 
 const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
+
   // Handle ESC key to close
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
@@ -87,7 +89,11 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         <div className="store-content">
           <div className="store-grid">
             {sources.map((source) => (
-              <div key={source.id} className="source-card">
+              <div 
+                key={source.id} 
+                className={`source-card ${selectedSource === source.id ? 'selected' : ''}`}
+                onClick={() => setSelectedSource(source.id)}
+              >
                 <div className="source-icon">
                   💿
                 </div>
@@ -120,7 +126,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           left: 5%;
           width: 90%;
           height: 90%;
-          background: #f0f0f0;
+          background: #ffffff;
           border: 2px solid #000000;
           border-radius: 0;
           z-index: 9999;
@@ -141,18 +147,26 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           align-items: center;
           position: relative;
           padding: 8px 16px;
-          background: #e0e0e0;
+          background: #ffffff;
           border-bottom: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+        
+        .store-title-bar::before {
+          content: '';
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          right: 3px;
+          bottom: 3px;
           background-image: repeating-linear-gradient(
             0deg,
-            transparent,
+            #000000 0px,
+            #000000 1px,
             transparent 1px,
-            #d0d0d0 1px,
-            #d0d0d0 2px,
-            transparent 2px,
             transparent 3px
           );
+          z-index: 1;
         }
 
         .store-title-text {
@@ -160,6 +174,10 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           font-weight: bold;
           color: #000000;
           text-align: center;
+          background: #ffffff;
+          padding: 0 8px;
+          z-index: 2;
+          position: relative;
         }
 
         .store-close-btn {
@@ -216,7 +234,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           flex: 1;
           overflow-y: auto;
           padding: 16px;
-          background: #f0f0f0;
+          background: #ffffff;
         }
 
         .store-grid {
@@ -228,28 +246,17 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         }
 
         .source-card {
-          background: #ffffff;
-          border: 1px solid #000000;
+          background: transparent;
+          border: none;
           border-radius: 0;
           padding: 16px 12px;
           text-align: center;
           cursor: pointer;
-          transition: background-color 0.1s ease;
           min-height: 120px;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
-          box-shadow: 1px 1px 0 #c0c0c0;
-        }
-
-        .source-card:hover {
-          background: #e0e0e0;
-        }
-
-        .source-card:active {
-          background: #d0d0d0;
-          box-shadow: inset 1px 1px 2px #a0a0a0;
         }
 
         .source-icon {
@@ -272,6 +279,13 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           text-align: center;
           line-height: 1.2;
+          padding: 2px 4px;
+          transition: all 0.1s ease;
+        }
+
+        .source-card.selected .source-name {
+          background: #000000;
+          color: #ffffff;
         }
 
         .source-author {
