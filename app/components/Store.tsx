@@ -51,9 +51,9 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
       
       {/* Store Popup */}
       <div className={`store-popup ${isOpen ? 'store-popup-open' : ''}`}>
-        {/* Header */}
-        <div className="store-header">
-          <h2 className="store-title">Integrations Store</h2>
+        {/* Title Bar */}
+        <div className="store-title-bar">
+          <div className="store-title-text">Sources</div>
           <button 
             className="store-close-btn"
             onClick={onClose}
@@ -61,6 +61,13 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           >
             ×
           </button>
+        </div>
+
+        {/* Status Bar */}
+        <div className="store-status-bar">
+          <div className="status-left">{integrations.length} items</div>
+          <div className="status-center">Available integrations and tools</div>
+          <div className="status-right">Ready to connect</div>
         </div>
 
         {/* Content */}
@@ -89,109 +96,143 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
+          background: rgba(0, 0, 0, 0.3);
           z-index: 9998;
           animation: fadeIn 0.2s ease-out;
         }
 
         .store-popup {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: #ffffff;
+          top: 5%;
+          left: 5%;
+          width: 90%;
+          height: 90%;
+          background: #f0f0f0;
+          border: 2px solid #000000;
+          border-radius: 0;
           z-index: 9999;
           display: flex;
           flex-direction: column;
           transform: translateY(100%);
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         .store-popup-open {
           transform: translateY(0);
         }
 
-        .store-header {
+        .store-title-bar {
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-          padding: 24px 32px;
-          border-bottom: 1px solid #e5e7eb;
-          background: #ffffff;
-          position: sticky;
-          top: 0;
-          z-index: 10;
+          position: relative;
+          padding: 8px 16px;
+          background: #e0e0e0;
+          border-bottom: 2px solid #000000;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
-        .store-title {
-          margin: 0;
-          font-size: 24px;
-          font-weight: 600;
-          color: #111827;
+        .store-title-text {
+          font-size: 12px;
+          font-weight: bold;
+          color: #000000;
+          text-align: center;
         }
 
         .store-close-btn {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
           background: none;
           border: none;
-          font-size: 32px;
-          color: #6b7280;
+          font-size: 16px;
+          color: #000000;
           cursor: pointer;
-          padding: 4px;
+          padding: 2px 6px;
           line-height: 1;
-          transition: color 0.2s ease;
-          border-radius: 6px;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
         .store-close-btn:hover {
-          color: #374151;
-          background: #f3f4f6;
+          background: #d0d0d0;
+        }
+
+        .store-status-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 16px;
+          background: #e8e8e8;
+          border-bottom: 1px solid #c0c0c0;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-size: 10px;
+          color: #000000;
+          background-image: repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 1px,
+            #d0d0d0 1px,
+            #d0d0d0 2px
+          );
+        }
+
+        .status-left, .status-center, .status-right {
+          flex: 1;
+        }
+
+        .status-center {
+          text-align: center;
+        }
+
+        .status-right {
+          text-align: right;
         }
 
         .store-content {
           flex: 1;
           overflow-y: auto;
-          padding: 32px;
+          padding: 16px;
+          background: #f0f0f0;
         }
 
         .store-grid {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
-          gap: 24px;
-          max-width: 1200px;
-          margin: 0 auto;
+          gap: 16px;
+          max-width: 100%;
+          margin: 0;
         }
 
         .integration-card {
           background: #ffffff;
-          border: 2px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 24px 16px;
+          border: 1px solid #000000;
+          border-radius: 0;
+          padding: 12px 8px;
           text-align: center;
           cursor: pointer;
-          transition: all 0.2s ease;
-          min-height: 160px;
+          transition: background-color 0.1s ease;
+          min-height: 100px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
+          box-shadow: 1px 1px 0 #c0c0c0;
         }
 
         .integration-card:hover {
-          border-color: #3b82f6;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-          transform: translateY(-2px);
+          background: #e0e0e0;
+        }
+
+        .integration-card:active {
+          background: #d0d0d0;
+          box-shadow: inset 1px 1px 2px #a0a0a0;
         }
 
         .integration-icon {
-          font-size: 32px;
-          margin-bottom: 12px;
+          font-size: 24px;
+          margin-bottom: 8px;
         }
 
         .integration-info {
@@ -202,17 +243,19 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         }
 
         .integration-name {
-          margin: 0 0 8px 0;
-          font-size: 16px;
-          font-weight: 600;
-          color: #111827;
+          margin: 0 0 4px 0;
+          font-size: 11px;
+          font-weight: bold;
+          color: #000000;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
         .integration-description {
           margin: 0;
-          font-size: 14px;
-          color: #6b7280;
-          line-height: 1.4;
+          font-size: 9px;
+          color: #000000;
+          line-height: 1.2;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
         /* Responsive adjustments */
@@ -231,11 +274,18 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         @media (max-width: 900px) {
           .store-grid {
             grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            gap: 12px;
           }
           
           .store-content {
-            padding: 24px 16px;
+            padding: 12px;
+          }
+
+          .store-popup {
+            top: 2.5%;
+            left: 2.5%;
+            width: 95%;
+            height: 95%;
           }
         }
 
@@ -244,12 +294,17 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
             grid-template-columns: repeat(2, 1fr);
           }
           
-          .store-header {
-            padding: 16px 20px;
+          .store-title-bar {
+            padding: 6px 12px;
           }
           
-          .store-title {
-            font-size: 20px;
+          .store-title-text {
+            font-size: 11px;
+          }
+
+          .store-status-bar {
+            padding: 3px 12px;
+            font-size: 9px;
           }
         }
 
