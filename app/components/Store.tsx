@@ -155,10 +155,10 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         .store-title-bar::before {
           content: '';
           position: absolute;
-          top: 3px;
+          top: 6px;
           left: 3px;
           right: 3px;
-          bottom: 3px;
+          bottom: 6px;
           background-image: repeating-linear-gradient(
             0deg,
             #000000 0px,
@@ -185,7 +185,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           right: 8px;
           top: 50%;
           transform: translateY(-50%);
-          background: none;
+          background: #ffffff;
           border: none;
           font-size: 16px;
           color: #000000;
@@ -193,10 +193,11 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
           padding: 2px 6px;
           line-height: 1;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          z-index: 2;
         }
 
         .store-close-btn:hover {
-          background: #d0d0d0;
+          background: #f0f0f0;
         }
 
         .store-status-bar {
