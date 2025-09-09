@@ -12,6 +12,7 @@ import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
 import DemoWelcomeWindow from './components/DemoWelcomeWindow';
 import WrapTool from './components/WrapTool';
+import Store from './components/Store';
 
 interface Highlight {
   title: string;
@@ -58,6 +59,7 @@ const HomePage = () => {
   const [wrapStateHash, setWrapStateHash] = useState<string>('');
   const [lastWrapSummary, setLastWrapSummary] = useState<string>('');
   const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [showStore, setShowStore] = useState(false);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -1471,14 +1473,15 @@ const HomePage = () => {
                     />
                   )}
                   
-                  {/* Tool Core button */}
-                  <button 
-                    className="action-button tools-button" 
-                    title="Smart Tools - Drop links, ask questions, or chat"
+                  {/* Store button */}
+                  <button
+                    className="action-button store-button"
+                    onClick={() => setShowStore(true)}
+                    title="Open Integrations Store"
                   >
-                    <span>🛠️</span>
+                    <span>🛒</span>
                   </button>
-                  
+
                   <button className="action-button" onClick={() => window.open('https://shrinked.ai', '_blank')}>
                     <img src="/shrinked.png" alt="Shrinked AI" />
                   </button>
@@ -1486,7 +1489,7 @@ const HomePage = () => {
               </div>
             </div>
 
-            <ArguePopup 
+            <ArguePopup
               isOpen={showArguePopup}
               onClose={() => {
                 setShowArguePopup(false);
@@ -1509,6 +1512,11 @@ const HomePage = () => {
                 userEmail={user?.email}
               />
             )}
+
+            <Store
+              isOpen={showStore}
+              onClose={() => setShowStore(false)}
+            />
           </>
         )}
       </main>
