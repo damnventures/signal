@@ -8,6 +8,15 @@ interface Capsule {
   isPublic: boolean;
 }
 
+interface SourceItem {
+  id: string;
+  name: string;
+  author: string;
+  type: 'user' | 'shrinked' | 'coming' | 'add-new';
+  capsuleId: string | null;
+  icon?: string;
+}
+
 interface User {
   email?: string;
   username?: string;
@@ -54,7 +63,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
     setIsCreatingCapsule(true);
     
     try {
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = localStorage.getItem('auth_access_token');
       if (!accessToken) {
         console.error('[Store] No access token found');
         return;
@@ -125,14 +134,27 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
     { id: 'shrink-4', name: 'Tech Podcasts', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb54' },
   ];
 
-  // Coming soon items (passive, not clickable)
+  // Coming soon items (passive, not clickable) - organized by category
   const comingSoonItems = [
-    { id: 'soon-1', name: 'Slack Integration', author: 'Coming Soon', type: 'coming', capsuleId: null },
-    { id: 'soon-2', name: 'Google Drive', author: 'Coming Soon', type: 'coming', capsuleId: null },
-    { id: 'soon-3', name: 'Notion Sync', author: 'Coming Soon', type: 'coming', capsuleId: null },
-    { id: 'soon-4', name: 'Email Parser', author: 'Coming Soon', type: 'coming', capsuleId: null },
-    { id: 'soon-5', name: 'Twitter Import', author: 'Coming Soon', type: 'coming', capsuleId: null },
-    { id: 'soon-6', name: 'Discord Logs', author: 'Coming Soon', type: 'coming', capsuleId: null },
+    // Data Sources
+    { id: 'soon-1', name: 'Email Inbox', author: 'Gmail, Outlook, etc', type: 'coming', capsuleId: null, icon: 'mailbox' },
+    { id: 'soon-2', name: 'Voice Records', author: 'Audio transcription', type: 'coming', capsuleId: null, icon: 'voicerecords' },
+    { id: 'soon-3', name: 'Smart Glasses POV', author: 'Meta, Apple Vision', type: 'coming', capsuleId: null, icon: 'smartglasses' },
+    { id: 'soon-4', name: 'Apple Notes', author: 'Notes sync', type: 'coming', capsuleId: null, icon: 'notepad' },
+    { id: 'soon-5', name: 'Call Recordings', author: 'Meetings, phone calls', type: 'coming', capsuleId: null, icon: 'calls' },
+    { id: 'soon-6', name: 'Excel/Numbers', author: 'Spreadsheet analysis', type: 'coming', capsuleId: null, icon: 'excel' },
+    
+    // Expansion Packs
+    { id: 'soon-7', name: 'Chess (FIDE)', author: 'Game analysis pack', type: 'coming', capsuleId: null, icon: 'chess-pieces' },
+    { id: 'soon-8', name: 'Bible Study', author: 'Scripture analysis', type: 'coming', capsuleId: null, icon: 'books' },
+    { id: 'soon-9', name: 'Harry Potter', author: 'Book series pack', type: 'coming', capsuleId: null, icon: 'books' },
+    
+    // Creator Integrations
+    { id: 'soon-10', name: 'John Oliver', author: 'YouTube creator', type: 'coming', capsuleId: null, icon: 'tvhost' },
+    { id: 'soon-11', name: 'Gordon Ramsay', author: 'Cooking recipes', type: 'coming', capsuleId: null, icon: 'recipe' },
+    
+    // Future Tools
+    { id: 'soon-12', name: 'Crypto Wallet', author: 'DeFi integration', type: 'coming', capsuleId: null, icon: 'coin' },
   ];
 
   // Add new capsule - only for authenticated users, positioned at the end (bottom right)
@@ -180,6 +202,11 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
               const isClickable = source.type !== 'coming';
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
+                if (source.type === 'coming' && source.icon) {
+                  const isWebp = source.icon === 'smartglasses' || source.icon === 'tvhost' || source.icon === 'coin';
+                  const extension = isWebp ? 'webp' : 'png';
+                  return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }} />;
+                }
                 if (source.type === 'coming') return '⏳';
                 return '💿';
               };
