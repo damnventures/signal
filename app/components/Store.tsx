@@ -205,7 +205,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                 if (source.type === 'coming' && source.icon) {
                   const isWebp = source.icon === 'smartglasses' || source.icon === 'tvhost' || source.icon === 'coin';
                   const extension = isWebp ? 'webp' : 'png';
-                  return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }} />;
+                  return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
                 }
                 if (source.type === 'coming') return '⏳';
                 return '💿';
@@ -405,7 +405,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         }
 
         .source-icon {
-          font-size: 32px;
+          font-size: 70px;
           margin-bottom: 12px;
         }
 
