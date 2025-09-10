@@ -1525,6 +1525,8 @@ const HomePage = () => {
             <Store
               isOpen={showStore}
               onClose={() => setShowStore(false)}
+              userCapsules={capsules}
+              user={user}
             />
           </>
         )}

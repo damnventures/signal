@@ -2,12 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 
+interface Capsule {
+  _id: string;
+  name: string;
+  isPublic: boolean;
+}
+
+interface User {
+  email?: string;
+  username?: string;
+}
+
 interface StoreProps {
   isOpen: boolean;
   onClose: () => void;
+  userCapsules?: Capsule[];
+  user?: User | null;
 }
 
-const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
+const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
 
   // Handle ESC key to close
@@ -32,12 +45,30 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  // User's capsules (their own + add new option)
-  const userCapsules = [
-    { id: 'user-1', name: 'My Research', author: 'You', type: 'user', capsuleId: null },
-    { id: 'user-2', name: 'Meeting Notes', author: 'You', type: 'user', capsuleId: null },
-    { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null }
-  ];
+  // User's capsules (real data when authenticated, fallback when not)
+  const getUserCapsules = () => {
+    if (user && userCapsules.length > 0) {
+      // Use real user capsule data
+      return userCapsules.map(capsule => ({
+        id: capsule._id,
+        name: capsule.name || 'Untitled Capsule',
+        author: user.email?.split('@')[0] || user.username || 'You',
+        type: 'user' as const,
+        capsuleId: capsule._id
+      }));
+    } else if (user) {
+      // User is authenticated but has no capsules
+      return [];
+    } else {
+      // Non-authenticated user - show demo data
+      return [
+        { id: 'user-1', name: 'My Research', author: 'You', type: 'user' as const, capsuleId: null },
+        { id: 'user-2', name: 'Meeting Notes', author: 'You', type: 'user' as const, capsuleId: null },
+      ];
+    }
+  };
+
+  const userCapsulesData = getUserCapsules();
 
   // Shrinked shared capsules (available to add/use)
   const shrinkedCapsules = [
@@ -57,7 +88,10 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
     { id: 'soon-6', name: 'Discord Logs', author: 'Coming Soon', type: 'coming', capsuleId: null },
   ];
 
-  const allSources = [...userCapsules, ...shrinkedCapsules, ...comingSoonItems];
+  // Add new capsule - positioned at the end (bottom right)
+  const addNewCapsule = { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null };
+
+  const allSources = [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems, addNewCapsule];
 
   if (!isOpen) return null;
 
@@ -86,7 +120,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         {/* Status Bar */}
         <div className="store-status-bar">
           <div className="status-left">{allSources.length} items</div>
-          <div className="status-center">{userCapsules.length} yours • {shrinkedCapsules.length} from Shrinked • {comingSoonItems.length} coming soon</div>
+          <div className="status-center">{userCapsulesData.length + 1} yours • {shrinkedCapsules.length} from Shrinked • {comingSoonItems.length} coming soon</div>
           <div className="status-right">Ready to connect</div>
         </div>
 
