@@ -32,27 +32,32 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  // Sources/Capsules data (6 per row)
-  const sources = [
-    { id: '1', name: 'YC Reducto AI', author: 'Y Combinator', icon: 'cd' },
-    { id: '2', name: 'Slack Conversations', author: 'Workspace Team', icon: 'cd' },
-    { id: '3', name: 'Meeting Notes Q3', author: 'John Smith', icon: 'cd' },
-    { id: '4', name: 'Research Papers', author: 'MIT Research', icon: 'cd' },
-    { id: '5', name: 'Podcast Transcripts', author: 'Joe Rogan', icon: 'cd' },
-    { id: '6', name: 'Code Reviews', author: 'Engineering', icon: 'cd' },
-    { id: '7', name: 'Customer Feedback', author: 'Support Team', icon: 'cd' },
-    { id: '8', name: 'Design Systems', author: 'Design Team', icon: 'cd' },
-    { id: '9', name: 'API Documentation', author: 'Platform', icon: 'cd' },
-    { id: '10', name: 'Sales Calls', author: 'Sales Team', icon: 'cd' },
-    { id: '11', name: 'Twitter Threads', author: 'Social Media', icon: 'cd' },
-    { id: '12', name: 'YouTube Videos', author: 'Content Team', icon: 'cd' },
-    { id: '13', name: 'Blog Articles', author: 'Marketing', icon: 'cd' },
-    { id: '14', name: 'User Interviews', author: 'Product Team', icon: 'cd' },
-    { id: '15', name: 'Industry Reports', author: 'Research', icon: 'cd' },
-    { id: '16', name: 'Conference Talks', author: 'Speakers', icon: 'cd' },
-    { id: '17', name: 'Books Summary', author: 'Library', icon: 'cd' },
-    { id: '18', name: 'Email Threads', author: 'Communications', icon: 'cd' }
+  // User's capsules (their own + add new option)
+  const userCapsules = [
+    { id: 'user-1', name: 'My Research', author: 'You', type: 'user', capsuleId: null },
+    { id: 'user-2', name: 'Meeting Notes', author: 'You', type: 'user', capsuleId: null },
+    { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null }
   ];
+
+  // Shrinked shared capsules (available to add/use)
+  const shrinkedCapsules = [
+    { id: 'shrink-1', name: 'YC Reducto AI', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb51' },
+    { id: 'shrink-2', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
+    { id: 'shrink-3', name: 'Startup Insights', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb53' },
+    { id: 'shrink-4', name: 'Tech Podcasts', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb54' },
+  ];
+
+  // Coming soon items (passive, not clickable)
+  const comingSoonItems = [
+    { id: 'soon-1', name: 'Slack Integration', author: 'Coming Soon', type: 'coming', capsuleId: null },
+    { id: 'soon-2', name: 'Google Drive', author: 'Coming Soon', type: 'coming', capsuleId: null },
+    { id: 'soon-3', name: 'Notion Sync', author: 'Coming Soon', type: 'coming', capsuleId: null },
+    { id: 'soon-4', name: 'Email Parser', author: 'Coming Soon', type: 'coming', capsuleId: null },
+    { id: 'soon-5', name: 'Twitter Import', author: 'Coming Soon', type: 'coming', capsuleId: null },
+    { id: 'soon-6', name: 'Discord Logs', author: 'Coming Soon', type: 'coming', capsuleId: null },
+  ];
+
+  const allSources = [...userCapsules, ...shrinkedCapsules, ...comingSoonItems];
 
   if (!isOpen) return null;
 
@@ -80,29 +85,39 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
 
         {/* Status Bar */}
         <div className="store-status-bar">
-          <div className="status-left">{sources.length} items</div>
-          <div className="status-center">Available sources and capsules</div>
+          <div className="status-left">{allSources.length} items</div>
+          <div className="status-center">{userCapsules.length} yours • {shrinkedCapsules.length} from Shrinked • {comingSoonItems.length} coming soon</div>
           <div className="status-right">Ready to connect</div>
         </div>
 
         {/* Content */}
         <div className="store-content">
           <div className="store-grid">
-            {sources.map((source) => (
-              <div 
-                key={source.id} 
-                className={`source-card ${selectedSource === source.id ? 'selected' : ''}`}
-                onClick={() => setSelectedSource(source.id)}
-              >
-                <div className="source-icon">
-                  💿
+            {allSources.map((source) => {
+              const isClickable = source.type !== 'coming';
+              const getIcon = () => {
+                if (source.type === 'add-new') return '➕';
+                if (source.type === 'coming') return '⏳';
+                return '💿';
+              };
+              
+              return (
+                <div 
+                  key={source.id} 
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${source.type}`}
+                  onClick={() => isClickable ? setSelectedSource(source.id) : null}
+                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                >
+                  <div className="source-icon">
+                    {getIcon()}
+                  </div>
+                  <div className="source-info">
+                    <div className="source-name">{source.name}</div>
+                    <div className="source-author">{source.author}</div>
+                  </div>
                 </div>
-                <div className="source-info">
-                  <div className="source-name">{source.name}</div>
-                  <div className="source-author">{source.author}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -287,6 +302,41 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose }) => {
         .source-card.selected .source-name {
           background: #000000;
           color: #ffffff;
+        }
+
+        /* Coming soon items - passive styling */
+        .source-card.coming {
+          opacity: 0.5;
+        }
+
+        .source-card.coming .source-name {
+          color: #999999;
+        }
+
+        .source-card.coming .source-author {
+          color: #cccccc;
+        }
+
+        /* Add new capsule - special styling */
+        .source-card.add-new .source-icon {
+          font-size: 24px;
+          opacity: 0.7;
+        }
+
+        .source-card.add-new .source-name {
+          font-style: italic;
+          color: #666666;
+        }
+
+        /* User capsules */
+        .source-card.user .source-name {
+          color: #000000;
+        }
+
+        /* Shrinked capsules */
+        .source-card.shrinked .source-author {
+          color: #0066cc;
+          font-weight: bold;
         }
 
         .source-author {
