@@ -18,10 +18,12 @@ interface StoreProps {
   onClose: () => void;
   userCapsules?: Capsule[];
   user?: User | null;
+  onRefreshCapsules?: () => void;
 }
 
-const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user }) => {
+const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [isCreatingCapsule, setIsCreatingCapsule] = useState(false);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -44,6 +46,51 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
+
+  // Handle creating a new capsule
+  const handleCreateCapsule = async () => {
+    if (!user || isCreatingCapsule) return;
+    
+    setIsCreatingCapsule(true);
+    
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        console.error('[Store] No access token found');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || 'https://api.shrinked.ai'}/capsules`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          name: `New Capsule ${new Date().toLocaleString()}`
+        })
+      });
+
+      if (response.ok) {
+        const newCapsule = await response.json();
+        console.log('[Store] Capsule created successfully:', newCapsule);
+        
+        // Refresh the capsules list
+        if (onRefreshCapsules) {
+          onRefreshCapsules();
+        }
+        
+        // Show success feedback (optional)
+        setSelectedSource(newCapsule._id);
+      } else {
+        console.error('[Store] Failed to create capsule:', response.status);
+      }
+    } catch (error) {
+      console.error('[Store] Error creating capsule:', error);
+    } finally {
+      setIsCreatingCapsule(false);
+    }
+  };
 
   // User's capsules (real data when authenticated, fallback when not)
   const getUserCapsules = () => {
@@ -88,10 +135,12 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
     { id: 'soon-6', name: 'Discord Logs', author: 'Coming Soon', type: 'coming', capsuleId: null },
   ];
 
-  // Add new capsule - positioned at the end (bottom right)
+  // Add new capsule - only for authenticated users, positioned at the end (bottom right)
   const addNewCapsule = { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null };
 
-  const allSources = [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems, addNewCapsule];
+  const allSources = user 
+    ? [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems, addNewCapsule]
+    : [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems];
 
   if (!isOpen) return null;
 
@@ -120,7 +169,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
         {/* Status Bar */}
         <div className="store-status-bar">
           <div className="status-left">{allSources.length} items</div>
-          <div className="status-center">{userCapsulesData.length + 1} yours • {shrinkedCapsules.length} from Shrinked • {comingSoonItems.length} coming soon</div>
+          <div className="status-center">{userCapsulesData.length + (user ? 1 : 0)} yours • {shrinkedCapsules.length} from Shrinked • {comingSoonItems.length} coming soon</div>
           <div className="status-right">Ready to connect</div>
         </div>
 
@@ -130,23 +179,39 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
             {allSources.map((source) => {
               const isClickable = source.type !== 'coming';
               const getIcon = () => {
-                if (source.type === 'add-new') return '➕';
+                if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
                 if (source.type === 'coming') return '⏳';
                 return '💿';
+              };
+
+              const handleClick = () => {
+                if (!isClickable) return;
+                
+                if (source.type === 'add-new') {
+                  handleCreateCapsule();
+                } else {
+                  setSelectedSource(source.id);
+                }
               };
               
               return (
                 <div 
                   key={source.id} 
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${source.type}`}
-                  onClick={() => isClickable ? setSelectedSource(source.id) : null}
-                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''}`}
+                  onClick={handleClick}
+                  style={{ cursor: isClickable && !(isCreatingCapsule && source.type === 'add-new') ? 'pointer' : 'default' }}
                 >
                   <div className="source-icon">
                     {getIcon()}
                   </div>
                   <div className="source-info">
-                    <div className="source-name">{source.name}</div>
+                    <div className="source-name">
+                      {source.type === 'add-new' && isCreatingCapsule ? (
+                        <>Creating<span className="loading-dots"></span></>
+                      ) : (
+                        source.name
+                      )}
+                    </div>
                     <div className="source-author">{source.author}</div>
                   </div>
                 </div>
@@ -166,7 +231,6 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
           bottom: 0;
           background: rgba(0, 0, 0, 0.3);
           z-index: 9998;
-          animation: fadeIn 0.2s ease-out;
         }
 
         .store-popup {
@@ -182,8 +246,8 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
           display: flex;
           flex-direction: column;
           transform: translateY(100%);
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
+          transition: transform 0.2s ease-out;
+          box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
         }
 
         .store-popup-open {
@@ -246,7 +310,11 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
         }
 
         .store-close-btn:hover {
-          background: #f0f0f0;
+          background: #e0e0e0;
+        }
+
+        .store-close-btn:active {
+          background: #d0d0d0;
         }
 
         .store-status-bar {
@@ -362,6 +430,16 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
           color: #666666;
         }
 
+        .source-card.add-new.creating {
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        .source-card.add-new.creating .source-name {
+          font-style: normal;
+          color: #000000;
+        }
+
         /* User capsules */
         .source-card.user .source-name {
           color: #000000;
@@ -431,14 +509,6 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user 
           }
         }
 
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
       `}</style>
     </>
   );
