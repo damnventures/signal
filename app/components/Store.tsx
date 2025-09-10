@@ -407,7 +407,6 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         .source-icon {
           font-size: 32px;
           margin-bottom: 12px;
-          filter: grayscale(0.3) brightness(0.9);
         }
 
         .source-info {
@@ -435,7 +434,6 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
 
         /* Coming soon items - passive styling */
         .source-card.coming {
-          opacity: 0.5;
         }
 
         .source-card.coming .source-name {
