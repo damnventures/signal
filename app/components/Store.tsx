@@ -178,7 +178,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       <div className={`store-popup ${isOpen ? 'store-popup-open' : ''}`}>
         {/* Title Bar */}
         <div className="store-title-bar">
-          <div className="store-title-text">Sources</div>
+          <div className="store-title-text">Skills</div>
           <button 
             className="store-close-btn"
             onClick={onClose}
@@ -472,7 +472,8 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
 
         /* User capsules */
         .source-card.user .source-name {
-          color: #000000;
+          color: #ffffff;
+          background: #000000;
         }
 
         /* Shrinked capsules */
