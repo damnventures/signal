@@ -111,15 +111,15 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         author: user.email?.split('@')[0] || user.username || 'You',
         type: 'user' as const,
         capsuleId: capsule._id
-      }));
+      } as SourceItem));
     } else if (user) {
       // User is authenticated but has no capsules
       return [];
     } else {
       // Non-authenticated user - show demo data
       return [
-        { id: 'user-1', name: 'My Research', author: 'You', type: 'user' as const, capsuleId: null },
-        { id: 'user-2', name: 'Meeting Notes', author: 'You', type: 'user' as const, capsuleId: null },
+        { id: 'user-1', name: 'My Research', author: 'You', type: 'user' as const, capsuleId: null } as SourceItem,
+        { id: 'user-2', name: 'Meeting Notes', author: 'You', type: 'user' as const, capsuleId: null } as SourceItem,
       ];
     }
   };
@@ -127,7 +127,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   const userCapsulesData = getUserCapsules();
 
   // Shrinked shared capsules (available to add/use)
-  const shrinkedCapsules = [
+  const shrinkedCapsules: SourceItem[] = [
     { id: 'shrink-1', name: 'YC Reducto AI', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb51' },
     { id: 'shrink-2', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
     { id: 'shrink-3', name: 'Startup Insights', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb53' },
@@ -135,7 +135,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   ];
 
   // Coming soon items (passive, not clickable) - organized by category
-  const comingSoonItems = [
+  const comingSoonItems: SourceItem[] = [
     // Data Sources
     { id: 'soon-1', name: 'Email Inbox', author: 'Gmail, Outlook, etc', type: 'coming', capsuleId: null, icon: 'mailbox' },
     { id: 'soon-2', name: 'Voice Records', author: 'Audio transcription', type: 'coming', capsuleId: null, icon: 'voicerecords' },
@@ -158,7 +158,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   ];
 
   // Add new capsule - only for authenticated users, positioned at the end (bottom right)
-  const addNewCapsule = { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null };
+  const addNewCapsule: SourceItem = { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null };
 
   const allSources = user 
     ? [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems, addNewCapsule]
@@ -198,7 +198,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         {/* Content */}
         <div className="store-content">
           <div className="store-grid">
-            {allSources.map((source) => {
+            {allSources.map((source: SourceItem) => {
               const isClickable = source.type !== 'coming';
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
