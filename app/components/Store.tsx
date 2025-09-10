@@ -405,7 +405,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         }
 
         .source-icon {
-          font-size: 70px;
+          font-size: 32px;
           margin-bottom: 12px;
         }
 
