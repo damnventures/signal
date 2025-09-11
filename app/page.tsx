@@ -621,7 +621,7 @@ const HomePage = () => {
         console.log(`[parseHighlights] Found ${sections.length} ** bold header sections`);
       }
       
-      sections.forEach((section, index) => {
+      sections.slice(0, 20).forEach((section, index) => { // Limit to 20 sections to prevent infinite loops
         let titleMatch: RegExpMatchArray | null = null;
         let title = '';
         let content = '';
@@ -637,11 +637,39 @@ const HomePage = () => {
           titleMatch = section.match(/^\*\*([^*]+)\*\*/);
           if (titleMatch) {
             title = titleMatch[1].trim();
-            content = section.replace(/^\*\*[^*]+\*\*\s*\n?/, '').trim();
+            
+            // Skip section headers (like "Section 1:", "Section 2:", etc.) and find the actual content title
+            if (title.match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
+              // Look for the next ** header within this section for the actual title
+              const lines = section.split('\n');
+              let actualTitle = '';
+              let contentStart = -1;
+              
+              for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const nestedMatch = line.match(/^\*\*([^*]+)\*\*/);
+                if (nestedMatch && !nestedMatch[1].match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
+                  actualTitle = nestedMatch[1].trim();
+                  contentStart = i + 1;
+                  break;
+                }
+              }
+              
+              if (actualTitle && contentStart > 0) {
+                title = actualTitle;
+                content = lines.slice(contentStart).join('\n').trim();
+              } else {
+                // If no nested title found, use the section title and content after it
+                const contentLines = section.split('\n').slice(1);
+                content = contentLines.join('\n').trim();
+              }
+            } else {
+              content = section.replace(/^\*\*[^*]+\*\*\s*\n?/, '').trim();
+            }
           }
         }
         
-        if (title && content.length > 0) {
+        if (title && content.length > 10) { // Ensure meaningful content length
           const newHighlight = {
             title: title,
             setup: '',
@@ -652,7 +680,8 @@ const HomePage = () => {
           highlights.push(newHighlight);
           console.log(`[parseHighlights] Successfully parsed section ${index}:`, newHighlight.title);
         } else {
-          console.warn(`[parseHighlights] Failed to parse section ${index}:`, section.substring(0, 100));
+          console.warn(`[parseHighlights] Failed to parse section ${index} - title: "${title}", content length: ${content.length}`);
+          console.warn(`[parseHighlights] Section preview:`, section.substring(0, 200));
         }
       });
     }
