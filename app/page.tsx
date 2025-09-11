@@ -75,11 +75,43 @@ const HomePage = () => {
     setShowDemoWelcomeWindow(true);
   }, []);
 
-  // DEPRECATED: Old wrap function - now using WrapTool component instead
   const fetchWrapSummary = useCallback(async (userProfile: any, hasAuth: boolean = true): Promise<string> => {
-    // Always return simple welcome - real wrap handled by WrapTool
-    return `Welcome ${userProfile?.email || userProfile?.username || 'User'}!`;
-  }, []);
+    // For non-authenticated users, always return simple welcome
+    if (!hasAuth || !userProfile || (!accessToken && !apiKey)) {
+      return `Welcome ${userProfile?.email || userProfile?.username || 'User'}!`;
+    }
+
+    try {
+      console.log('[HomePage] Fetching wrap summary for authenticated user...');
+      const response = await fetch('/api/wrap-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken,
+          apiKey,
+          lastStateHash: wrapStateHash,
+          username: user?.email?.split('@')[0] || user?.username || 'user'
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.summary) {
+          console.log('[HomePage] Wrap summary received:', result.summary);
+          setWrapStateHash(result.stateHash);
+          setLastWrapSummary(result.summary);
+          return result.summary;
+        }
+      }
+    } catch (error) {
+      console.error('[HomePage] Error fetching wrap summary:', error);
+    }
+
+    // Fallback to welcome message for authenticated users too
+    return `Welcome ${userProfile.email || userProfile.username}!`;
+  }, [accessToken, apiKey, wrapStateHash]);
 
   // Animate status message with typewriter effect (like Argue tool)
   const animateStatusMessage = useCallback((fullMessage: string) => {
@@ -123,10 +155,42 @@ const HomePage = () => {
       return;
     }
 
-    // DISABLED: Periodic state check - now handled by WrapTool
+    // Set up periodic state check
     const checkForStateChanges = async () => {
-      // State monitoring now handled by WrapTool component
-      console.log('[HomePage] State checking disabled - handled by WrapTool');
+      try {
+        console.log('[HomePage] Checking for capsule state changes...');
+        const response = await fetch('/api/wrap-summary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken,
+            apiKey,
+            lastStateHash: wrapStateHash,
+            username: user?.email?.split('@')[0] || user?.username || 'user'
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.stateChanged && result.summary && result.summary !== lastWrapSummary) {
+            console.log('[HomePage] Capsule state changed, updating summary');
+            // Clear status intervals when periodic check updates summary
+            if (statusIntervalRef.current) {
+              clearInterval(statusIntervalRef.current);
+              statusIntervalRef.current = null;
+            }
+            setLastWrapSummary(result.summary);
+            setWrapStateHash(result.stateHash);
+            console.log('[HomePage] Periodic check updated status and cleared intervals');
+          } else {
+            console.log('[HomePage] No capsule state changes detected');
+          }
+        }
+      } catch (error) {
+        console.error('[HomePage] Error checking capsule state changes:', error);
+      }
     };
 
     // Initial check after 30 seconds (to avoid immediate duplicate with auth flow)
@@ -1400,7 +1464,7 @@ const HomePage = () => {
                   {user && (
                     <WrapTool
                       showAsButton={true}
-                      autoFetch={true}  // Auto-fetch on startup to replace old auto wrap
+                      autoFetch={false}  // Disabled - using original auto wrap system
                       className="action-button wrap-button"
                       onWrapStart={() => {
                         // Clear welcome window message and show loading in status

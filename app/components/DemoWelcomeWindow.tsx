@@ -27,11 +27,11 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
-  const [animatedWrapSummary, setAnimatedWrapSummary] = useState('');
+  const [animatedMessage, setAnimatedMessage] = useState('');
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Typewriter animation for wrap summary
-  const animateWrapSummary = useCallback((fullMessage: string) => {
+  // Use the SAME chunked animation as animateStatusMessage for consistency
+  const animateMessage = useCallback((fullMessage: string) => {
     // Clear any existing animation
     if (animationRef.current) {
       clearTimeout(animationRef.current);
@@ -41,13 +41,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     const words = fullMessage.split(' ');
     let currentIndex = 0;
     
-    // Show message in chunks of 3-4 words for better flow
+    // Show message in chunks of 3-4 words for better flow (exactly like animateStatusMessage)
     const animateChunk = () => {
       if (currentIndex >= words.length) return;
       
       const chunkSize = Math.random() > 0.5 ? 3 : 4; // Vary chunk size 3-4 words
       const chunk = words.slice(0, currentIndex + chunkSize).join(' ');
-      setAnimatedWrapSummary(chunk);
+      setAnimatedMessage(chunk);
       
       currentIndex += chunkSize;
       
@@ -56,7 +56,8 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         animationRef.current = setTimeout(animateChunk, 200 + Math.random() * 100); // 200-300ms between chunks
       }
     };
-
+    
+    // Start animation
     animateChunk();
   }, []);
 
@@ -74,13 +75,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       } else {
         // Got wrap summary - show the animated AI-generated message (which includes greeting)
         return [
-          animatedWrapSummary || wrapSummary
+          animatedMessage || wrapSummary
         ];
       }
     } else if (demoMessage) {
-      // Demo user flow - show the demo launch message
+      // Demo user flow - show the animated demo launch message
       return [
-        demoMessage
+        animatedMessage || demoMessage
       ];
     } else {
       // Non-authenticated user - show default demo variants
@@ -185,19 +186,27 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   };
 
   // Cycle through variants with pause
-  // Watch for prop changes (wrap summary arriving)
+  // Watch for prop changes (wrap summary arriving) and animate using chunked approach
   useEffect(() => {
     if (userEmail && wrapSummary) {
-      // Only animate if this is new content (avoid re-animating same content)
-      if (wrapSummary !== animatedWrapSummary) {
-        console.log('[DemoWelcomeWindow] New wrap summary received, starting animation');
-        setVariantIndex(0);
-        setShowDiff(false);
-        setAnimatedWrapSummary(''); // Clear previous animation
-        animateWrapSummary(wrapSummary);
-      }
+      // Reset animation when wrap summary arrives and start chunked animation
+      setVariantIndex(0);
+      setShowDiff(false);
+      setAnimatedMessage(''); // Clear previous animation
+      animateMessage(wrapSummary); // Use same chunked animation as status bar
     }
-  }, [wrapSummary, userEmail, animateWrapSummary, animatedWrapSummary]);
+  }, [wrapSummary, userEmail, animateMessage]);
+
+  // Watch for demo message changes and animate using chunked approach
+  useEffect(() => {
+    if (demoMessage && !userEmail) {
+      // Reset animation when demo message arrives and start chunked animation
+      setVariantIndex(0);
+      setShowDiff(false);
+      setAnimatedMessage(''); // Clear previous animation
+      animateMessage(demoMessage); // Use same chunked animation as status bar
+    }
+  }, [demoMessage, userEmail, animateMessage]);
 
   useEffect(() => {
     const delay = variantIndex === 0 ? 2000 : 1500;

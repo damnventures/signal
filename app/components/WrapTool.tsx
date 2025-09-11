@@ -117,16 +117,19 @@ const WrapTool: React.FC<WrapToolProps> = ({
   }, [user, accessToken, apiKey, lastStateHash, onSummaryUpdate, onStateHashUpdate]);
 
   // Auto-fetch on mount if enabled - start early for optimal timing
+  const [hasAutoFetched, setHasAutoFetched] = useState(false);
+  
   useEffect(() => {
-    if (autoFetch && user && (accessToken || apiKey)) {
+    if (autoFetch && user && (accessToken || apiKey) && !hasAutoFetched) {
       console.log('[WrapTool] Auto-fetching wrap summary early for optimal timing');
+      setHasAutoFetched(true);
       // Small delay to ensure auth is fully ready
       const timer = setTimeout(() => {
         fetchWrapSummary(false);  // false = auto trigger (no callbacks)
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [autoFetch, user, accessToken, apiKey, fetchWrapSummary]);
+  }, [autoFetch, user, accessToken, apiKey, hasAutoFetched, fetchWrapSummary]);
 
   // Render as button
   if (showAsButton) {
