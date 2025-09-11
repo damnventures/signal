@@ -1,0 +1,62 @@
+import { NextResponse } from 'next/server';
+
+export async function GET(request: Request) {
+  const userApiKey = request.headers.get('x-api-key');
+  
+  console.log(`[Shared Capsules Route] Request received`);
+  console.log(`[Shared Capsules Route] API Key present: ${userApiKey ? 'yes' : 'no'}`);
+
+  // For shared capsules, we need the user's API key
+  if (!userApiKey) {
+    console.log('[Shared Capsules Route] No user API key provided - returning empty array');
+    return NextResponse.json([]);
+  }
+  
+  const requestHeaders: Record<string, string> = {
+    'x-api-key': userApiKey
+  };
+
+  // The Shrinked API should have an endpoint to get shared capsules
+  // If not available, we can get all capsules and filter for shared ones
+  const requestUrl = `https://api.shrinked.ai/capsules?shared=true`;
+  console.log(`[Shared Capsules Route] Attempting to fetch shared capsules from: ${requestUrl}`);
+
+  try {
+    const response = await fetch(requestUrl, {
+      headers: requestHeaders,
+    });
+
+    if (!response.ok) {
+      // If shared endpoint doesn't exist, fall back to regular capsules endpoint
+      // and let the frontend filter
+      console.log(`[Shared Capsules Route] Shared endpoint not available, falling back to regular capsules endpoint`);
+      const fallbackUrl = `https://api.shrinked.ai/capsules`;
+      const fallbackResponse = await fetch(fallbackUrl, {
+        headers: requestHeaders,
+      });
+      
+      if (!fallbackResponse.ok) {
+        const errorText = await fallbackResponse.text();
+        console.error(`[Shared Capsules Route] Fallback API Error: Status: ${fallbackResponse.status}, Body: ${errorText}`);
+        return NextResponse.json({ error: `Failed to fetch capsules: ${fallbackResponse.statusText}` }, { status: fallbackResponse.status });
+      }
+      
+      const data = await fallbackResponse.json();
+      // Filter for shared capsules (those where user is not the owner)
+      const sharedCapsules = Array.isArray(data) ? data.filter((capsule: any) => 
+        capsule.visibility === 'shared' && capsule.shared === true
+      ) : [];
+      
+      console.log('[Shared Capsules Route] Fallback Success: Found', sharedCapsules.length, 'shared capsules');
+      return NextResponse.json(sharedCapsules);
+    }
+
+    const data = await response.json();
+    console.log('[Shared Capsules Route] API Success: Shared capsules fetched successfully.');
+    console.log('[Shared Capsules Route] Found', Array.isArray(data) ? data.length : 'unknown', 'shared capsules');
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error(`[Shared Capsules Route] API Error: ${error.message}`);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

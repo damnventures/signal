@@ -430,6 +430,11 @@ const HomePage = () => {
       "Analyzing input and context...",
       "Generating response..."
     ],
+    wrapping: [
+      "Generating wrap summary...",
+      "Analyzing capsule changes...",
+      "Building contextual insights..."
+    ],
     idle: [
       "System ready - All components loaded", 
       "Monitoring user interactions...",
@@ -437,7 +442,7 @@ const HomePage = () => {
     ]
   };
 
-  const updateStatusMessage = useCallback((phase: 'signal' | 'insights' | 'thinking' | 'idle') => {
+  const updateStatusMessage = useCallback((phase: 'signal' | 'insights' | 'thinking' | 'wrapping' | 'idle') => {
     const messages = statusMessages[phase];
     let currentIndex = 0;
     
@@ -459,12 +464,12 @@ const HomePage = () => {
           currentIndex = (currentIndex + 1) % messages.length;
         }, 8000); // Slower rotation for idle messages
       }, 10000);
-    } else if (phase === 'thinking') {
-      // For thinking phase, cycle through messages faster to show activity
+    } else if (phase === 'thinking' || phase === 'wrapping') {
+      // For thinking and wrapping phases, cycle through messages faster to show activity
       statusIntervalRef.current = setInterval(() => {
         setStatusMessage(messages[currentIndex]);
         currentIndex = (currentIndex + 1) % messages.length;
-      }, 2000); // Faster rotation for thinking messages
+      }, 2000); // Faster rotation for active operation messages
     } else {
       // Set up immediate interval for signal and insights phases
       statusIntervalRef.current = setInterval(() => {
@@ -863,6 +868,12 @@ const HomePage = () => {
             _id: '6887e02fa01e2f4073d3bb51',
             name: 'Demo Capsule',
             isPublic: true
+          },
+          {
+            _id: '68c32cf3735fb4ac0ef3ccbf',
+            name: 'LastWeekTonight Preview',
+            isPublic: true,
+            isShared: true
           }
         ];
         
@@ -897,9 +908,41 @@ const HomePage = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('[HomePage] Fetched capsules data:', data);
-        setCapsules(data);
-        if (data.length > 0) {
-          setSelectedCapsuleId(data[0]._id);
+        
+        // Also fetch shared capsules if user has API key
+        let allCapsules = data;
+        if (key) {
+          try {
+            console.log('[HomePage] Fetching shared capsules...');
+            const sharedResponse = await authFetch('/api/capsules/shared', {
+              headers: {
+                'x-api-key': key
+              },
+            });
+            
+            if (sharedResponse.ok) {
+              const sharedData = await sharedResponse.json();
+              console.log('[HomePage] Fetched shared capsules:', sharedData);
+              
+              // Merge shared capsules with owned capsules, avoiding duplicates
+              if (Array.isArray(sharedData)) {
+                const ownedIds = new Set(data.map((c: any) => c._id));
+                const newSharedCapsules = sharedData.filter((c: any) => !ownedIds.has(c._id));
+                allCapsules = [...data, ...newSharedCapsules];
+                console.log('[HomePage] Merged capsules:', allCapsules.length, 'total');
+              }
+            } else {
+              console.warn('[HomePage] Failed to fetch shared capsules, continuing with owned capsules only');
+            }
+          } catch (sharedError) {
+            console.error('[HomePage] Error fetching shared capsules:', sharedError);
+            // Continue with just the owned capsules
+          }
+        }
+        
+        setCapsules(allCapsules);
+        if (allCapsules.length > 0) {
+          setSelectedCapsuleId(allCapsules[0]._id);
           // For authenticated users, ensure video rendering is enabled
           setTimeout(() => {
             setShowVideo(true);
@@ -1378,8 +1421,52 @@ const HomePage = () => {
               <CapsulesWindow
                 id="capsules-window"
                 capsules={capsules}
-                onSelectCapsule={(capsuleId) => {
+                onSelectCapsule={async (capsuleId) => {
                   setSelectedCapsuleId(capsuleId);
+                  
+                  // Auto-share LastWeekTonight Preview capsule when authenticated user selects it
+                  if (capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && user.email) {
+                    console.log(`[HomePage] Auto-sharing LastWeekTonight Preview capsule with ${user.email}`);
+                    try {
+                      const shareResponse = await fetch(`/api/capsules/${capsuleId}/share`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          email: user.email,
+                          role: 'viewer'
+                        }),
+                      });
+                      
+                      if (shareResponse.ok) {
+                        console.log(`[HomePage] Successfully shared capsule with ${user.email}`);
+                        // Now accept the invite
+                        const acceptResponse = await fetch(`/api/capsules/${capsuleId}/accept-invite`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': apiKey || ''
+                          },
+                          body: JSON.stringify({
+                            email: user.email
+                          }),
+                        });
+                        
+                        if (acceptResponse.ok) {
+                          console.log(`[HomePage] Successfully accepted invite for ${user.email}`);
+                          // Refresh capsule list to include the newly shared capsule
+                          fetchCapsules(apiKey);
+                        } else {
+                          console.error('[HomePage] Failed to accept invite:', await acceptResponse.text());
+                        }
+                      } else {
+                        console.error('[HomePage] Failed to share capsule:', await shareResponse.text());
+                      }
+                    } catch (error) {
+                      console.error('[HomePage] Error in auto-sharing:', error);
+                    }
+                  }
                 }}
                 selectedCapsuleId={selectedCapsuleId}
                 initialPosition={calculateCapsulesWindowPosition()}
@@ -1467,12 +1554,15 @@ const HomePage = () => {
                       autoFetch={false}  // Disabled - using original auto wrap system
                       className="action-button wrap-button"
                       onWrapStart={() => {
-                        // Clear welcome window message and show loading in status
+                        // Clear welcome window message and show wrapping status
                         setLastWrapSummary('');
+                        setLoadingPhase('wrapping');
+                        updateStatusMessage('wrapping');
                         console.log('[HomePage] Manual wrap started - cleared welcome window');
                       }}
                       onStatusMessage={(message) => {
-                        // Show status in bottom bar
+                        // Update loading phase to wrapping and show custom message
+                        setLoadingPhase('wrapping');
                         setStatusMessage(message);
                         console.log('[HomePage] Wrap status:', message);
                       }}
@@ -1489,13 +1579,10 @@ const HomePage = () => {
                           // Full summary - use it directly
                           setLastWrapSummary(summary);
                         }
-                        // Clear the "working on wrap" status message
-                        if (statusIntervalRef.current) {
-                          clearInterval(statusIntervalRef.current);
-                          statusIntervalRef.current = null;
-                        }
-                        setStatusMessage(''); // Clear status bar
-                        console.log('[HomePage] Wrap tool updated welcome window and cleared status');
+                        // Resume periodic status updates and return to idle phase
+                        setLoadingPhase('idle');
+                        updateStatusMessage('idle');
+                        console.log('[HomePage] Wrap tool updated welcome window and resumed status');
                       }}
                       onStateHashUpdate={setWrapStateHash}
                       lastStateHash={wrapStateHash}
