@@ -90,7 +90,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       }, 1500);
       
       // Load in logical order: user capsules -> accessible capsules -> coming soon
-      const loadingOrder = [];
+      const loadingOrder: string[] = [];
       
       // 1. User's own capsules (if any)
       const userCapsuleIds = userCapsulesData.map(c => c.id);
