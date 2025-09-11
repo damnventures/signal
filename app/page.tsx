@@ -934,7 +934,7 @@ const HomePage = () => {
                 const newSharedCapsules = sharedData.filter((c: any) => !ownedIds.has(c._id));
                 console.log('[HomePage] New shared capsules to add:', newSharedCapsules);
                 allCapsules = [...data, ...newSharedCapsules];
-                console.log('[HomePage] Final merged capsules:', allCapsules.map(c => ({id: c._id, name: c.name})));
+                console.log('[HomePage] Final merged capsules:', allCapsules.map((c: any) => ({id: c._id, name: c.name})));
               }
             } else {
               const errorText = await sharedResponse.text();
@@ -1431,7 +1431,7 @@ const HomePage = () => {
                 capsules={capsules}
                 onSelectCapsule={async (capsuleId) => {
                   console.log(`[HomePage] User selected capsule: ${capsuleId}`);
-                  console.log(`[HomePage] Current capsules in window:`, capsules.map(c => ({id: c._id, name: c.name})));
+                  console.log(`[HomePage] Current capsules in window:`, capsules.map((c: any) => ({id: c._id, name: c.name})));
                   setSelectedCapsuleId(capsuleId);
                   
                   // Auto-share LastWeekTonight Preview capsule when authenticated user selects it
