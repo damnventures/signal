@@ -34,9 +34,9 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isCreatingCapsule, setIsCreatingCapsule] = useState(false);
   
-  // Sharing terminal state
-  const [terminalVisible, setTerminalVisible] = useState(false);
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
+  // Sharing status state
+  const [statusVisible, setStatusVisible] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [sharedCapsules, setSharedCapsules] = useState<Set<string>>(new Set());
   
@@ -63,7 +63,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       if (!isOpen) {
         setStoreChecked(false);
         setLoadedCapsules(new Set());
-        setTerminalVisible(false);
+        setStatusVisible(false);
       }
     }
 
@@ -77,21 +77,20 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   useEffect(() => {
     if (isOpen && !storeChecked) {
       setIsCheckingStore(true);
-      setTerminalVisible(true);
-      clearTerminal();
+      setStatusVisible(true);
       
-      addTerminalLine('Checking what\'s in store...');
+      setStatusMessage('Checking what\'s in store...');
       
       setTimeout(() => {
-        addTerminalLine('Scanning user access permissions...');
+        setStatusMessage('Scanning user access permissions...');
       }, 800);
       
       setTimeout(() => {
-        addTerminalLine('Loading available capsules...');
+        setStatusMessage('Loading available capsules...');
       }, 1600);
       
       setTimeout(() => {
-        addTerminalLine('Store ready.');
+        setStatusMessage('Store ready.');
         setIsCheckingStore(false);
         setStoreChecked(true);
         
@@ -103,38 +102,37 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           }, (index + 1) * 300);
         });
         
-        // Keep terminal visible for a moment, then auto-hide
+        // Hide status after a moment
         setTimeout(() => {
-          setTerminalVisible(false);
+          setStatusVisible(false);
         }, 1500);
       }, 2400);
     }
   }, [isOpen, storeChecked]);
 
-  // Terminal functions
-  const addTerminalLine = (line: string) => {
-    setTerminalOutput(prev => [...prev, line]);
-  };
-
-  const clearTerminal = () => {
-    setTerminalOutput([]);
-  };
 
 
   const handleShareToggle = async (capsuleId: string, capsuleName: string) => {
     if (!user || !user.email || isSharing) return;
 
     setIsSharing(true);
-    setTerminalVisible(true);
+    setStatusVisible(true);
     
     const isCurrentlyShared = sharedCapsules.has(capsuleId);
     
     if (!isCurrentlyShared) {
       // Share the capsule
-      clearTerminal();
-      addTerminalLine('Requesting access to ' + capsuleName + '...');
-      addTerminalLine('Context shared. You now have access.');
-      addTerminalLine('You can ask questions about this content.');
+      setStatusMessage('Requesting access to ' + capsuleName + '...');
+      
+      setTimeout(() => {
+        setStatusMessage('Context shared. You now have access.');
+        setTimeout(() => {
+          setStatusMessage('You can ask questions about this content.');
+          setTimeout(() => {
+            setStatusVisible(false);
+          }, 2000);
+        }, 1500);
+      }, 1000);
       
       setSharedCapsules(prev => new Set([...prev, capsuleId]));
       setIsSharing(false);
@@ -157,15 +155,25 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
             },
             body: JSON.stringify({ email: user.email }),
           });
+          
+          // Refresh capsules to show the newly shared capsule
+          if (onRefreshCapsules) {
+            onRefreshCapsules();
+          }
         }
       } catch (error) {
         console.error('Sharing error:', error);
       }
     } else {
       // Unshare the capsule
-      clearTerminal();
-      addTerminalLine('Revoking access to ' + capsuleName + '...');
-      addTerminalLine('Access removed.');
+      setStatusMessage('Revoking access to ' + capsuleName + '...');
+      
+      setTimeout(() => {
+        setStatusMessage('Access removed.');
+        setTimeout(() => {
+          setStatusVisible(false);
+        }, 2000);
+      }, 1000);
       
       setSharedCapsules(prev => {
         const newSet = new Set(prev);
@@ -359,10 +367,12 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                 }
               };
               
+              const isSharedWithUser = source.type === 'shrinked' && sharedCapsules.has(source.capsuleId || '');
+              
               return (
                 <div 
                   key={source.id} 
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${!isLoaded && source.type === 'shrinked' ? 'loading' : ''}`}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${!isLoaded && source.type === 'shrinked' ? 'loading' : ''}`}
                   onClick={handleClick}
                   style={{ cursor: (isClickable && isLoaded && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
                 >
@@ -385,26 +395,11 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           </div>
         </div>
         
-        {/* Sharing Terminal */}
-        {terminalVisible && (
-          <div className="sharing-terminal">
-            <div className="terminal-header">
-              <div className="terminal-title">Terminal</div>
-              <div className="terminal-controls">
-                <button 
-                  className="terminal-btn" 
-                  onClick={() => setTerminalVisible(false)}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            <div className="terminal-content">
-              {terminalOutput.map((line, index) => (
-                <div key={index} className="terminal-line">
-                  {line}
-                </div>
-              ))}
+        {/* Status Message */}
+        {statusVisible && (
+          <div className="store-status-message">
+            <div className="status-content">
+              {statusMessage}
             </div>
           </div>
         )}
@@ -723,24 +718,21 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           }
         }
 
-        /* Terminal Styles */
-        .sharing-terminal {
+        /* Status Message Styles */
+        .store-status-message {
           position: absolute;
           bottom: 20px;
           right: 20px;
-          width: 400px;
-          height: 200px;
-          background: #000000;
-          border: 2px solid #c0c0c0;
+          max-width: 300px;
+          background: #ffffff;
+          border: 2px solid #000000;
           border-radius: 0;
           z-index: 10000;
-          display: flex;
-          flex-direction: column;
           box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
-          animation: terminalSlideIn 0.2s ease-out;
+          animation: statusSlideIn 0.2s ease-out;
         }
 
-        @keyframes terminalSlideIn {
+        @keyframes statusSlideIn {
           from {
             transform: translateY(100%);
             opacity: 0;
@@ -751,71 +743,13 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           }
         }
 
-        .terminal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 4px 8px;
-          background: #c0c0c0;
-          border-bottom: 1px solid #808080;
+        .status-content {
+          padding: 8px 12px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 10px;
-          font-weight: bold;
-        }
-
-        .terminal-title {
-          color: #000000;
-        }
-
-        .terminal-btn {
-          background: #c0c0c0;
-          border: 1px outset #c0c0c0;
-          color: #000000;
-          cursor: pointer;
-          font-size: 10px;
-          padding: 1px 6px;
-          line-height: 1;
-          font-family: 'Chicago', 'Lucida Grande', sans-serif;
-        }
-
-        .terminal-btn:hover:not(:disabled) {
-          background: #d0d0d0;
-        }
-
-        .terminal-btn:active:not(:disabled) {
-          border: 1px inset #c0c0c0;
-        }
-
-        .terminal-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .terminal-content {
-          flex: 1;
-          padding: 8px;
-          overflow-y: auto;
-          font-family: 'Courier New', monospace;
           font-size: 11px;
           line-height: 1.3;
-          color: #00ff00;
-          background: #000000;
-        }
-
-        .terminal-line {
-          margin-bottom: 2px;
-          white-space: pre-wrap;
-        }
-
-        .terminal-cursor {
-          display: inline-block;
-          animation: terminalBlink 1s infinite;
-          color: #00ff00;
-        }
-
-        @keyframes terminalBlink {
-          0%, 50% { opacity: 1; }
-          51%, 100% { opacity: 0; }
+          color: #000000;
+          white-space: nowrap;
         }
 
       `}</style>
