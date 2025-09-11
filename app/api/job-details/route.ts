@@ -10,27 +10,39 @@ export async function GET(request: Request) {
   }
 
   const API_URL = process.env.BACKEND_API_URL || 'https://api.shrinked.ai';
-  // Use user's API key if provided, otherwise fall back to default
-  const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
+  const defaultApiKey = process.env.SHRINKED_API_KEY;
+  let apiKey = userApiKey || defaultApiKey;
+  let isUsingUserKey = !!userApiKey;
 
-  if (!API_KEY) {
+  if (!apiKey) {
     console.error('API Error: No API key available (neither user nor default).');
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
   console.log(`[Job Details API] Attempting to fetch jobId from: ${API_URL}/jobs/by-result/${fileId}`);
-  console.log(`[Job Details API] Using ${userApiKey ? 'user' : 'default'} API Key (last 4 chars): ...${API_KEY.slice(-4)}`);
 
   try {
     // Step 1: Fetch jobId using fileId
     const jobIdUrl = `${API_URL}/jobs/by-result/${fileId}`;
-    console.log(`[Job Details API] Making request to: ${jobIdUrl}`);
-    
-    const jobIdResponse = await fetch(jobIdUrl, {
-      headers: {
-        'x-api-key': API_KEY,
-      },
-    });
+    let jobIdResponse;
+
+    const doFetchJobId = async (key: string, isUser: boolean) => {
+      console.log(`[Job Details API] Making request to: ${jobIdUrl}`);
+      console.log(`[Job Details API] Using ${isUser ? 'user' : 'default'} API Key (last 4 chars): ...${key.slice(-4)}`);
+      return await fetch(jobIdUrl, {
+        headers: { 'x-api-key': key },
+      });
+    };
+
+    jobIdResponse = await doFetchJobId(apiKey, isUsingUserKey);
+
+    // If user key fails with 403, and there is a default key, retry with default key
+    if (jobIdResponse.status === 403 && isUsingUserKey && defaultApiKey) {
+      console.log(`[Job Details API] User key failed with 403. Retrying with default API key.`);
+      apiKey = defaultApiKey;
+      isUsingUserKey = false;
+      jobIdResponse = await doFetchJobId(apiKey, isUsingUserKey);
+    }
 
     console.log(`[Job Details API] Response status: ${jobIdResponse.status} ${jobIdResponse.statusText}`);
 
@@ -79,7 +91,7 @@ export async function GET(request: Request) {
       console.log(`[Job Details API] Attempting to fetch job details for jobId ${jobId} (Attempt ${i + 1})`);
       jobDetailsResponse = await fetch(`${API_URL}/jobs/${jobId}`, {
         headers: {
-          'x-api-key': API_KEY,
+          'x-api-key': apiKey, // Use the potentially updated apiKey
         },
       });
 
