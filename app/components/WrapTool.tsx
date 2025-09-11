@@ -154,7 +154,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
           {!summary && !isLoading && !error && (
             <button
               className="wrap-generate-btn"
-              onClick={fetchWrapSummary}
+              onClick={() => fetchWrapSummary(true)}
               disabled={isLoading}
             >
               Generate Summary
@@ -171,7 +171,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
           {error && (
             <div className="wrap-error">
               <p>Error: {error}</p>
-              <button onClick={fetchWrapSummary} className="wrap-retry-btn">
+              <button onClick={() => fetchWrapSummary(true)} className="wrap-retry-btn">
                 Retry
               </button>
             </div>
@@ -191,7 +191,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
                 </div>
               )}
               <button 
-                onClick={fetchWrapSummary} 
+                onClick={() => fetchWrapSummary(true)} 
                 className="wrap-refresh-btn"
                 title="Refresh summary"
               >
