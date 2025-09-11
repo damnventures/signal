@@ -45,6 +45,9 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   const [storeChecked, setStoreChecked] = useState(false);
   const [loadedCapsules, setLoadedCapsules] = useState<Set<string>>(new Set());
   const [loadingCapsules, setLoadingCapsules] = useState<Set<string>>(new Set());
+  
+  // Track which items should be shown (vs completely hidden during initial phases)
+  const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
 
   // Handle ESC key to close
   useEffect(() => {
@@ -65,6 +68,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         setStoreChecked(false);
         setLoadedCapsules(new Set());
         setLoadingCapsules(new Set());
+        setVisibleItems(new Set());
         setStatusVisible(false);
       }
     }
@@ -114,18 +118,23 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         
         loadingOrder.forEach((id, index) => {
           setTimeout(() => {
-            // Show loading animation first
-            setLoadingCapsules(prev => new Set([...prev, id]));
+            // First make the item visible (but not loaded)
+            setVisibleItems(prev => new Set([...prev, id]));
             
-            // Then show the item after a brief loading period
+            // Then immediately show loading animation
             setTimeout(() => {
-              setLoadingCapsules(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(id);
-                return newSet;
-              });
-              setLoadedCapsules(prev => new Set([...prev, id]));
-            }, 300); // 300ms loading animation per item
+              setLoadingCapsules(prev => new Set([...prev, id]));
+              
+              // Then complete loading after animation
+              setTimeout(() => {
+                setLoadingCapsules(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(id);
+                  return newSet;
+                });
+                setLoadedCapsules(prev => new Set([...prev, id]));
+              }, 300); // 300ms loading animation per item
+            }, 50); // Small delay to see the unloaded state first
           }, index * 600); // 600ms between each item load start
         });
       }, 3000);
@@ -149,6 +158,9 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   const handleShareToggle = async (capsuleId: string, capsuleName: string) => {
     if (!user || !user.email || isSharing) return;
 
+    console.log(`[Store] Starting share toggle for capsule ${capsuleId} (${capsuleName})`);
+    console.log(`[Store] User: ${user.email}, Currently shared:`, sharedCapsules.has(capsuleId));
+
     setIsSharing(true);
     setStatusVisible(true);
     
@@ -156,6 +168,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
     
     if (!isCurrentlyShared) {
       // Share the capsule
+      console.log(`[Store] Sharing capsule ${capsuleId} with ${user.email}`);
       setStatusMessage('Requesting access to ' + capsuleName + '...');
       
       setTimeout(() => {
@@ -168,35 +181,55 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         }, 1500);
       }, 1000);
       
-      setSharedCapsules(prev => new Set([...prev, capsuleId]));
+      console.log(`[Store] Adding ${capsuleId} to sharedCapsules set`);
+      setSharedCapsules(prev => {
+        const newSet = new Set([...prev, capsuleId]);
+        console.log(`[Store] Updated sharedCapsules:`, Array.from(newSet));
+        return newSet;
+      });
       setIsSharing(false);
 
       // Actual API call
       try {
+        console.log(`[Store] Making share API call to /api/capsules/${capsuleId}/share`);
         const shareResponse = await fetch(`/api/capsules/${capsuleId}/share`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: user.email, role: 'viewer' }),
         });
 
+        console.log(`[Store] Share response status: ${shareResponse.status}`);
         if (shareResponse.ok) {
-          // Accept the invite
-          await fetch(`/api/capsules/${capsuleId}/accept-invite`, {
+          console.log(`[Store] Share successful, now accepting invite`);
+          const apiKey = localStorage.getItem('auth_api_key');
+          console.log(`[Store] Using API key (last 4 chars): ...${apiKey?.slice(-4) || 'none'}`);
+          
+          const acceptResponse = await fetch(`/api/capsules/${capsuleId}/accept-invite`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': localStorage.getItem('auth_api_key') || ''
+              'x-api-key': apiKey || ''
             },
             body: JSON.stringify({ email: user.email }),
           });
           
-          // Refresh capsules to show the newly shared capsule
-          if (onRefreshCapsules) {
-            onRefreshCapsules();
+          console.log(`[Store] Accept invite response status: ${acceptResponse.status}`);
+          if (acceptResponse.ok) {
+            console.log(`[Store] Accept invite successful, refreshing capsules`);
+            // Refresh capsules to show the newly shared capsule
+            if (onRefreshCapsules) {
+              onRefreshCapsules();
+            } else {
+              console.warn(`[Store] No onRefreshCapsules callback provided`);
+            }
+          } else {
+            console.error(`[Store] Accept invite failed:`, await acceptResponse.text());
           }
+        } else {
+          console.error(`[Store] Share failed:`, await shareResponse.text());
         }
       } catch (error) {
-        console.error('Sharing error:', error);
+        console.error('[Store] Sharing error:', error);
       }
     } else {
       // Unshare the capsule
@@ -372,8 +405,14 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
         {/* Content */}
         <div className="store-content">
           <div className="store-grid">
-            {allSources.map((source: SourceItem) => {
+            {allSources.filter((source: SourceItem) => {
+              // Always show user capsules and add-new button
+              if (source.type === 'user' || source.type === 'add-new') return true;
+              // Only show other items if they're visible
+              return visibleItems.has(source.id);
+            }).map((source: SourceItem) => {
               const isClickable = source.type !== 'coming';
+              const isVisible = source.type === 'user' || source.type === 'add-new' || visibleItems.has(source.id);
               const isLoaded = source.type === 'user' || source.type === 'add-new' || loadedCapsules.has(source.id);
               const isCurrentlyLoading = loadingCapsules.has(source.id);
               const getIcon = () => {
@@ -383,11 +422,14 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                   const extension = isWebp ? 'webp' : 'png';
                   return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
                 }
-                if (source.type === 'coming' && !isLoaded) return '⏳';
+                // Show loading spinner when actively loading
                 if ((source.type === 'shrinked' || source.type === 'coming') && isCurrentlyLoading) {
                   return <div className="loading-spinner">⏳</div>;
                 }
-                if ((source.type === 'shrinked' || source.type === 'coming') && !isLoaded) return '⏳';
+                // Show static loading icon when not loaded
+                if ((source.type === 'shrinked' || source.type === 'coming') && !isLoaded) {
+                  return '⏳';
+                }
                 
                 return '💿';
               };
@@ -407,6 +449,18 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
               };
               
               const isSharedWithUser = user && source.type === 'shrinked' && sharedCapsules.has(source.capsuleId || '');
+              
+              // Debug logging for shared capsule styling
+              if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf') {
+                console.log(`[Store] LastWeekTonight Preview styling check:`, {
+                  hasUser: !!user,
+                  sourceType: source.type,
+                  capsuleId: source.capsuleId,
+                  isInSharedSet: sharedCapsules.has(source.capsuleId),
+                  sharedCapsulesArray: Array.from(sharedCapsules),
+                  isSharedWithUser
+                });
+              }
               
               return (
                 <div 

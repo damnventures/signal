@@ -914,30 +914,38 @@ const HomePage = () => {
         if (key) {
           try {
             console.log('[HomePage] Fetching shared capsules...');
+            console.log('[HomePage] Using API key (last 4 chars):', key.slice(-4));
             const sharedResponse = await authFetch('/api/capsules/shared', {
               headers: {
                 'x-api-key': key
               },
             });
             
+            console.log('[HomePage] Shared capsules response status:', sharedResponse.status);
             if (sharedResponse.ok) {
               const sharedData = await sharedResponse.json();
               console.log('[HomePage] Fetched shared capsules:', sharedData);
+              console.log('[HomePage] Shared capsules count:', Array.isArray(sharedData) ? sharedData.length : 'not array');
               
               // Merge shared capsules with owned capsules, avoiding duplicates
               if (Array.isArray(sharedData)) {
                 const ownedIds = new Set(data.map((c: any) => c._id));
+                console.log('[HomePage] Owned capsule IDs:', Array.from(ownedIds));
                 const newSharedCapsules = sharedData.filter((c: any) => !ownedIds.has(c._id));
+                console.log('[HomePage] New shared capsules to add:', newSharedCapsules);
                 allCapsules = [...data, ...newSharedCapsules];
-                console.log('[HomePage] Merged capsules:', allCapsules.length, 'total');
+                console.log('[HomePage] Final merged capsules:', allCapsules.map(c => ({id: c._id, name: c.name})));
               }
             } else {
-              console.warn('[HomePage] Failed to fetch shared capsules, continuing with owned capsules only');
+              const errorText = await sharedResponse.text();
+              console.warn('[HomePage] Failed to fetch shared capsules:', sharedResponse.status, errorText);
             }
           } catch (sharedError) {
             console.error('[HomePage] Error fetching shared capsules:', sharedError);
             // Continue with just the owned capsules
           }
+        } else {
+          console.log('[HomePage] No API key available, skipping shared capsules fetch');
         }
         
         setCapsules(allCapsules);
@@ -1422,6 +1430,8 @@ const HomePage = () => {
                 id="capsules-window"
                 capsules={capsules}
                 onSelectCapsule={async (capsuleId) => {
+                  console.log(`[HomePage] User selected capsule: ${capsuleId}`);
+                  console.log(`[HomePage] Current capsules in window:`, capsules.map(c => ({id: c._id, name: c.name})));
                   setSelectedCapsuleId(capsuleId);
                   
                   // Auto-share LastWeekTonight Preview capsule when authenticated user selects it
