@@ -28,9 +28,10 @@ interface StoreProps {
   userCapsules?: Capsule[];
   user?: User | null;
   onRefreshCapsules?: () => void;
+  accessibleShrinkedCapsules?: string[];
 }
 
-const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules }) => {
+const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules, accessibleShrinkedCapsules = [] }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isCreatingCapsule, setIsCreatingCapsule] = useState(false);
   
@@ -100,16 +101,35 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       const userCapsuleIds = userCapsulesData.map(c => c.id);
       loadingOrder.push(...userCapsuleIds);
       
-      // 2. Shrinked capsules user can access (shareable ones)
-      const accessibleShrinkedIds = ['shrink-1', 'shrink-2']; // YC Reducto AI, LastWeekTonight Preview
+      // 2. Shrinked capsules user can access
+      const shrinkedCapsuleMap: Record<string, string> = {
+        '6887e02fa01e2f4073d3bb51': 'shrink-1', // YC Reducto AI
+        '68c32cf3735fb4ac0ef3ccbf': 'shrink-2', // LastWeekTonight Preview
+        '6887e02fa01e2f4073d3bb52': 'shrink-3', // AI Research Papers
+        '6887e02fa01e2f4073d3bb53': 'shrink-4', // Startup Insights
+        '6887e02fa01e2f4073d3bb54': 'shrink-5', // Tech Podcasts
+      };
+      
+      const accessibleShrinkedIds = accessibleShrinkedCapsules
+        .map(capsuleId => shrinkedCapsuleMap[capsuleId])
+        .filter(Boolean);
+      const allShrinkedIds = Object.values(shrinkedCapsuleMap);
+      const inaccessibleShrinkedIds = allShrinkedIds.filter(id => !accessibleShrinkedIds.includes(id));
+      
+      console.log('[Store] Loading order setup:', {
+        accessibleShrinkedCapsules,
+        accessibleShrinkedIds,
+        inaccessibleShrinkedIds,
+        userCapsuleIds
+      });
+      
       loadingOrder.push(...accessibleShrinkedIds);
       
       // 3. Other Shrinked capsules (user has no access)
-      const inaccessibleShrinkedIds = ['shrink-3', 'shrink-4', 'shrink-5'];
       loadingOrder.push(...inaccessibleShrinkedIds);
       
-      // 4. Coming soon items (load a few for demo)
-      const comingSoonIds = ['soon-1', 'soon-2', 'soon-3'];
+      // 4. Coming soon items (load more for demo)  
+      const comingSoonIds = ['soon-1', 'soon-2', 'soon-3', 'soon-4', 'soon-5', 'soon-6', 'soon-7', 'soon-8'];
       loadingOrder.push(...comingSoonIds);
       
       setTimeout(() => {
@@ -218,7 +238,10 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
             console.log(`[Store] Accept invite successful, refreshing capsules`);
             // Refresh capsules to show the newly shared capsule
             if (onRefreshCapsules) {
-              onRefreshCapsules();
+              // Add a delay to ensure the sharing is processed on the backend
+              setTimeout(() => {
+                onRefreshCapsules();
+              }, 1000);
             } else {
               console.warn(`[Store] No onRefreshCapsules callback provided`);
             }
@@ -448,16 +471,18 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                 }
               };
               
-              const isSharedWithUser = user && source.type === 'shrinked' && sharedCapsules.has(source.capsuleId || '');
+              // Check if user has access to this Shrinked capsule (either owned or shared)
+              const userHasAccess = source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId);
+              const isSharedWithUser = user && userHasAccess;
               
-              // Debug logging for shared capsule styling
+              // Debug logging for accessible capsule styling
               if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf') {
-                console.log(`[Store] LastWeekTonight Preview styling check:`, {
+                console.log(`[Store] LastWeekTonight Preview access check:`, {
                   hasUser: !!user,
                   sourceType: source.type,
                   capsuleId: source.capsuleId,
-                  isInSharedSet: sharedCapsules.has(source.capsuleId),
-                  sharedCapsulesArray: Array.from(sharedCapsules),
+                  accessibleCapsules: accessibleShrinkedCapsules,
+                  userHasAccess,
                   isSharedWithUser
                 });
               }

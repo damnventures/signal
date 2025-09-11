@@ -61,6 +61,7 @@ const HomePage = () => {
   const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [showStore, setShowStore] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
+  const [accessibleShrinkedCapsules, setAccessibleShrinkedCapsules] = useState<string[]>([]);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -859,6 +860,15 @@ const HomePage = () => {
     setIsFetchingCapsules(true);
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
     
+    // Store Shrinked capsules data for cross-reference
+    const storeShrinkedCapsules = [
+      { id: '6887e02fa01e2f4073d3bb51', name: 'YC Reducto AI' },
+      { id: '68c32cf3735fb4ac0ef3ccbf', name: 'LastWeekTonight Preview' },
+      { id: '6887e02fa01e2f4073d3bb52', name: 'AI Research Papers' },
+      { id: '6887e02fa01e2f4073d3bb53', name: 'Startup Insights' },
+      { id: '6887e02fa01e2f4073d3bb54', name: 'Tech Podcasts' },
+    ];
+    
     try {
       // For non-auth users, return hardcoded capsule list instead of real API lookup
       if (!key && !accessToken) {
@@ -881,6 +891,12 @@ const HomePage = () => {
         setCapsules(hardcodedCapsules);
         setSelectedCapsuleId(hardcodedCapsules[0]._id);
         setShowCapsulesWindow(true);
+        
+        // Store access check for non-auth users
+        const nonAuthAccessible = hardcodedCapsules.map(c => c._id);
+        console.log('[HomePage] Store check - Non-auth user has demo access to:', hardcodedCapsules.map(c => c.name));
+        console.log('[HomePage] Store check - Non-auth accessible IDs:', nonAuthAccessible);
+        setAccessibleShrinkedCapsules(nonAuthAccessible);
         return;
       }
       
@@ -950,13 +966,39 @@ const HomePage = () => {
         
         setCapsules(allCapsules);
         if (allCapsules.length > 0) {
-          setSelectedCapsuleId(allCapsules[0]._id);
+          // Don't change selected capsule if user already has one selected
+          if (!selectedCapsuleId) {
+            setSelectedCapsuleId(allCapsules[0]._id);
+          }
           // For authenticated users, ensure video rendering is enabled
           setTimeout(() => {
             setShowVideo(true);
           }, 500);
         }
         setShowCapsulesWindow(true);
+        
+        // Store access check - cross-reference user's capsules with Shrinked capsules in store
+        const userCapsuleIds = allCapsules.map((c: any) => c._id);
+        const ownedShrinked = storeShrinkedCapsules.filter(storeCapsule => 
+          userCapsuleIds.includes(storeCapsule.id)
+        );
+        const accessibleShrinked = allCapsules.filter((c: any) => 
+          storeShrinkedCapsules.some(storeCapsule => storeCapsule.id === c._id) && 
+          (c.shared || c.isShared)
+        );
+        
+        // Combine owned and accessible capsule IDs
+        const totalAccessible = [...new Set([
+          ...ownedShrinked.map(c => c.id),
+          ...accessibleShrinked.map((c: any) => c._id)
+        ])];
+        
+        console.log('[HomePage] Store check - User owns Shrinked capsules:', ownedShrinked.map(c => c.name));
+        console.log('[HomePage] Store check - User has shared access to Shrinked capsules:', accessibleShrinked.map((c: any) => c.name));
+        console.log('[HomePage] Store check - Total Shrinked capsules accessible:', totalAccessible);
+        
+        // Update state to pass to Store component
+        setAccessibleShrinkedCapsules(totalAccessible);
       } else {
         const errorText = await response.text();
         console.error('Failed to fetch capsules:', errorText);
@@ -1646,6 +1688,7 @@ const HomePage = () => {
               userCapsules={capsules}
               user={user}
               onRefreshCapsules={() => fetchCapsules(apiKey)}
+              accessibleShrinkedCapsules={accessibleShrinkedCapsules}
             />
           </>
         )}

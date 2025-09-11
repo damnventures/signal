@@ -47,6 +47,15 @@ export async function GET(request: Request) {
         capsule.visibility === 'shared' && capsule.shared === true
       ) : [];
       
+      // Temporarily add the LastWeekTonight Preview capsule as a shared capsule for testing
+      sharedCapsules.push({
+        _id: '68c32cf3735fb4ac0ef3ccbf',
+        name: 'LastWeekTonight Preview',
+        visibility: 'shared',
+        shared: true,
+        isPublic: false
+      });
+      
       console.log('[Shared Capsules Route] Fallback Success: Found', sharedCapsules.length, 'shared capsules');
       return NextResponse.json(sharedCapsules);
     }
@@ -54,6 +63,18 @@ export async function GET(request: Request) {
     const data = await response.json();
     console.log('[Shared Capsules Route] API Success: Shared capsules fetched successfully.');
     console.log('[Shared Capsules Route] Found', Array.isArray(data) ? data.length : 'unknown', 'shared capsules');
+    
+    // Temporarily add the LastWeekTonight Preview capsule as a shared capsule for testing
+    if (Array.isArray(data)) {
+      data.push({
+        _id: '68c32cf3735fb4ac0ef3ccbf',
+        name: 'LastWeekTonight Preview',
+        visibility: 'shared',
+        shared: true,
+        isPublic: false
+      });
+    }
+    
     return NextResponse.json(data);
   } catch (error: any) {
     console.error(`[Shared Capsules Route] API Error: ${error.message}`);
