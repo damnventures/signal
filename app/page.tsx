@@ -1477,8 +1477,18 @@ const HomePage = () => {
                         console.log('[HomePage] Wrap status:', message);
                       }}
                       onSummaryUpdate={(summary) => {
-                        // When wrap result comes back, update the welcome window
-                        setLastWrapSummary(summary);
+                        // When wrap result comes back, handle based on content
+                        if (summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50)) {
+                          // Short "no updates" message - preserve previous summary and add note
+                          if (lastWrapSummary) {
+                            setLastWrapSummary(lastWrapSummary + '\n\n*No new updates since last wrap - your capsules remain current.*');
+                          } else {
+                            setLastWrapSummary(summary); // First time, use as-is
+                          }
+                        } else {
+                          // Full summary - use it directly
+                          setLastWrapSummary(summary);
+                        }
                         // Clear the "working on wrap" status message
                         if (statusIntervalRef.current) {
                           clearInterval(statusIntervalRef.current);

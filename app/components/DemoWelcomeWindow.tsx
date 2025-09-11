@@ -27,38 +27,24 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
-  const [animatedMessage, setAnimatedMessage] = useState('');
-  const animationRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use the SAME chunked animation as animateStatusMessage for consistency
-  const animateMessage = useCallback((fullMessage: string) => {
-    // Clear any existing animation
-    if (animationRef.current) {
-      clearTimeout(animationRef.current);
-      animationRef.current = null;
-    }
-
-    const words = fullMessage.split(' ');
-    let currentIndex = 0;
+  // Helper function to break text into sentence-based variants like demo mode
+  const createWrapVariants = useCallback((summary: string): string[] => {
+    // Split by sentences and rebuild progressively like demo mode
+    const sentences = summary.split(/\. (?=[A-Z])/);
+    const variants: string[] = [];
+    let currentText = '';
     
-    // Show message in chunks of 3-4 words for better flow (exactly like animateStatusMessage)
-    const animateChunk = () => {
-      if (currentIndex >= words.length) return;
-      
-      const chunkSize = Math.random() > 0.5 ? 3 : 4; // Vary chunk size 3-4 words
-      const chunk = words.slice(0, currentIndex + chunkSize).join(' ');
-      setAnimatedMessage(chunk);
-      
-      currentIndex += chunkSize;
-      
-      if (currentIndex < words.length) {
-        // Continue with next chunk after a brief delay
-        animationRef.current = setTimeout(animateChunk, 200 + Math.random() * 100); // 200-300ms between chunks
+    sentences.forEach((sentence, index) => {
+      if (index === 0) {
+        currentText = sentence + (sentence.endsWith('.') ? '' : '.');
+      } else {
+        currentText += ' ' + sentence + (sentence.endsWith('.') ? '' : '.');
       }
-    };
+      variants.push(currentText);
+    });
     
-    // Start animation
-    animateChunk();
+    return variants.length > 1 ? variants : [summary];
   }, []);
 
   // For authenticated users, show loading then wrap summary
@@ -73,16 +59,12 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
           "Analyzing your capsules..."
         ];
       } else {
-        // Got wrap summary - show the animated AI-generated message (which includes greeting)
-        return [
-          animatedMessage || wrapSummary
-        ];
+        // Break wrap summary into progressive variants like demo mode
+        return createWrapVariants(wrapSummary);
       }
     } else if (demoMessage) {
-      // Demo user flow - show the animated demo launch message
-      return [
-        animatedMessage || demoMessage
-      ];
+      // Demo user flow - break demo message into progressive variants
+      return createWrapVariants(demoMessage);
     } else {
       // Non-authenticated user - show default demo variants
       return [
@@ -186,27 +168,25 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   };
 
   // Cycle through variants with pause
-  // Watch for prop changes (wrap summary arriving) and animate using chunked approach
+  // Watch for prop changes (wrap summary arriving) and restart demo-style animation
   useEffect(() => {
     if (userEmail && wrapSummary) {
-      // Reset animation when wrap summary arrives and start chunked animation
+      // Reset animation when wrap summary arrives and use demo-style progression
       setVariantIndex(0);
       setShowDiff(false);
-      setAnimatedMessage(''); // Clear previous animation
-      animateMessage(wrapSummary); // Use same chunked animation as status bar
+      // Don't use word-based animation - let variant progression handle it
     }
-  }, [wrapSummary, userEmail, animateMessage]);
+  }, [wrapSummary, userEmail]);
 
-  // Watch for demo message changes and animate using chunked approach
+  // Watch for demo message changes and restart demo-style animation
   useEffect(() => {
     if (demoMessage && !userEmail) {
-      // Reset animation when demo message arrives and start chunked animation
+      // Reset animation when demo message arrives and use demo-style progression
       setVariantIndex(0);
       setShowDiff(false);
-      setAnimatedMessage(''); // Clear previous animation
-      animateMessage(demoMessage); // Use same chunked animation as status bar
+      // Don't use word-based animation - let variant progression handle it
     }
-  }, [demoMessage, userEmail, animateMessage]);
+  }, [demoMessage, userEmail]);
 
   useEffect(() => {
     const delay = variantIndex === 0 ? 2000 : 1500;

@@ -17,7 +17,8 @@ interface WrapToolProps {
 
 interface WrapResponse {
   success: boolean;
-  summary: string;
+  summary?: string;
+  message?: string;  // Alternative field name for summary content
   stateChanged: boolean;
   stateHash: string;
   metadata?: {
@@ -87,15 +88,17 @@ const WrapTool: React.FC<WrapToolProps> = ({
       const result: WrapResponse = await response.json();
       console.log('[WrapTool] Received wrap response:', result);
 
-      if (result.success || result.summary) {
-        setSummary(result.summary);
+      if (result.success || result.summary || result.message) {
+        // Handle both 'summary' and 'message' fields from API response
+        const summaryText = result.summary || result.message || '';
+        setSummary(summaryText);
         setMetadata(result.metadata);
         setStateHash(result.stateHash);
         
         // Notify parent components
         if (onSummaryUpdate) {
           // Check if state changed significantly
-          let summaryToShow = result.summary;
+          let summaryToShow = summaryText;
           if (!result.stateChanged && result.stateHash === lastStateHash) {
             summaryToShow += '\n\n*Not much has changed since your last wrap - your capsules are up to date.*';
           }
