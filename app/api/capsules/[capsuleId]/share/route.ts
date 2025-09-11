@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { capsuleId: string } }
+  { params }: { params: Promise<{ capsuleId: string }> }
 ) {
-  const { capsuleId } = params;
+  const { capsuleId } = await params;
   const body = await request.json();
   const { email, role = 'viewer' } = body;
 

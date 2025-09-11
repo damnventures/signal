@@ -33,6 +33,17 @@ interface StoreProps {
 const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isCreatingCapsule, setIsCreatingCapsule] = useState(false);
+  
+  // Sharing terminal state
+  const [terminalVisible, setTerminalVisible] = useState(false);
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
+  const [sharedCapsules, setSharedCapsules] = useState<Set<string>>(new Set());
+  
+  // Loading state for initial store check
+  const [isCheckingStore, setIsCheckingStore] = useState(false);
+  const [storeChecked, setStoreChecked] = useState(false);
+  const [loadedCapsules, setLoadedCapsules] = useState<Set<string>>(new Set());
 
   // Handle ESC key to close
   useEffect(() => {
@@ -48,6 +59,12 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
+      // Reset store state when closing so it checks again next time
+      if (!isOpen) {
+        setStoreChecked(false);
+        setLoadedCapsules(new Set());
+        setTerminalVisible(false);
+      }
     }
 
     return () => {
@@ -55,6 +72,120 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
+
+  // Simulate checking store contents when opened
+  useEffect(() => {
+    if (isOpen && !storeChecked) {
+      setIsCheckingStore(true);
+      setTerminalVisible(true);
+      clearTerminal();
+      
+      addTerminalLine('Checking what\'s in store...');
+      
+      setTimeout(() => {
+        addTerminalLine('Scanning user access permissions...');
+      }, 800);
+      
+      setTimeout(() => {
+        addTerminalLine('Loading available capsules...');
+      }, 1600);
+      
+      setTimeout(() => {
+        addTerminalLine('Store ready.');
+        setIsCheckingStore(false);
+        setStoreChecked(true);
+        
+        // Progressively load capsules with delays
+        const shrinkedIds = ['shrink-1', 'shrink-2', 'shrink-3', 'shrink-4', 'shrink-5'];
+        shrinkedIds.forEach((id, index) => {
+          setTimeout(() => {
+            setLoadedCapsules(prev => new Set([...prev, id]));
+          }, (index + 1) * 300);
+        });
+        
+        // Keep terminal visible for a moment, then auto-hide
+        setTimeout(() => {
+          setTerminalVisible(false);
+        }, 1500);
+      }, 2400);
+    }
+  }, [isOpen, storeChecked]);
+
+  // Terminal functions
+  const addTerminalLine = (line: string) => {
+    setTerminalOutput(prev => [...prev, line]);
+  };
+
+  const clearTerminal = () => {
+    setTerminalOutput([]);
+  };
+
+
+  const handleShareToggle = async (capsuleId: string, capsuleName: string) => {
+    if (!user || !user.email || isSharing) return;
+
+    setIsSharing(true);
+    setTerminalVisible(true);
+    
+    const isCurrentlyShared = sharedCapsules.has(capsuleId);
+    
+    if (!isCurrentlyShared) {
+      // Share the capsule
+      clearTerminal();
+      addTerminalLine('Requesting access to ' + capsuleName + '...');
+      addTerminalLine('Context shared. You now have access.');
+      addTerminalLine('You can ask questions about this content.');
+      
+      setSharedCapsules(prev => new Set([...prev, capsuleId]));
+      setIsSharing(false);
+
+      // Actual API call
+      try {
+        const shareResponse = await fetch(`/api/capsules/${capsuleId}/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, role: 'viewer' }),
+        });
+
+        if (shareResponse.ok) {
+          // Accept the invite
+          await fetch(`/api/capsules/${capsuleId}/accept-invite`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': localStorage.getItem('auth_api_key') || ''
+            },
+            body: JSON.stringify({ email: user.email }),
+          });
+        }
+      } catch (error) {
+        console.error('Sharing error:', error);
+      }
+    } else {
+      // Unshare the capsule
+      clearTerminal();
+      addTerminalLine('Revoking access to ' + capsuleName + '...');
+      addTerminalLine('Access removed.');
+      
+      setSharedCapsules(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(capsuleId);
+        return newSet;
+      });
+      setIsSharing(false);
+
+      // Actual API call
+      try {
+        await fetch(`/api/capsules/${capsuleId}/access/user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email }),
+        });
+      } catch (error) {
+        console.error('Unsharing error:', error);
+      }
+    }
+  };
 
   // Handle creating a new capsule
   const handleCreateCapsule = async () => {
@@ -129,9 +260,10 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   // Shrinked shared capsules (available to add/use)
   const shrinkedCapsules: SourceItem[] = [
     { id: 'shrink-1', name: 'YC Reducto AI', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb51' },
-    { id: 'shrink-2', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
-    { id: 'shrink-3', name: 'Startup Insights', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb53' },
-    { id: 'shrink-4', name: 'Tech Podcasts', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb54' },
+    { id: 'shrink-2', name: 'LastWeekTonight Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68c32cf3735fb4ac0ef3ccbf' },
+    { id: 'shrink-3', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
+    { id: 'shrink-4', name: 'Startup Insights', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb53' },
+    { id: 'shrink-5', name: 'Tech Podcasts', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb54' },
   ];
 
   // Coming soon items (passive, not clickable) - organized by category
@@ -200,6 +332,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           <div className="store-grid">
             {allSources.map((source: SourceItem) => {
               const isClickable = source.type !== 'coming';
+              const isLoaded = source.type !== 'shrinked' || loadedCapsules.has(source.id);
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
                 if (source.type === 'coming' && source.icon) {
@@ -208,14 +341,19 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                   return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
                 }
                 if (source.type === 'coming') return '⏳';
+                if (source.type === 'shrinked' && !isLoaded) return '⏳';
+                
                 return '💿';
               };
 
               const handleClick = () => {
-                if (!isClickable) return;
+                if (!isClickable || !isLoaded) return;
                 
                 if (source.type === 'add-new') {
                   handleCreateCapsule();
+                } else if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && isLoaded) {
+                  // LastWeekTonight Preview capsule - handle sharing
+                  handleShareToggle(source.capsuleId, source.name);
                 } else {
                   setSelectedSource(source.id);
                 }
@@ -224,9 +362,9 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
               return (
                 <div 
                   key={source.id} 
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''}`}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${!isLoaded && source.type === 'shrinked' ? 'loading' : ''}`}
                   onClick={handleClick}
-                  style={{ cursor: isClickable && !(isCreatingCapsule && source.type === 'add-new') ? 'pointer' : 'default' }}
+                  style={{ cursor: (isClickable && isLoaded && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
                 >
                   <div className="source-icon">
                     {getIcon()}
@@ -246,6 +384,30 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
             })}
           </div>
         </div>
+        
+        {/* Sharing Terminal */}
+        {terminalVisible && (
+          <div className="sharing-terminal">
+            <div className="terminal-header">
+              <div className="terminal-title">Terminal</div>
+              <div className="terminal-controls">
+                <button 
+                  className="terminal-btn" 
+                  onClick={() => setTerminalVisible(false)}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="terminal-content">
+              {terminalOutput.map((line, index) => (
+                <div key={index} className="terminal-line">
+                  {line}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Styles */}
@@ -482,6 +644,20 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           font-weight: bold;
         }
 
+        /* Loading capsules */
+        .source-card.loading {
+          opacity: 0.4;
+          pointer-events: none;
+        }
+
+        .source-card.loading .source-name {
+          color: #999999;
+        }
+
+        .source-card.loading .source-author {
+          color: #cccccc;
+        }
+
         .source-author {
           font-size: 9px;
           color: #666666;
@@ -538,6 +714,108 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
             padding: 3px 12px;
             font-size: 9px;
           }
+          
+          .sharing-terminal {
+            width: 90%;
+            height: 120px;
+            right: 5%;
+            bottom: 5%;
+          }
+        }
+
+        /* Terminal Styles */
+        .sharing-terminal {
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
+          width: 400px;
+          height: 200px;
+          background: #000000;
+          border: 2px solid #c0c0c0;
+          border-radius: 0;
+          z-index: 10000;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
+          animation: terminalSlideIn 0.2s ease-out;
+        }
+
+        @keyframes terminalSlideIn {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .terminal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 8px;
+          background: #c0c0c0;
+          border-bottom: 1px solid #808080;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-size: 10px;
+          font-weight: bold;
+        }
+
+        .terminal-title {
+          color: #000000;
+        }
+
+        .terminal-btn {
+          background: #c0c0c0;
+          border: 1px outset #c0c0c0;
+          color: #000000;
+          cursor: pointer;
+          font-size: 10px;
+          padding: 1px 6px;
+          line-height: 1;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        .terminal-btn:hover:not(:disabled) {
+          background: #d0d0d0;
+        }
+
+        .terminal-btn:active:not(:disabled) {
+          border: 1px inset #c0c0c0;
+        }
+
+        .terminal-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .terminal-content {
+          flex: 1;
+          padding: 8px;
+          overflow-y: auto;
+          font-family: 'Courier New', monospace;
+          font-size: 11px;
+          line-height: 1.3;
+          color: #00ff00;
+          background: #000000;
+        }
+
+        .terminal-line {
+          margin-bottom: 2px;
+          white-space: pre-wrap;
+        }
+
+        .terminal-cursor {
+          display: inline-block;
+          animation: terminalBlink 1s infinite;
+          color: #00ff00;
+        }
+
+        @keyframes terminalBlink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
         }
 
       `}</style>

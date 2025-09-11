@@ -40,7 +40,7 @@ const HomePage = () => {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [loadingPhase, setLoadingPhase] = useState<'signal' | 'insights' | 'idle'>('signal');
+  const [loadingPhase, setLoadingPhase] = useState<'signal' | 'insights' | 'thinking' | 'wrapping' | 'idle'>('signal');
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showArguePopup, setShowArguePopup] = useState(false);
