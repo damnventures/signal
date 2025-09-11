@@ -44,6 +44,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   const [isCheckingStore, setIsCheckingStore] = useState(false);
   const [storeChecked, setStoreChecked] = useState(false);
   const [loadedCapsules, setLoadedCapsules] = useState<Set<string>>(new Set());
+  const [loadingCapsules, setLoadingCapsules] = useState<Set<string>>(new Set());
 
   // Handle ESC key to close
   useEffect(() => {
@@ -63,6 +64,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       if (!isOpen) {
         setStoreChecked(false);
         setLoadedCapsules(new Set());
+        setLoadingCapsules(new Set());
         setStatusVisible(false);
       }
     }
@@ -79,34 +81,66 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       setIsCheckingStore(true);
       setStatusVisible(true);
       
+      // Phase 1: Initial check
       setStatusMessage('Checking what\'s in store...');
       
       setTimeout(() => {
+        // Phase 2: Permissions check
         setStatusMessage('Scanning user access permissions...');
-      }, 800);
+      }, 1500);
+      
+      // Load in logical order: user capsules -> accessible capsules -> coming soon
+      const loadingOrder = [];
+      
+      // 1. User's own capsules (if any)
+      const userCapsuleIds = userCapsulesData.map(c => c.id);
+      loadingOrder.push(...userCapsuleIds);
+      
+      // 2. Shrinked capsules user can access (shareable ones)
+      const accessibleShrinkedIds = ['shrink-1', 'shrink-2']; // YC Reducto AI, LastWeekTonight Preview
+      loadingOrder.push(...accessibleShrinkedIds);
+      
+      // 3. Other Shrinked capsules (user has no access)
+      const inaccessibleShrinkedIds = ['shrink-3', 'shrink-4', 'shrink-5'];
+      loadingOrder.push(...inaccessibleShrinkedIds);
+      
+      // 4. Coming soon items (load a few for demo)
+      const comingSoonIds = ['soon-1', 'soon-2', 'soon-3'];
+      loadingOrder.push(...comingSoonIds);
       
       setTimeout(() => {
+        // Phase 3: Start loading capsules
         setStatusMessage('Loading available capsules...');
-      }, 1600);
+        
+        loadingOrder.forEach((id, index) => {
+          setTimeout(() => {
+            // Show loading animation first
+            setLoadingCapsules(prev => new Set([...prev, id]));
+            
+            // Then show the item after a brief loading period
+            setTimeout(() => {
+              setLoadingCapsules(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+              });
+              setLoadedCapsules(prev => new Set([...prev, id]));
+            }, 300); // 300ms loading animation per item
+          }, index * 600); // 600ms between each item load start
+        });
+      }, 3000);
       
       setTimeout(() => {
+        // Phase 4: Complete - after all items loaded
         setStatusMessage('Store ready.');
         setIsCheckingStore(false);
         setStoreChecked(true);
         
-        // Progressively load capsules with delays
-        const shrinkedIds = ['shrink-1', 'shrink-2', 'shrink-3', 'shrink-4', 'shrink-5'];
-        shrinkedIds.forEach((id, index) => {
-          setTimeout(() => {
-            setLoadedCapsules(prev => new Set([...prev, id]));
-          }, (index + 1) * 300);
-        });
-        
         // Hide status after a moment
         setTimeout(() => {
           setStatusVisible(false);
-        }, 1500);
-      }, 2400);
+        }, 2000);
+      }, 3000 + (loadingOrder.length * 600) + 500); // After all items loaded + buffer
     }
   }, [isOpen, storeChecked]);
 
@@ -340,7 +374,8 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           <div className="store-grid">
             {allSources.map((source: SourceItem) => {
               const isClickable = source.type !== 'coming';
-              const isLoaded = source.type !== 'shrinked' || loadedCapsules.has(source.id);
+              const isLoaded = source.type === 'user' || source.type === 'add-new' || loadedCapsules.has(source.id);
+              const isCurrentlyLoading = loadingCapsules.has(source.id);
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
                 if (source.type === 'coming' && source.icon) {
@@ -348,8 +383,11 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                   const extension = isWebp ? 'webp' : 'png';
                   return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
                 }
-                if (source.type === 'coming') return '⏳';
-                if (source.type === 'shrinked' && !isLoaded) return '⏳';
+                if (source.type === 'coming' && !isLoaded) return '⏳';
+                if ((source.type === 'shrinked' || source.type === 'coming') && isCurrentlyLoading) {
+                  return <div className="loading-spinner">⏳</div>;
+                }
+                if ((source.type === 'shrinked' || source.type === 'coming') && !isLoaded) return '⏳';
                 
                 return '💿';
               };
@@ -359,22 +397,23 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                 
                 if (source.type === 'add-new') {
                   handleCreateCapsule();
-                } else if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && isLoaded) {
-                  // LastWeekTonight Preview capsule - handle sharing
+                } else if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && user.email && isLoaded) {
+                  // LastWeekTonight Preview capsule - handle sharing (AUTH USERS ONLY)
                   handleShareToggle(source.capsuleId, source.name);
                 } else {
+                  // Regular selection for non-auth users or other capsules
                   setSelectedSource(source.id);
                 }
               };
               
-              const isSharedWithUser = source.type === 'shrinked' && sharedCapsules.has(source.capsuleId || '');
+              const isSharedWithUser = user && source.type === 'shrinked' && sharedCapsules.has(source.capsuleId || '');
               
               return (
                 <div 
                   key={source.id} 
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${!isLoaded && source.type === 'shrinked' ? 'loading' : ''}`}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''}`}
                   onClick={handleClick}
-                  style={{ cursor: (isClickable && isLoaded && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
+                  style={{ cursor: (isClickable && isLoaded && !isCurrentlyLoading && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
                 >
                   <div className="source-icon">
                     {getIcon()}
@@ -728,7 +767,6 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           border: 2px solid #000000;
           border-radius: 0;
           z-index: 10000;
-          box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
           animation: statusSlideIn 0.2s ease-out;
         }
 
@@ -750,6 +788,16 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           line-height: 1.3;
           color: #000000;
           white-space: nowrap;
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
 
       `}</style>
