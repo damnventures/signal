@@ -27,6 +27,38 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
+  const [animatedWrapSummary, setAnimatedWrapSummary] = useState('');
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Typewriter animation for wrap summary
+  const animateWrapSummary = useCallback((fullMessage: string) => {
+    // Clear any existing animation
+    if (animationRef.current) {
+      clearTimeout(animationRef.current);
+      animationRef.current = null;
+    }
+
+    const words = fullMessage.split(' ');
+    let currentIndex = 0;
+    
+    // Show message in chunks of 3-4 words for better flow
+    const animateChunk = () => {
+      if (currentIndex >= words.length) return;
+      
+      const chunkSize = Math.random() > 0.5 ? 3 : 4; // Vary chunk size 3-4 words
+      const chunk = words.slice(0, currentIndex + chunkSize).join(' ');
+      setAnimatedWrapSummary(chunk);
+      
+      currentIndex += chunkSize;
+      
+      if (currentIndex < words.length) {
+        // Continue with next chunk after a brief delay
+        animationRef.current = setTimeout(animateChunk, 200 + Math.random() * 100); // 200-300ms between chunks
+      }
+    };
+
+    animateChunk();
+  }, []);
 
   // For authenticated users, show loading then wrap summary
   // For demo users, show demo message
@@ -40,9 +72,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
           "Analyzing your capsules..."
         ];
       } else {
-        // Got wrap summary - show the AI-generated message (which includes greeting)
+        // Got wrap summary - show the animated AI-generated message (which includes greeting)
         return [
-          wrapSummary
+          animatedWrapSummary || wrapSummary
         ];
       }
     } else if (demoMessage) {
@@ -156,11 +188,16 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   // Watch for prop changes (wrap summary arriving)
   useEffect(() => {
     if (userEmail && wrapSummary) {
-      // Reset animation when wrap summary arrives
-      setVariantIndex(0);
-      setShowDiff(false);
+      // Only animate if this is new content (avoid re-animating same content)
+      if (wrapSummary !== animatedWrapSummary) {
+        console.log('[DemoWelcomeWindow] New wrap summary received, starting animation');
+        setVariantIndex(0);
+        setShowDiff(false);
+        setAnimatedWrapSummary(''); // Clear previous animation
+        animateWrapSummary(wrapSummary);
+      }
     }
-  }, [wrapSummary, userEmail]);
+  }, [wrapSummary, userEmail, animateWrapSummary, animatedWrapSummary]);
 
   useEffect(() => {
     const delay = variantIndex === 0 ? 2000 : 1500;

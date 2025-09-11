@@ -10,6 +10,9 @@ interface WrapToolProps {
   autoFetch?: boolean;
   lastStateHash?: string;
   onStateHashUpdate?: (newHash: string) => void;
+  onWrapStart?: () => void;  // Called when wrap starts
+  onStatusMessage?: (message: string) => void;  // For status bar updates
+  isManualTrigger?: boolean;  // Distinguish manual vs auto wrap
 }
 
 interface WrapResponse {
@@ -32,7 +35,10 @@ const WrapTool: React.FC<WrapToolProps> = ({
   showAsButton = false,
   autoFetch = false,
   lastStateHash,
-  onStateHashUpdate
+  onStateHashUpdate,
+  onWrapStart,
+  onStatusMessage,
+  isManualTrigger = false
 }) => {
   const { user, accessToken, apiKey } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +47,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
   const [metadata, setMetadata] = useState<WrapResponse['metadata']>();
   const [stateHash, setStateHash] = useState<string>('');
 
-  const fetchWrapSummary = useCallback(async () => {
+  const fetchWrapSummary = useCallback(async (manualTrigger = false) => {
     if (!user || (!accessToken && !apiKey)) {
       console.log('[WrapTool] No user or auth token available');
       return;
@@ -49,6 +55,16 @@ const WrapTool: React.FC<WrapToolProps> = ({
 
     setIsLoading(true);
     setError('');
+
+    // Only call callbacks for manual triggers (button clicks)
+    if (manualTrigger) {
+      if (onWrapStart) {
+        onWrapStart();
+      }
+      if (onStatusMessage) {
+        onStatusMessage('Generating wrap summary...');
+      }
+    }
 
     try {
       console.log('[WrapTool] Fetching wrap summary...');
@@ -78,7 +94,12 @@ const WrapTool: React.FC<WrapToolProps> = ({
         
         // Notify parent components
         if (onSummaryUpdate) {
-          onSummaryUpdate(result.summary);
+          // Check if state changed significantly
+          let summaryToShow = result.summary;
+          if (!result.stateChanged && result.stateHash === lastStateHash) {
+            summaryToShow += '\n\n*Not much has changed since your last wrap - your capsules are up to date.*';
+          }
+          onSummaryUpdate(summaryToShow);
         }
         if (onStateHashUpdate) {
           onStateHashUpdate(result.stateHash);
@@ -95,11 +116,15 @@ const WrapTool: React.FC<WrapToolProps> = ({
     }
   }, [user, accessToken, apiKey, lastStateHash, onSummaryUpdate, onStateHashUpdate]);
 
-  // Auto-fetch on mount if enabled
+  // Auto-fetch on mount if enabled - start early for optimal timing
   useEffect(() => {
     if (autoFetch && user && (accessToken || apiKey)) {
-      console.log('[WrapTool] Auto-fetching wrap summary');
-      fetchWrapSummary();
+      console.log('[WrapTool] Auto-fetching wrap summary early for optimal timing');
+      // Small delay to ensure auth is fully ready
+      const timer = setTimeout(() => {
+        fetchWrapSummary(false);  // false = auto trigger (no callbacks)
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [autoFetch, user, accessToken, apiKey, fetchWrapSummary]);
 
@@ -108,16 +133,11 @@ const WrapTool: React.FC<WrapToolProps> = ({
     return (
       <button
         className={`wrap-tool-button ${className}`}
-        onClick={fetchWrapSummary}
+        onClick={() => fetchWrapSummary(true)}  // true = manual trigger
         disabled={isLoading || !user}
         title="Generate Wrap Summary"
       >
-        {isLoading ? (
-          <span>📊 ...</span>
-        ) : (
-          <span>📊</span>
-        )}
-        {isLoading && <span className="loading-text">Wrap</span>}
+        <span>📊</span>
       </button>
     );
   }
