@@ -577,6 +577,12 @@ const HomePage = () => {
     console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
     
+    // Safety check for empty or invalid text
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      console.warn('[parseHighlights] Empty or invalid text provided');
+      return highlights;
+    }
+    
     // First try the old highlight format with Title/Setup/Quote/Why it matters
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
     console.log('[parseHighlights] Number of highlight blocks found:', highlightBlocks.length);
@@ -616,60 +622,88 @@ const HomePage = () => {
         console.log(`[parseHighlights] Found ${sections.length} ## markdown sections`);
       }
       // Try ** bold headers if no ## headers found
-      else if (text.includes('**') && sections.length === 0) {
+      else if (text.includes('**')) {
         sections = text.split(/(?=^\*\*[^*]+\*\*)/m).filter(section => section.trim() !== '');
         console.log(`[parseHighlights] Found ${sections.length} ** bold header sections`);
       }
       
-      sections.slice(0, 20).forEach((section, index) => { // Limit to 20 sections to prevent infinite loops
-        let titleMatch: RegExpMatchArray | null = null;
+      // Safety limit to prevent infinite loops
+      const maxSections = Math.min(sections.length, 20);
+      console.log(`[parseHighlights] Processing ${maxSections} sections (limited from ${sections.length})`);
+      
+      for (let index = 0; index < maxSections; index++) {
+        const section = sections[index];
+        console.log(`[parseHighlights] Processing section ${index}/${maxSections}:`, section.substring(0, 100) + '...');
+        
         let title = '';
         let content = '';
         
         // Try ## header format first
-        titleMatch = section.match(/^##?\s*(.+?)(?:\n|$)/);
-        if (titleMatch) {
-          title = titleMatch[1].trim();
+        const hashHeaderMatch = section.match(/^##?\s*(.+?)(?:\n|$)/);
+        if (hashHeaderMatch) {
+          title = hashHeaderMatch[1].trim();
           content = section.replace(/^##?\s*.+?\n/, '').trim();
+          console.log(`[parseHighlights] Parsed ## header - title: "${title}", content length: ${content.length}`);
         }
         // Try ** bold header format
         else {
-          titleMatch = section.match(/^\*\*([^*]+)\*\*/);
-          if (titleMatch) {
-            title = titleMatch[1].trim();
+          const boldHeaderMatch = section.match(/^\*\*([^*]+)\*\*/);
+          if (boldHeaderMatch) {
+            title = boldHeaderMatch[1].trim();
+            console.log(`[parseHighlights] Found bold header title: "${title}"`);
             
-            // Skip section headers (like "Section 1:", "Section 2:", etc.) and find the actual content title
+            // Check if this is a section header that needs special handling
             if (title.match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
-              // Look for the next ** header within this section for the actual title
+              console.log(`[parseHighlights] Detected section header: "${title}", looking for nested content`);
+              
+              // Look for nested ** headers within this section
               const lines = section.split('\n');
               let actualTitle = '';
-              let contentStart = -1;
+              let contentStartIndex = -1;
               
-              for (let i = 1; i < lines.length; i++) {
+              // Limit search to prevent infinite loops
+              const maxLines = Math.min(lines.length, 50);
+              for (let i = 1; i < maxLines; i++) {
                 const line = lines[i].trim();
                 const nestedMatch = line.match(/^\*\*([^*]+)\*\*/);
-                if (nestedMatch && !nestedMatch[1].match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
-                  actualTitle = nestedMatch[1].trim();
-                  contentStart = i + 1;
-                  break;
+                if (nestedMatch) {
+                  const nestedTitle = nestedMatch[1].trim();
+                  // Make sure it's not another section header
+                  if (!nestedTitle.match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
+                    actualTitle = nestedTitle;
+                    contentStartIndex = i + 1;
+                    console.log(`[parseHighlights] Found nested title: "${actualTitle}" at line ${i}`);
+                    break;
+                  }
                 }
               }
               
-              if (actualTitle && contentStart > 0) {
+              if (actualTitle && contentStartIndex > 0 && contentStartIndex < lines.length) {
                 title = actualTitle;
-                content = lines.slice(contentStart).join('\n').trim();
+                content = lines.slice(contentStartIndex, contentStartIndex + 30).join('\n').trim(); // Limit content length
+                console.log(`[parseHighlights] Used nested title: "${title}", content length: ${content.length}`);
               } else {
-                // If no nested title found, use the section title and content after it
-                const contentLines = section.split('\n').slice(1);
+                // If no nested title found, use content after section header
+                const contentLines = section.split('\n').slice(1, 31); // Limit to 30 lines
                 content = contentLines.join('\n').trim();
+                console.log(`[parseHighlights] No nested title found, using section content, length: ${content.length}`);
               }
             } else {
+              // Regular bold header - extract content after it
               content = section.replace(/^\*\*[^*]+\*\*\s*\n?/, '').trim();
+              if (content.length > 1000) {
+                content = content.substring(0, 1000) + '...'; // Limit content length
+              }
+              console.log(`[parseHighlights] Regular bold header processed, content length: ${content.length}`);
             }
+          } else {
+            console.warn(`[parseHighlights] No header match found for section ${index}`);
+            continue;
           }
         }
         
-        if (title && content.length > 10) { // Ensure meaningful content length
+        // Ensure we have meaningful content
+        if (title && title.length > 0 && content.length > 10) {
           const newHighlight = {
             title: title,
             setup: '',
@@ -678,15 +712,14 @@ const HomePage = () => {
             isCapsuleSummary: true // Mark as summary to use different display
           };
           highlights.push(newHighlight);
-          console.log(`[parseHighlights] Successfully parsed section ${index}:`, newHighlight.title);
+          console.log(`[parseHighlights] Successfully created highlight ${highlights.length}: "${title}"`);
         } else {
-          console.warn(`[parseHighlights] Failed to parse section ${index} - title: "${title}", content length: ${content.length}`);
-          console.warn(`[parseHighlights] Section preview:`, section.substring(0, 200));
+          console.warn(`[parseHighlights] Skipping section ${index} - title: "${title}" (length: ${title.length}), content length: ${content.length}`);
         }
-      });
+      }
     }
 
-    console.log('[parseHighlights] Final parsed highlights:', highlights);
+    console.log('[parseHighlights] Final parsed highlights count:', highlights.length);
     return highlights;
   };
 
@@ -995,9 +1028,12 @@ const HomePage = () => {
         
         setCapsules(allCapsules);
         if (allCapsules.length > 0) {
-          // Don't change selected capsule if user already has one selected
+          // Don't change selected capsule if user already has one selected (including shared capsules)
           if (!selectedCapsuleId) {
             setSelectedCapsuleId(allCapsules[0]._id);
+            console.log('[HomePage] No capsule selected, auto-selecting first user capsule:', allCapsules[0]._id);
+          } else {
+            console.log('[HomePage] User already has capsule selected, keeping it:', selectedCapsuleId);
           }
           // For authenticated users, ensure video rendering is enabled
           setTimeout(() => {
@@ -1694,8 +1730,9 @@ const HomePage = () => {
               }}
               capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
-              initialPosition={{ x: 100, y: 100 }} 
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
+              initialPosition={{ x: 100, y: 100 }}
+              id="argue-popup"
               initialQuestion={argueQuestion}
             />
 
