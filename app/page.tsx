@@ -30,6 +30,7 @@ const HomePage = () => {
   const [cardZIndexes, setCardZIndexes] = useState<Record<string, number>>({});
   const [nextZIndex, setNextZIndex] = useState(1);
   const [fetchedOriginalLinks, setFetchedOriginalLinks] = useState<string[]>([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const playerRefs = useRef<Record<string, YT.Player | null>>({});
   const [isClient, setIsClient] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
@@ -52,6 +53,7 @@ const HomePage = () => {
   const [showCapsulesWindow, setShowCapsulesWindow] = useState(false);
   const [selectedCapsuleId, setSelectedCapsuleId] = useState<string | null>(null);
   const [isFetchingCapsuleContent, setIsFetchingCapsuleContent] = useState(false);
+  const [lastFetchedCapsuleId, setLastFetchedCapsuleId] = useState<string | null>(null);
   const [isFetchingCapsules, setIsFetchingCapsules] = useState(false);
   const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
@@ -508,46 +510,47 @@ const HomePage = () => {
   const initializePlayers = useCallback(() => {
     if (!fetchedOriginalLinks.length || !(window as any).YT) return;
 
-    fetchedOriginalLinks.forEach((link, index) => {
-      const videoId = getYouTubeVideoId(link);
-      if (videoId && !playerRefs.current[videoId]) {
-        const checkIframe = setInterval(() => {
-          const iframe = document.getElementById(`youtube-player-${videoId}`);
-          if (iframe) {
-            clearInterval(checkIframe);
-            try {
-              playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
-                events: {
-                  'onReady': (event: any) => {
-                    console.log(`[YouTube] Player ready for videoId: ${videoId}`);
-                    if (index === 0) {
-                      event.target.playVideo();
-                      setIsPlaying(prev => ({ ...prev, [videoId]: true }));
-                      setActiveVideoId(videoId);
-                    }
-                  },
-                  'onStateChange': (event: any) => {
-                    const newState = event.data === (window as any).YT.PlayerState.PLAYING;
-                    setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
-                    if (newState) {
-                      setActiveVideoId(videoId);
-                    }
-                  },
-                  'onError': (event: any) => {
-                    console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
-                  },
+    // Only initialize the current video player
+    const currentLink = fetchedOriginalLinks[currentVideoIndex];
+    if (!currentLink) return;
+    
+    const videoId = getYouTubeVideoId(currentLink);
+    if (videoId && !playerRefs.current[videoId]) {
+      const checkIframe = setInterval(() => {
+        const iframe = document.getElementById(`youtube-player-${videoId}`);
+        if (iframe) {
+          clearInterval(checkIframe);
+          try {
+            playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+              events: {
+                'onReady': (event: any) => {
+                  console.log(`[YouTube] Player ready for videoId: ${videoId}`);
+                  // Auto-play the current video
+                  event.target.playVideo();
+                  setIsPlaying(prev => ({ ...prev, [videoId]: true }));
+                  setActiveVideoId(videoId);
                 },
-              });
-            } catch (error) {
-              console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
-            }
+                'onStateChange': (event: any) => {
+                  const newState = event.data === (window as any).YT.PlayerState.PLAYING;
+                  setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
+                  if (newState) {
+                    setActiveVideoId(videoId);
+                  }
+                },
+                'onError': (event: any) => {
+                  console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
+                },
+              },
+            });
+          } catch (error) {
+            console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
           }
-        }, 100);
+        }
+      }, 100);
 
-        setTimeout(() => clearInterval(checkIframe), 10000);
-      }
-    });
-  }, [fetchedOriginalLinks]);
+      setTimeout(() => clearInterval(checkIframe), 10000);
+    }
+  }, [fetchedOriginalLinks, currentVideoIndex]);
 
   useEffect(() => {
     const tag = document.createElement('script');
@@ -571,7 +574,7 @@ const HomePage = () => {
     if (fetchedOriginalLinks.length > 0 && (window as any).YT && (window as any).YT.Player) {
       setTimeout(initializePlayers, 100);
     }
-  }, [fetchedOriginalLinks, initializePlayers]);
+  }, [fetchedOriginalLinks, currentVideoIndex, initializePlayers]);
 
   const parseHighlights = (text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
@@ -730,6 +733,10 @@ const HomePage = () => {
       console.log(`[HomePage] Already fetching capsule content, skipping...`);
       return;
     }
+    if (lastFetchedCapsuleId === capsuleId) {
+      console.log(`[HomePage] Already fetched content for capsuleId: ${capsuleId}, skipping duplicate fetch...`);
+      return;
+    }
     
     // Check if this is a known shared system capsule
     const shrinkedCapsuleIds = [
@@ -742,8 +749,10 @@ const HomePage = () => {
     const isSharedSystemCapsule = shrinkedCapsuleIds.includes(capsuleId);
     
     setIsFetchingCapsuleContent(true);
+    setLastFetchedCapsuleId(capsuleId);
     setHighlightsData([]);
     setFetchedOriginalLinks([]);
+    setCurrentVideoIndex(0);
     setCapsuleContent("");
     try {
       const apiUrl = `/api/capsule-signal?capsuleId=${capsuleId}`;
@@ -861,6 +870,8 @@ const HomePage = () => {
                 setFetchedOriginalLinks(prevLinks => {
                   const newLinks = [...prevLinks, jobDetails.originalLink];
                   console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
+                  // Set current video index to the last video (most recent)
+                  setCurrentVideoIndex(newLinks.length - 1);
                   return newLinks;
                 });
               } else {
@@ -1497,11 +1508,14 @@ const HomePage = () => {
                   <div className="tv-screen">
                     <div className="window-content video-window-content">
                       <div className="video-embed-container">
-                        {fetchedOriginalLinks.map((link, index) => {
-                          const videoId = getYouTubeVideoId(link);
+                        {(() => {
+                          const currentLink = fetchedOriginalLinks[currentVideoIndex];
+                          if (!currentLink) return null;
+                          
+                          const videoId = getYouTubeVideoId(currentLink);
                           if (videoId) {
                             return (
-                              <div key={index} className="youtube-video-wrapper">
+                              <div key={currentVideoIndex} className="youtube-video-wrapper">
                                 <iframe
                                   id={`youtube-player-${videoId}`}
                                   width="100%"
@@ -1510,18 +1524,18 @@ const HomePage = () => {
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
-                                  title={`YouTube video ${index}`}
+                                  title={`YouTube video ${currentVideoIndex + 1} of ${fetchedOriginalLinks.length}`}
                                 ></iframe>
                               </div>
                             );
                           } else {
                             return (
-                              <p key={index} className="main-text">
-                                <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                              <p key={currentVideoIndex} className="main-text">
+                                <a href={currentLink} target="_blank" rel="noopener noreferrer">{currentLink}</a>
                               </p>
                             );
                           }
-                        })}
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1621,6 +1635,68 @@ const HomePage = () => {
                 onBringToFront={handleBringToFront}
                 initialZIndex={cardZIndexes['capsules-window'] || nextZIndex}
               />
+            )}
+
+            {/* Video Navigation Controls - Top Right Corner */}
+            {fetchedOriginalLinks.length > 1 && (
+              <div style={{
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                zIndex: 10000,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <DraggableWindow
+                  id="video-nav"
+                  onBringToFront={handleBringToFront}
+                  initialZIndex={nextZIndex + 500}
+                  isDraggable={false}
+                  className="status-window"
+                  initialPosition={{ x: 0, y: 0 }}
+                >
+                  <div className="window-content" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    padding: '4px 8px',
+                    minHeight: 'auto'
+                  }}>
+                    <button
+                      onClick={() => setCurrentVideoIndex(prev => Math.max(0, prev - 1))}
+                      disabled={currentVideoIndex === 0}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '12px',
+                        cursor: currentVideoIndex === 0 ? 'default' : 'pointer',
+                        color: currentVideoIndex === 0 ? '#808080' : '#000000',
+                        padding: '2px 4px'
+                      }}
+                    >
+                      &lt;
+                    </button>
+                    <span className="main-text" style={{ fontSize: '10px', margin: 0 }}>
+                      {currentVideoIndex + 1}/{fetchedOriginalLinks.length}
+                    </span>
+                    <button
+                      onClick={() => setCurrentVideoIndex(prev => Math.min(fetchedOriginalLinks.length - 1, prev + 1))}
+                      disabled={currentVideoIndex === fetchedOriginalLinks.length - 1}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '12px',
+                        cursor: currentVideoIndex === fetchedOriginalLinks.length - 1 ? 'default' : 'pointer',
+                        color: currentVideoIndex === fetchedOriginalLinks.length - 1 ? '#808080' : '#000000',
+                        padding: '2px 4px'
+                      }}
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                </DraggableWindow>
+              </div>
             )}
 
             <div style={{
