@@ -510,12 +510,28 @@ const HomePage = () => {
   const initializePlayers = useCallback(() => {
     if (!fetchedOriginalLinks.length || !(window as any).YT) return;
 
+    // Clean up all existing players first to prevent conflicts
+    Object.entries(playerRefs.current).forEach(([videoId, player]) => {
+      if (player) {
+        try {
+          console.log(`[YouTube] Cleaning up player for videoId: ${videoId}`);
+          if (typeof (player as any).destroy === 'function') {
+            (player as any).destroy();
+          }
+        } catch (error) {
+          console.warn(`[YouTube] Error destroying player for videoId: ${videoId}`, error);
+        }
+      }
+    });
+    playerRefs.current = {};
+
     // Only initialize the current video player
     const currentLink = fetchedOriginalLinks[currentVideoIndex];
     if (!currentLink) return;
     
     const videoId = getYouTubeVideoId(currentLink);
-    if (videoId && !playerRefs.current[videoId]) {
+    if (videoId) {
+      console.log(`[YouTube] Initializing player for current video: ${videoId}`);
       const checkIframe = setInterval(() => {
         const iframe = document.getElementById(`youtube-player-${videoId}`);
         if (iframe) {
@@ -525,9 +541,6 @@ const HomePage = () => {
               events: {
                 'onReady': (event: any) => {
                   console.log(`[YouTube] Player ready for videoId: ${videoId}`);
-                  // Auto-play the current video
-                  event.target.playVideo();
-                  setIsPlaying(prev => ({ ...prev, [videoId]: true }));
                   setActiveVideoId(videoId);
                 },
                 'onStateChange': (event: any) => {
@@ -868,10 +881,14 @@ const HomePage = () => {
               if (jobDetails.originalLink) {
                 console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
                 setFetchedOriginalLinks(prevLinks => {
+                  // Check if this link already exists to prevent duplicates
+                  if (prevLinks.includes(jobDetails.originalLink)) {
+                    console.log(`[HomePage] Skipping duplicate video link:`, jobDetails.originalLink);
+                    return prevLinks;
+                  }
                   const newLinks = [...prevLinks, jobDetails.originalLink];
-                  console.log(`[HomePage] Updated fetchedOriginalLinks:`, newLinks);
-                  // Set current video index to the last video (most recent)
-                  setCurrentVideoIndex(newLinks.length - 1);
+                  console.log(`[HomePage] Added unique video link. Total: ${newLinks.length}`);
+                  // Keep current video index at 0 (first video) instead of jumping to last
                   return newLinks;
                 });
               } else {
