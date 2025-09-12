@@ -71,7 +71,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
     if (apiKey) {
       try {
         console.log('[wrap-summary] Fetching shared capsules...');
-        const sharedResponse = await fetch(`${API_BASE_URL}/capsules?shared=true`, {
+        const sharedResponse = await fetch(`${API_BASE_URL}/capsules/shared`, {
           headers,
           cache: 'no-store'
         });

@@ -64,6 +64,7 @@ const HomePage = () => {
   const [showStore, setShowStore] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
   const [accessibleShrinkedCapsules, setAccessibleShrinkedCapsules] = useState<string[]>([]);
+  const [wrapSummaryShown, setWrapSummaryShown] = useState(false);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -146,6 +147,18 @@ const HomePage = () => {
     // Start animation
     animateChunk();
   }, []);
+
+  const showWrapSummaryOnce = useCallback(async (userProfile: any) => {
+    if (wrapSummaryShown) {
+      console.log('[HomePage] Wrap summary already shown, skipping duplicate');
+      return;
+    }
+    
+    console.log('[HomePage] Showing wrap summary for first time');
+    setWrapSummaryShown(true);
+    const wrapMessage = await fetchWrapSummary(userProfile);
+    animateStatusMessage(wrapMessage);
+  }, [wrapSummaryShown, fetchWrapSummary, animateStatusMessage]);
 
   // Periodic check for capsule state changes (every 5 minutes for authenticated users)
   useEffect(() => {
@@ -327,8 +340,7 @@ const HomePage = () => {
           const userId = userProfile.userId || userProfile.id || userProfile._id;
           console.log('[Auth] Direct profile fetch successful:', userProfile.email, 'userId:', userId);
           setUserData(userProfile, token); // No API key, but we have user data
-          const wrapMessage = await fetchWrapSummary(userProfile);
-          animateStatusMessage(wrapMessage);
+          await showWrapSummaryOnce(userProfile);
         } else {
           console.warn('[Auth] Direct profile fetch also failed, clearing auth');
           logout();
@@ -359,8 +371,7 @@ const HomePage = () => {
           if (userProfile) {
             setUserData(userProfile, token, newApiKey);
             console.log('[Auth] Successfully authenticated user with API key');
-            const wrapMessage = await fetchWrapSummary(userProfile);
-            animateStatusMessage(wrapMessage);
+            await showWrapSummaryOnce(userProfile);
             return true;
           } else {
             console.warn('[Auth] No user profile returned from API');
@@ -378,8 +389,7 @@ const HomePage = () => {
             if (userProfile) {
               // We have user data but no API key - still authenticate the user
               setUserData(userProfile, token);
-              const wrapMessage = await fetchWrapSummary(userProfile);
-              animateStatusMessage(wrapMessage);
+              await showWrapSummaryOnce(userProfile);
               return true;
             }
           } catch (parseError) {
@@ -389,8 +399,7 @@ const HomePage = () => {
           // If user is already stored locally, keep them logged in without API key
           if (user) {
             setUserData(user, token);
-            const wrapMessage = await fetchWrapSummary(user);
-            animateStatusMessage(wrapMessage);
+            await showWrapSummaryOnce(user);
             return true; // User is still authenticated
           } else {
             setStatusMessage('Authentication failed: Unable to verify identity');
@@ -1184,17 +1193,8 @@ const HomePage = () => {
             console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
             setShowDemoWelcomeWindow(true);
             
-            // Fetch wrap summary in background
-            setTimeout(() => {
-              console.log('[HomePage] Fetching wrap summary...');
-              fetchWrapSummary(user).then((summary) => {
-                console.log('[HomePage] Got wrap summary:', summary);
-                setLastWrapSummary(summary);
-              }).catch(error => {
-                console.error('[HomePage] Error fetching wrap summary:', error);
-                setLastWrapSummary(`Good morning, ${user.email.split('@')[0]}! Your capsules are loaded and ready for analysis.`);
-              });
-            }, 1000);
+            // Wrap summary is already fetched and animated in auth flow
+            console.log('[HomePage] Wrap summary already handled by auth flow');
           }
           
           // Phase 2: After 3 seconds, move to insights phase + show capsules + fetch data
