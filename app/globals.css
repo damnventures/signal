@@ -660,7 +660,7 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  padding: 0;
+  padding: 0 16px 16px 16px; /* Add right padding to prevent cutoff */
   margin: 0;
 }
 
@@ -701,19 +701,41 @@ body {
   image-rendering: crisp-edges;
 }
 
+.capsule-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 2px;
+}
+
 .capsule-name-cell {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
   color: #000000;
   font-family: 'Chicago', 'Lucida Grande', sans-serif;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.3;
   padding: 2px 4px;
   transition: all 0.1s ease;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  white-space: normal; /* Allow wrapping */
   text-transform: lowercase;
-  transition: background-color 0.2s ease;
+  max-width: 100%;
+}
+
+.capsule-author {
+  font-size: 8px;
+  color: #666666;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.capsule-item.shrinked .capsule-author {
+  color: #0066cc;
+  font-weight: bold;
 }
 
 /* Capsule summary styles */

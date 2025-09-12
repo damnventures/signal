@@ -802,7 +802,7 @@ const HomePage = () => {
         initialZIndexes['argue-popup'] = currentHighlights.length + 10; // Add argue popup with high z-index
         initialZIndexes['capsules-window'] = currentHighlights.length + 5; // Add capsules window to z-index tracking
         currentHighlights.forEach((_, index) => {
-          initialZIndexes[`highlight-${index}`] = index + 2;
+          initialZIndexes[`highlight-${index}`] = currentHighlights.length - index + 1;
         });
         setCardZIndexes(initialZIndexes);
         setNextZIndex(currentHighlights.length + 11); // Update next z-index accordingly
@@ -1536,6 +1536,7 @@ const HomePage = () => {
               <CapsulesWindow
                 id="capsules-window"
                 capsules={capsules}
+                currentUser={user}
                 onSelectCapsule={async (capsuleId) => {
                   console.log(`[HomePage] User selected capsule: ${capsuleId}`);
                   console.log(`[HomePage] Current capsules in window:`, capsules.map((c: any) => ({id: c._id, name: c.name})));

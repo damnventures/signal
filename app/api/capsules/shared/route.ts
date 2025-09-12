@@ -2,18 +2,21 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const userApiKey = request.headers.get('x-api-key');
+  const defaultApiKey = process.env.SHRINKED_API_KEY;
   
   console.log(`[Shared Capsules Route] Request received`);
-  console.log(`[Shared Capsules Route] API Key present: ${userApiKey ? 'yes' : 'no'}`);
+  console.log(`[Shared Capsules Route] User API Key present: ${userApiKey ? 'yes' : 'no'}`);
+  console.log(`[Shared Capsules Route] Default API Key present: ${defaultApiKey ? 'yes' : 'no'}`);
 
-  // For shared capsules, we need the user's API key
-  if (!userApiKey) {
-    console.log('[Shared Capsules Route] No user API key provided - returning empty array');
+  // Use user API key first, fallback to default API key for system capsules
+  const apiKey = userApiKey || defaultApiKey;
+  if (!apiKey) {
+    console.log('[Shared Capsules Route] No API key available (neither user nor default) - returning empty array');
     return NextResponse.json([]);
   }
   
   const requestHeaders: Record<string, string> = {
-    'x-api-key': userApiKey
+    'x-api-key': apiKey
   };
 
   // The Shrinked API should have an endpoint to get shared capsules

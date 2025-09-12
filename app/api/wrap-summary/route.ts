@@ -52,7 +52,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
-    console.log('[wrap-summary] Fetching user capsules...');
+    console.log('[wrap-summary] Fetching user owned capsules...');
     const response = await fetch(`${API_BASE_URL}/capsules`, {
       headers,
       cache: 'no-store'
@@ -63,9 +63,42 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
       throw new Error(`Failed to fetch capsules: ${response.status}`);
     }
 
-    const capsules = await response.json();
-    console.log('[wrap-summary] Fetched', capsules.length, 'capsules');
-    return capsules;
+    const ownedCapsules = await response.json();
+    console.log('[wrap-summary] Fetched', ownedCapsules.length, 'owned capsules');
+    
+    // Also fetch shared capsules if user has API key
+    let allCapsules = ownedCapsules;
+    if (apiKey) {
+      try {
+        console.log('[wrap-summary] Fetching shared capsules...');
+        const sharedResponse = await fetch(`${API_BASE_URL}/capsules?shared=true`, {
+          headers,
+          cache: 'no-store'
+        });
+        
+        if (sharedResponse.ok) {
+          const sharedCapsules = await sharedResponse.json();
+          console.log('[wrap-summary] Fetched', Array.isArray(sharedCapsules) ? sharedCapsules.length : 0, 'shared capsules');
+          
+          // Merge shared capsules with owned capsules, avoiding duplicates
+          if (Array.isArray(sharedCapsules)) {
+            const ownedIds = new Set(ownedCapsules.map((c: any) => c._id));
+            const newSharedCapsules = sharedCapsules.filter((c: any) => !ownedIds.has(c._id));
+            allCapsules = [...ownedCapsules, ...newSharedCapsules];
+            console.log('[wrap-summary] Total capsules including shared:', allCapsules.length);
+          }
+        } else {
+          console.warn('[wrap-summary] Failed to fetch shared capsules:', sharedResponse.status);
+        }
+      } catch (sharedError) {
+        console.error('[wrap-summary] Error fetching shared capsules:', sharedError);
+        // Continue with just owned capsules
+      }
+    } else {
+      console.log('[wrap-summary] No API key available, skipping shared capsules fetch');
+    }
+    
+    return allCapsules;
   } catch (error) {
     console.error('[wrap-summary] Error fetching capsules:', error);
     return [];
