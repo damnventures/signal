@@ -14,6 +14,7 @@ interface Capsule {
   updatedAt?: string;
   status?: string;
   fileCount?: number;
+  isShared?: boolean;
 }
 
 interface WrapRequest {
@@ -67,7 +68,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
     console.log('[wrap-summary] Fetched', ownedCapsules.length, 'owned capsules');
     
     // Also fetch shared capsules if user has API key
-    let allCapsules = ownedCapsules;
+    let allCapsules: Capsule[] = ownedCapsules;
     if (apiKey) {
       try {
         console.log('[wrap-summary] Fetching shared capsules...');
@@ -84,7 +85,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
           if (Array.isArray(sharedCapsules)) {
             const ownedIds = new Set(ownedCapsules.map((c: any) => c._id));
             const newSharedCapsules = sharedCapsules.filter((c: any) => !ownedIds.has(c._id));
-            allCapsules = [...ownedCapsules, ...newSharedCapsules];
+            allCapsules = [...ownedCapsules, ...newSharedCapsules.map((c: any) => ({ ...c, isShared: true }))];
             console.log('[wrap-summary] Total capsules including shared:', allCapsules.length);
           }
         } else {
@@ -105,7 +106,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
   }
 }
 
-async function fetchEnhancedCapsule(capsuleId: string, accessToken: string, apiKey?: string): Promise<any> {
+async function fetchEnhancedCapsule(capsule: Capsule, accessToken: string, apiKey?: string): Promise<any> {
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -120,21 +121,22 @@ async function fetchEnhancedCapsule(capsuleId: string, accessToken: string, apiK
     }
 
     // Get the full capsule state with all processed content
-    const response = await fetch(`${API_BASE_URL}/capsules/${capsuleId}`, {
+    const url = `${API_BASE_URL}/capsules/${capsule._id}${capsule.isShared ? '?shared=true' : ''}`;
+    const response = await fetch(url, {
       headers,
       cache: 'no-store'
     });
 
     if (response.ok) {
-      const capsule = await response.json();
-      console.log('[wrap-summary] Enhanced capsule data:', Object.keys(capsule));
-      return capsule;
+      const enhancedData = await response.json();
+      console.log('[wrap-summary] Enhanced capsule data:', Object.keys(enhancedData));
+      return enhancedData;
     } else {
-      console.warn('[wrap-summary] Failed to fetch enhanced capsule:', capsuleId);
+      console.warn(`[wrap-summary] Failed to fetch enhanced capsule: ${capsule._id} (isShared: ${capsule.isShared})`);
       return null;
     }
   } catch (error) {
-    console.warn('[wrap-summary] Error fetching enhanced capsule:', capsuleId, error);
+    console.warn(`[wrap-summary] Error fetching enhanced capsule: ${capsule._id}`, error);
     return null;
   }
 }
@@ -213,7 +215,7 @@ export async function POST(request: NextRequest) {
       const capsule = capsules[i];
       console.log('[wrap-summary] Fetching enhanced data for capsule:', capsule.name);
       
-      const enhancedCapsule = await fetchEnhancedCapsule(capsule._id, accessToken || '', apiKey);
+      const enhancedCapsule = await fetchEnhancedCapsule(capsule, accessToken || '', apiKey);
       if (enhancedCapsule) {
         // Use processed fields from the enhanced capsule data
         enhancedCapsules.push({
