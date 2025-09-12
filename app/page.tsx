@@ -510,59 +510,65 @@ const HomePage = () => {
   const initializePlayers = useCallback(() => {
     if (!fetchedOriginalLinks.length || !(window as any).YT) return;
 
-    // Clean up all existing players first to prevent conflicts
-    Object.entries(playerRefs.current).forEach(([videoId, player]) => {
-      if (player) {
-        try {
-          console.log(`[YouTube] Cleaning up player for videoId: ${videoId}`);
-          if (typeof (player as any).destroy === 'function') {
-            (player as any).destroy();
-          }
-        } catch (error) {
-          console.warn(`[YouTube] Error destroying player for videoId: ${videoId}`, error);
-        }
-      }
-    });
-    playerRefs.current = {};
-
-    // Only initialize the current video player
     const currentLink = fetchedOriginalLinks[currentVideoIndex];
     if (!currentLink) return;
     
     const videoId = getYouTubeVideoId(currentLink);
-    if (videoId) {
-      console.log(`[YouTube] Initializing player for current video: ${videoId}`);
-      const checkIframe = setInterval(() => {
-        const iframe = document.getElementById(`youtube-player-${videoId}`);
-        if (iframe) {
-          clearInterval(checkIframe);
-          try {
-            playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
-              events: {
-                'onReady': (event: any) => {
-                  console.log(`[YouTube] Player ready for videoId: ${videoId}`);
-                  setActiveVideoId(videoId);
-                },
-                'onStateChange': (event: any) => {
-                  const newState = event.data === (window as any).YT.PlayerState.PLAYING;
-                  setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
-                  if (newState) {
-                    setActiveVideoId(videoId);
-                  }
-                },
-                'onError': (event: any) => {
-                  console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
-                },
-              },
-            });
-          } catch (error) {
-            console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
-          }
-        }
-      }, 100);
+    if (!videoId) return;
 
-      setTimeout(() => clearInterval(checkIframe), 10000);
+    // Check if player already exists for current video
+    if (playerRefs.current[videoId]) {
+      console.log(`[YouTube] Player already exists for videoId: ${videoId}, skipping initialization`);
+      setActiveVideoId(videoId);
+      return;
     }
+
+    // Clean up players for videos that are no longer current
+    Object.entries(playerRefs.current).forEach(([existingVideoId, player]) => {
+      if (existingVideoId !== videoId && player) {
+        try {
+          console.log(`[YouTube] Cleaning up old player for videoId: ${existingVideoId}`);
+          if (typeof (player as any).destroy === 'function') {
+            (player as any).destroy();
+          }
+          delete playerRefs.current[existingVideoId];
+        } catch (error) {
+          console.warn(`[YouTube] Error destroying player for videoId: ${existingVideoId}`, error);
+        }
+      }
+    });
+
+    console.log(`[YouTube] Initializing player for current video: ${videoId}`);
+    const checkIframe = setInterval(() => {
+      const iframe = document.getElementById(`youtube-player-${videoId}`);
+      if (iframe) {
+        clearInterval(checkIframe);
+        try {
+          playerRefs.current[videoId] = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+            events: {
+              'onReady': (event: any) => {
+                console.log(`[YouTube] Player ready for videoId: ${videoId}`);
+                setActiveVideoId(videoId);
+              },
+              'onStateChange': (event: any) => {
+                const newState = event.data === (window as any).YT.PlayerState.PLAYING;
+                setIsPlaying(prev => ({ ...prev, [videoId]: newState }));
+                if (newState) {
+                  setActiveVideoId(videoId);
+                }
+              },
+              'onError': (event: any) => {
+                console.error(`[YouTube] Error for videoId: ${videoId}, code: ${event.data}`);
+              },
+            },
+          });
+        } catch (error) {
+          console.error(`[YouTube] Failed to initialize player for videoId: ${videoId}`, error);
+        }
+      }
+    }, 100);
+
+    setTimeout(() => clearInterval(checkIframe), 10000);
   }, [fetchedOriginalLinks, currentVideoIndex]);
 
   useEffect(() => {
@@ -585,9 +591,17 @@ const HomePage = () => {
 
   useEffect(() => {
     if (fetchedOriginalLinks.length > 0 && (window as any).YT && (window as any).YT.Player) {
+      // Only initialize when currentVideoIndex changes or when we have the first video
       setTimeout(initializePlayers, 100);
     }
-  }, [fetchedOriginalLinks, currentVideoIndex, initializePlayers]);
+  }, [currentVideoIndex, initializePlayers]);
+
+  // Separate effect for when first video is added
+  useEffect(() => {
+    if (fetchedOriginalLinks.length === 1 && (window as any).YT && (window as any).YT.Player) {
+      setTimeout(initializePlayers, 100);
+    }
+  }, [fetchedOriginalLinks.length === 1, initializePlayers]);
 
   const parseHighlights = (text: string): Highlight[] => {
     console.log('[parseHighlights] Raw text to parse:', text);
