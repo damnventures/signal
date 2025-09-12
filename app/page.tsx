@@ -823,9 +823,26 @@ const HomePage = () => {
           try {
             const jobDetailsUrl = `/api/job-details?fileId=${fileId}`;
             const jobDetailsHeaders: Record<string, string> = {};
-            if (key) {
+            
+            // For shared capsules, prefer to use default API key instead of user key
+            // Check if this is a known shared capsule based on its ID
+            const shrinkedCapsuleIds = [
+              '6887e02fa01e2f4073d3bb51', // YC Reducto AI  
+              '68c32cf3735fb4ac0ef3ccbf', // LastWeekTonight Preview
+              '6887e02fa01e2f4073d3bb52', // AI Research Papers
+              '6887e02fa01e2f4073d3bb53', // Startup Insights
+              '6887e02fa01e2f4073d3bb54'  // Tech Podcasts
+            ];
+            const isSharedSystemCapsule = shrinkedCapsuleIds.includes(currentCapsuleId);
+            
+            // For shared system capsules, don't send user API key to allow fallback to default
+            if (key && !isSharedSystemCapsule) {
               jobDetailsHeaders['x-api-key'] = key;
+              console.log(`[HomePage] Using user API key for user-owned capsule`);
+            } else {
+              console.log(`[HomePage] Not sending user API key - allowing default API key fallback for shared capsule`);
             }
+            
             console.log(`[HomePage] Fetching job details from: ${jobDetailsUrl}`);
             
             const jobDetailsResponse = await authFetch(jobDetailsUrl, {
@@ -1028,12 +1045,19 @@ const HomePage = () => {
         
         setCapsules(allCapsules);
         if (allCapsules.length > 0) {
-          // Don't change selected capsule if user already has one selected (including shared capsules)
+          // Only auto-select first capsule if no capsule is currently selected
           if (!selectedCapsuleId) {
             setSelectedCapsuleId(allCapsules[0]._id);
             console.log('[HomePage] No capsule selected, auto-selecting first user capsule:', allCapsules[0]._id);
           } else {
-            console.log('[HomePage] User already has capsule selected, keeping it:', selectedCapsuleId);
+            // Check if currently selected capsule still exists in the updated list
+            const currentCapsuleExists = allCapsules.some(c => c._id === selectedCapsuleId);
+            if (currentCapsuleExists) {
+              console.log('[HomePage] User already has capsule selected and it exists, keeping it:', selectedCapsuleId);
+            } else {
+              console.log('[HomePage] Currently selected capsule no longer exists, selecting first available:', allCapsules[0]._id);
+              setSelectedCapsuleId(allCapsules[0]._id);
+            }
           }
           // For authenticated users, ensure video rendering is enabled
           setTimeout(() => {
@@ -1573,8 +1597,13 @@ const HomePage = () => {
                         
                         if (acceptResponse.ok) {
                           console.log(`[HomePage] Successfully accepted invite for ${user.email}`);
-                          // Refresh capsule list to include the newly shared capsule
-                          fetchCapsules(apiKey);
+                          // Refresh capsule list to include the newly shared capsule, but maintain current selection
+                          const currentSelection = capsuleId;
+                          await fetchCapsules(apiKey);
+                          // Restore the selected capsule after refresh to prevent loop
+                          setTimeout(() => {
+                            setSelectedCapsuleId(currentSelection);
+                          }, 100);
                         } else {
                           console.error('[HomePage] Failed to accept invite:', await acceptResponse.text());
                         }
