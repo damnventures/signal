@@ -31,36 +31,30 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [currentCapsuleId, setCurrentCapsuleId] = useState(capsuleId);
   const { apiKey } = useAuth();
   
-  // Update currentCapsuleId when the prop changes
   useEffect(() => {
     setCurrentCapsuleId(capsuleId);
   }, [capsuleId]);
 
-  // Set initial question when popup opens
   useEffect(() => {
     if (isOpen && initialQuestion && !question) {
       setQuestion(initialQuestion);
     }
   }, [isOpen, initialQuestion, question]);
   
-  // Dragging state
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [zIndex, setZIndex] = useState(initialZIndex);
   const windowRef = useRef<HTMLDivElement>(null);
 
-  // Calculate initial position (below video, centered)
   useEffect(() => {
     if (isOpen && position.x === 0 && position.y === 0) {
-      // Position it more centrally, similar to other windows
-      const initialX = (window.innerWidth - 500) / 2; // Center horizontally for a 500px wide window
-      const initialY = Math.max(50, (window.innerHeight - 600) / 2); // Center vertically, but at least 50px from top
+      const initialX = (window.innerWidth - 500) / 2;
+      const initialY = Math.max(50, (window.innerHeight - 600) / 2);
       setPosition({ x: initialX, y: initialY });
     }
   }, [isOpen, position.x, position.y]);
 
-  // Handle dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!windowRef.current) return;
     
@@ -71,7 +65,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       y: e.clientY - rect.top,
     });
     onBringToFront('argue-popup');
-    setZIndex(initialZIndex + 1000); // Bring to front immediately
+    setZIndex(initialZIndex + 1000);
     e.preventDefault();
   }, [onBringToFront, initialZIndex]);
 
@@ -194,10 +188,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     }
   }, [question, currentCapsuleId, apiKey]);
 
-  // Auto-submit when question is set from initialQuestion
   useEffect(() => {
     if (isOpen && question === initialQuestion && initialQuestion && !isLoading && !chatResponse) {
-      // Auto-submit after a short delay to ensure UI is ready
       const timer = setTimeout(() => {
         const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
         handleSubmit(fakeEvent);
@@ -233,73 +225,70 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         width: '500px',
         maxHeight: '600px',
         cursor: isDragging ? 'grabbing' : 'default',
-        background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
-        border: '1px solid black',
-        boxShadow: '8px 8px 0px #808080, 16px 16px 0px #404040', // Flat, offset shadow like TV window
-        borderRadius: '20px', // Rounded corners like TV window
+        background: '#ffffff',
+        border: '2px solid #000000',
+        boxShadow: '4px 4px 0px #c0c0c0, 8px 8px 0px #808080',
+        borderRadius: '8px',
       }}
       onClick={handleWindowClick}
     >
-      {/* Close Button */}
       <button
         onClick={onClose}
         style={{
           position: 'absolute',
-          top: '4px',
-          right: '4px',
+          top: '6px',
+          right: '6px',
           width: '20px',
           height: '20px',
-          background: '#c0c0c0',
+          background: '#ffffff',
           border: '2px outset #c0c0c0',
           fontSize: '14px',
           fontWeight: 'bold',
           cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'black',
+          color: '#000000',
           zIndex: 10,
         }}
       >
         ×
       </button>
 
-      {/* Content */}
+      <div 
+        style={{
+          background: '#ffffff',
+          padding: '6px 12px',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          fontFamily: 'Geneva, sans-serif',
+          userSelect: 'none',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          position: 'absolute',
+          top: '-1px',
+          left: '0',
+          width: '100%',
+          textAlign: 'center',
+          borderBottom: '2px solid #c0c0c0',
+          borderTopLeftRadius: '6px',
+          borderTopRightRadius: '6px',
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        Argue with Craig
+      </div>
+
       <div 
         style={{ 
           padding: '20px', 
-          maxHeight: 'calc(100% - 16px)', // Adjust max height to account for padding
+          maxHeight: 'calc(100% - 40px)',
           overflowY: 'auto',
-          fontSize: '12px', // Match status line font size
-          fontFamily: 'Geneva, sans-serif', // Match status line font
-          color: 'black', // Ensure dark text on light background
+          fontSize: '12px',
+          fontFamily: 'Geneva, sans-serif',
+          color: '#000000',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#c0c0c0 #f0f0f0',
         }}
       >
-        {/* New Header */}
-        <div 
-          style={{
-            background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)', // Same as main window background
-            color: 'black', // Black text
-            padding: '6px 12px', // Add horizontal padding
-            fontWeight: 'bold',
-            fontSize: '13px', // Slightly larger for header
-            fontFamily: 'Geneva, sans-serif', // Use Geneva for header
-            userSelect: 'none',
-            cursor: isDragging ? 'grabbing' : 'grab',
-            position: 'absolute', // Position absolutely
-            top: '-1px', // Move up to cover the border
-            left: '50%', // Center horizontally
-            transform: 'translateX(-50%)', // Adjust for centering
-            width: 'fit-content', // Fit to content
-            zIndex: 1, // Ensure it's on top of the border
-          }}
-          onMouseDown={handleMouseDown}
-        >
-          Argue with Craig
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ marginBottom: '12px' }}>
-          <div style={{ marginBottom: '8px' }}>
+        <form onSubmit={handleSubmit} style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '12px' }}>
             <textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -307,13 +296,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               style={{
                 width: '100%',
                 height: '60px',
-                padding: '4px',
+                padding: '6px',
                 border: '2px inset #c0c0c0',
-                background: 'white',
-                fontSize: '12px', // Match status line font size
-                fontFamily: 'Geneva, sans-serif', // Match status line font
+                background: '#ffffff',
+                fontSize: '12px',
+                fontFamily: 'Geneva, sans-serif',
                 resize: 'none',
-                color: 'black', // Ensure dark text
+                color: '#000000',
+                lineHeight: '1.5',
               }}
               disabled={isLoading}
             />
@@ -321,31 +311,32 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
           {error && (
             <div style={{
-              padding: '4px',
-              background: '#ffeeee',
-              border: '1px solid #cc0000',
+              padding: '6px',
+              background: '#ffe0e0',
+              border: '1px solid #ff9999',
               color: '#cc0000',
-              fontSize: '12px', // Match status line font size
-              marginBottom: '8px'
+              fontSize: '12px',
+              marginBottom: '12px',
+              lineHeight: '1.5',
             }}>
               <strong>Error:</strong> {error}
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 type="submit"
                 disabled={isLoading || !question.trim()}
                 style={{
-                  padding: '4px 8px',
-                  background: isLoading || !question.trim() ? '#d0d0d0' : '#c0c0c0',
+                  padding: '6px 12px',
+                  background: isLoading || !question.trim() ? '#e0e0e0' : '#ffffff',
                   border: '2px solid #000000',
-                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                  boxShadow: '2px 2px 0px #c0c0c0',
                   fontSize: '12px',
                   fontWeight: 'bold',
                   cursor: isLoading || !question.trim() ? 'default' : 'pointer',
-                  color: isLoading || !question.trim() ? '#808080' : 'black',
+                  color: '#000000',
                   fontFamily: 'Geneva, sans-serif',
                 }}
               >
@@ -355,34 +346,34 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 onClick={handleClear}
                 disabled={isLoading}
                 style={{
-                  padding: '4px 8px',
-                  background: isLoading ? '#d0d0d0' : '#c0c0c0',
+                  padding: '6px 12px',
+                  background: isLoading ? '#e0e0e0' : '#ffffff',
                   border: '2px solid #000000',
-                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+                  boxShadow: '2px 2px 0px #c0c0c0',
                   fontSize: '12px',
                   fontWeight: 'bold',
                   cursor: isLoading ? 'default' : 'pointer',
-                  color: isLoading ? '#808080' : 'black',
+                  color: '#000000',
                   fontFamily: 'Geneva, sans-serif',
                 }}
               >
                 Clear
               </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '12px', fontFamily: 'Geneva, sans-serif', color: 'black' }}>Capsule ID:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontFamily: 'Geneva, sans-serif', color: '#000000' }}>Capsule ID:</span>
               <input
                 type="text"
                 value={currentCapsuleId}
                 onChange={(e) => setCurrentCapsuleId(e.target.value)}
                 style={{
                   width: '150px',
-                  padding: '2px 4px',
+                  padding: '4px',
                   border: '2px inset #c0c0c0',
-                  background: 'white',
+                  background: '#ffffff',
                   fontSize: '12px',
                   fontFamily: 'Geneva, sans-serif',
-                  color: 'black',
+                  color: '#000000',
                 }}
                 disabled={isLoading}
               />
@@ -390,102 +381,83 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           </div>
         </form>
 
-        {/* Loading indicator */}
         {isLoading && !chatResponse && (
           <div style={{ 
-            padding: '8px',
+            padding: '10px',
             background: '#f0f0f0',
             border: '1px inset #c0c0c0',
-            fontSize: '12px', // Match status line font size
+            fontSize: '12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            color: 'black', // Ensure dark text
-            fontFamily: 'Geneva, sans-serif', // Match status line font
+            gap: '8px',
+            color: '#000000',
+            fontFamily: 'Geneva, sans-serif',
+            lineHeight: '1.5',
           }}>
-            <div style={{ display: 'flex', gap: '2px' }}>
-              <div style={{ 
-                width: '4px', 
-                height: '4px', 
-                background: '#0066cc', 
-                borderRadius: '50%',
-                animation: 'bounce 1.4s infinite ease-in-out both',
-                animationDelay: '0s'
-              }}></div>
-              <div style={{ 
-                width: '4px', 
-                height: '4px', 
-                background: '#0066cc', 
-                borderRadius: '50%',
-                animation: 'bounce 1.4s infinite ease-in-out both',
-                animationDelay: '0.16s'
-              }}></div>
-              <div style={{ 
-                width: '4px', 
-                height: '4px', 
-                background: '#0066cc', 
-                borderRadius: '50%',
-                animation: 'bounce 1.4s infinite ease-in-out both',
-                animationDelay: '0.32s'
-              }}></div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <div style={{ width: '6px', height: '6px', background: '#0066cc', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0s' }}></div>
+              <div style={{ width: '6px', height: '6px', background: '#0066cc', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.16s' }}></div>
+              <div style={{ width: '6px', height: '6px', background: '#0066cc', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.32s' }}></div>
             </div>
             Craig is building his argument...
           </div>
         )}
 
-        {/* Response */}
         {chatResponse && (
-          <div style={{ marginTop: '8px' }}>
+          <div style={{ marginTop: '16px' }}>
             <div style={{
-              marginBottom: '6px',
+              marginBottom: '10px',
               fontWeight: 'bold',
-              fontSize: '12px', // Match status line font size
+              fontSize: '12px',
               background: '#0066cc',
-              color: 'white',
-              padding: '2px 6px',
-              fontFamily: 'Geneva, sans-serif', // Match status line font
+              color: '#ffffff',
+              padding: '4px 8px',
+              fontFamily: 'Geneva, sans-serif',
             }}>
               Craig's Argument:
             </div>
             
             <div style={{
-              background: 'white',
+              background: '#ffffff',
               border: '2px inset #c0c0c0',
-              padding: '6px',
+              padding: '12px',
               maxHeight: '200px',
               overflowY: 'auto',
-              fontSize: '12px', // Match status line font size
-              lineHeight: '1.3',
-              color: 'black', // Ensure dark text
-              fontFamily: 'Geneva, sans-serif', // Match status line font
+              fontSize: '12px',
+              lineHeight: '1.6',
+              color: '#000000',
+              fontFamily: 'Geneva, sans-serif',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#c0c0c0 #f0f0f0',
             }}>
-              {chatResponse}
-              {isLoading && !isStreamingComplete && 
-                <span style={{ animation: 'blink 1s infinite' }}>|</span>
-              }
+              {chatResponse.split('\n\n').map((paragraph, index) => (
+                <p key={index} style={{ marginBottom: '12px' }}>
+                  {paragraph.replace(/\[\[\d+\]\]/g, match => `<span style="color: #808080">${match}</span>`)}
+                  {isLoading && !isStreamingComplete && index === chatResponse.split('\n\n').length - 1 && <span style={{ animation: 'blink 1s infinite' }}>|</span>}
+                </p>
+              ))}
             </div>
             
-            {/* Analysis toggle */}
             {reasoningResponse && reasoningResponse.trim() && (
-              <div style={{ marginTop: '8px' }}>
+              <div style={{ marginTop: '16px' }}>
                 <button
                   onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
                   style={{
-                    padding: '2px 6px',
-                    background: '#c0c0c0',
+                    padding: '4px 8px',
+                    background: '#ffffff',
                     border: '2px solid #000000',
-                    boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
-                    fontSize: '12px', // Match status line font size
+                    boxShadow: '2px 2px 0px #c0c0c0',
+                    fontSize: '12px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    color: 'black', // Ensure dark text
-                    fontFamily: 'Geneva, sans-serif', // Match status line font
+                    gap: '6px',
+                    color: '#000000',
+                    fontFamily: 'Geneva, sans-serif',
                   }}
                 >
                   <span style={{ 
-                    fontSize: '10px', // Slightly larger for arrow
+                    fontSize: '10px',
                     transform: isReasoningExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                     transition: 'transform 0.2s'
                   }}>
@@ -495,17 +467,19 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 </button>
                 {isReasoningExpanded && (
                   <div style={{
-                    marginTop: '6px',
-                    background: '#f8f8f8',
+                    marginTop: '10px',
+                    background: '#f0f0f0',
                     border: '1px inset #c0c0c0',
-                    padding: '6px',
+                    padding: '12px',
                     maxHeight: '150px',
                     overflowY: 'auto',
-                    fontSize: '12px', // Match status line font size
-                    lineHeight: '1.3',
+                    fontSize: '12px',
+                    lineHeight: '1.6',
                     whiteSpace: 'pre-wrap',
-                    color: 'black', // Ensure dark text
-                    fontFamily: 'Geneva, sans-serif', // Match status line font
+                    color: '#000000',
+                    fontFamily: 'Geneva, sans-serif',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#c0c0c0 #f0f0f0',
                   }}>
                     {reasoningResponse}
                   </div>
@@ -513,19 +487,18 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               </div>
             )}
             
-            {/* Copy button */}
-            <div style={{ marginTop: '6px' }}>
+            <div style={{ marginTop: '12px' }}>
               <button
                 onClick={() => navigator.clipboard.writeText(chatResponse + (reasoningResponse ? '\n\n' + reasoningResponse : ''))}
                 style={{
-                  padding: '2px 6px',
-                  background: '#c0c0c0',
+                  padding: '4px 8px',
+                  background: '#ffffff',
                   border: '2px solid #000000',
-                  boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
-                  fontSize: '12px', // Match status line font size
+                  boxShadow: '2px 2px 0px #c0c0c0',
+                  fontSize: '12px',
                   cursor: 'pointer',
-                  color: 'black', // Ensure dark text
-                  fontFamily: 'Geneva, sans-serif', // Match status line font
+                  color: '#000000',
+                  fontFamily: 'Geneva, sans-serif',
                 }}
               >
                 📋 Copy
@@ -543,6 +516,21 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         @keyframes blink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
+        }
+        .retro-window::-webkit-scrollbar {
+          width: 12px;
+        }
+        .retro-window::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-radius: 6px;
+        }
+        .retro-window::-webkit-scrollbar-thumb {
+          background: #c0c0c0;
+          border-radius: 6px;
+          border: 2px solid #f0f0f0;
+        }
+        .retro-window::-webkit-scrollbar-thumb:hover {
+          background: #a0a0a0;
         }
       `}</style>
     </div>
