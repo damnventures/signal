@@ -1694,6 +1694,7 @@ const HomePage = () => {
               }}
               capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
+              initialPosition={{ x: 100, y: 100 }} 
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
               initialQuestion={argueQuestion}
             />
