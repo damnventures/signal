@@ -731,6 +731,16 @@ const HomePage = () => {
       return;
     }
     
+    // Check if this is a known shared system capsule
+    const shrinkedCapsuleIds = [
+      '6887e02fa01e2f4073d3bb51', // YC Reducto AI  
+      '68c32cf3735fb4ac0ef3ccbf', // LastWeekTonight Preview
+      '6887e02fa01e2f4073d3bb52', // AI Research Papers
+      '6887e02fa01e2f4073d3bb53', // Startup Insights
+      '6887e02fa01e2f4073d3bb54'  // Tech Podcasts
+    ];
+    const isSharedSystemCapsule = shrinkedCapsuleIds.includes(capsuleId);
+    
     setIsFetchingCapsuleContent(true);
     setHighlightsData([]);
     setFetchedOriginalLinks([]);
@@ -825,15 +835,6 @@ const HomePage = () => {
             const jobDetailsHeaders: Record<string, string> = {};
             
             // For shared capsules, prefer to use default API key instead of user key
-            // Check if this is a known shared capsule based on its ID
-            const shrinkedCapsuleIds = [
-              '6887e02fa01e2f4073d3bb51', // YC Reducto AI  
-              '68c32cf3735fb4ac0ef3ccbf', // LastWeekTonight Preview
-              '6887e02fa01e2f4073d3bb52', // AI Research Papers
-              '6887e02fa01e2f4073d3bb53', // Startup Insights
-              '6887e02fa01e2f4073d3bb54'  // Tech Podcasts
-            ];
-            const isSharedSystemCapsule = shrinkedCapsuleIds.includes(currentCapsuleId);
             
             // For shared system capsules, don't send user API key to allow fallback to default
             if (key && !isSharedSystemCapsule) {
@@ -1051,7 +1052,7 @@ const HomePage = () => {
             console.log('[HomePage] No capsule selected, auto-selecting first user capsule:', allCapsules[0]._id);
           } else {
             // Check if currently selected capsule still exists in the updated list
-            const currentCapsuleExists = allCapsules.some(c => c._id === selectedCapsuleId);
+            const currentCapsuleExists = allCapsules.some((c: any) => c._id === selectedCapsuleId);
             if (currentCapsuleExists) {
               console.log('[HomePage] User already has capsule selected and it exists, keeping it:', selectedCapsuleId);
             } else {
