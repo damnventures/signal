@@ -1229,7 +1229,7 @@ const HomePage = () => {
         // No user and no capsule selected, and not in demo mode - do nothing.
       }
     }
-  }, [isLoading, user, authInProgress, selectedCapsuleId, showDemo]);
+  }, [isLoading, user, authInProgress, showDemo]);
 
   const handleHeaderLoadingComplete = useCallback(() => {
     if (hasHeaderCompleted) {
@@ -1523,10 +1523,7 @@ const HomePage = () => {
               </DraggableWindow>
             ))}
 
-            {(() => {
-              console.log(`[HomePage] Video render check: showVideo=${showVideo}, fetchedOriginalLinks.length=${fetchedOriginalLinks.length}, links:`, fetchedOriginalLinks);
-              return (showDemo || user) && showVideo && fetchedOriginalLinks.length > 0;
-            })() && (
+            {(showDemo || user) && showVideo && fetchedOriginalLinks.length > 0 && (
               <DraggableWindow
                 id="original-links"
                 onBringToFront={handleBringToFront}
