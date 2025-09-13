@@ -72,7 +72,7 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
     if (apiKey) {
       try {
         console.log('[wrap-summary] Fetching shared capsules...');
-        const sharedResponse = await fetch(`${API_BASE_URL}/capsules/shared`, {
+        const sharedResponse = await fetch(`${API_BASE_URL}/capsules?shared=true`, {
           headers,
           cache: 'no-store'
         });
@@ -84,7 +84,10 @@ async function fetchUserCapsules(accessToken: string, apiKey?: string): Promise<
           // Merge shared capsules with owned capsules, avoiding duplicates
           if (Array.isArray(sharedCapsules)) {
             const ownedIds = new Set(ownedCapsules.map((c: any) => c._id));
+            console.log('[wrap-summary] DEBUG: Owned IDs:', Array.from(ownedIds));
+            console.log('[wrap-summary] DEBUG: Shared capsule IDs:', sharedCapsules.map((c: any) => c._id));
             const newSharedCapsules = sharedCapsules.filter((c: any) => !ownedIds.has(c._id));
+            console.log('[wrap-summary] DEBUG: New shared capsules after dedup:', newSharedCapsules.length);
             allCapsules = [...ownedCapsules, ...newSharedCapsules.map((c: any) => ({ ...c, isShared: true }))];
             console.log('[wrap-summary] Total capsules including shared:', allCapsules.length);
           }
@@ -116,12 +119,13 @@ async function fetchEnhancedCapsule(capsule: Capsule, accessToken: string, apiKe
       headers['x-api-key'] = apiKey;
     }
     
-    if (accessToken) {
+    // Only add Authorization header for non-shared capsules
+    if (accessToken && !capsule.isShared) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
     // Get the full capsule state with all processed content
-    const url = `${API_BASE_URL}/capsules/${capsule._id}${capsule.isShared ? '?shared=true' : ''}`;
+    const url = `${API_BASE_URL}/capsules/${capsule._id}`;
     const response = await fetch(url, {
       headers,
       cache: 'no-store'
@@ -242,6 +246,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Wrap worker with frontend prompt (like Argue)
+    console.log('[wrap-summary] DEBUG: Total capsules before enhancement:', capsules.length);
+    console.log('[wrap-summary] DEBUG: Enhanced capsules length:', enhancedCapsules.length);
+    console.log('[wrap-summary] DEBUG: Capsule names being sent:', enhancedCapsules.map(c => c.name));
     console.log('[wrap-summary] Calling wrap worker with', enhancedCapsules.length, 'capsules');
     
     const wrapResponse = await fetch(WRAP_WORKER_URL, {
