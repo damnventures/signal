@@ -119,8 +119,9 @@ async function fetchEnhancedCapsule(capsule: Capsule, accessToken: string, apiKe
       headers['x-api-key'] = apiKey;
     }
     
-    // Only add Authorization header for non-shared capsules
-    if (accessToken && !capsule.isShared) {
+    // Add Authorization header for all capsules when available
+    // Shared capsules will use API key auth, owned capsules can use both
+    if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
@@ -133,10 +134,10 @@ async function fetchEnhancedCapsule(capsule: Capsule, accessToken: string, apiKe
 
     if (response.ok) {
       const enhancedData = await response.json();
-      console.log('[wrap-summary] Enhanced capsule data:', Object.keys(enhancedData));
+      console.log('[wrap-summary] Enhanced capsule data for', capsule._id, '(isShared:', capsule.isShared, '):', Object.keys(enhancedData));
       return enhancedData;
     } else {
-      console.warn(`[wrap-summary] Failed to fetch enhanced capsule: ${capsule._id} (isShared: ${capsule.isShared})`);
+      console.warn(`[wrap-summary] Failed to fetch enhanced capsule: ${capsule._id} (isShared: ${capsule.isShared}) - Status: ${response.status}`);
       return null;
     }
   } catch (error) {
@@ -217,7 +218,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < Math.min(capsules.length, maxCapsulesWithContent); i++) {
       const capsule = capsules[i];
-      console.log('[wrap-summary] Fetching enhanced data for capsule:', capsule.name);
+      console.log('[wrap-summary] Fetching enhanced data for capsule:', capsule.name, '(isShared:', capsule.isShared, ')');
       
       const enhancedCapsule = await fetchEnhancedCapsule(capsule, accessToken || '', apiKey);
       if (enhancedCapsule) {
