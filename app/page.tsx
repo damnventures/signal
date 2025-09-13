@@ -774,6 +774,16 @@ const HomePage = () => {
       return;
     }
     
+    // Additional safeguard: prevent rapid successive calls for the same capsule
+    const now = Date.now();
+    const lastFetchKey = `fetch_${capsuleId}`;
+    const lastFetchTime = (window as any)[lastFetchKey] || 0;
+    if (now - lastFetchTime < 1000) { // 1 second cooldown
+      console.log(`[HomePage] Recent fetch for capsuleId: ${capsuleId}, skipping to prevent rapid successive calls...`);
+      return;
+    }
+    (window as any)[lastFetchKey] = now;
+    
     // Check if this is a known shared system capsule
     const shrinkedCapsuleIds = [
       '6887e02fa01e2f4073d3bb51', // YC Reducto AI  
@@ -1640,13 +1650,9 @@ const HomePage = () => {
                         
                         if (acceptResponse.ok) {
                           console.log(`[HomePage] Successfully accepted invite for ${user.email}`);
-                          // Refresh capsule list to include the newly shared capsule, but maintain current selection
-                          const currentSelection = capsuleId;
-                          await fetchCapsules(apiKey);
-                          // Restore the selected capsule after refresh to prevent loop
-                          setTimeout(() => {
-                            setSelectedCapsuleId(currentSelection);
-                          }, 100);
+                          // Skip the refresh since auto-sharing only happens for already accessible capsules
+                          // The capsule is already loaded and this prevents the re-render cascade
+                          console.log(`[HomePage] Skipping capsule list refresh to prevent duplicate loading`);
                         } else {
                           console.error('[HomePage] Failed to accept invite:', await acceptResponse.text());
                         }
