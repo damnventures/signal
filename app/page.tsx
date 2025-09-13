@@ -1169,7 +1169,7 @@ const HomePage = () => {
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}, user: ${user ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress, showDemo, user, fetchCapsuleContent]);
+  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress, showDemo, user]);
 
   // Handle capsule selection based on auth state
   useEffect(() => {
