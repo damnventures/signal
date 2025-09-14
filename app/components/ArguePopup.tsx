@@ -151,24 +151,27 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   if (!isOpen) return null;
 
   return (
-    <DraggableWindow
-      id={id}
-      onBringToFront={onBringToFront}
-      initialZIndex={initialZIndex}
-      initialPosition={initialPosition}
-    >
-      <div className="argue-popup">
-        {/* Title bar with grill pattern like Store */}
-        <div className="argue-title-bar">
-          <div className="argue-title-text">Argue with Craig</div>
-          <button 
-            className="argue-close-btn"
-            onClick={onClose}
-            aria-label="Close argue popup"
-          >
-            ×
-          </button>
-        </div>
+    <>
+      {/* Backdrop to ensure proper z-index layering */}
+      <div className="argue-backdrop"></div>
+      <DraggableWindow
+        id={id}
+        onBringToFront={onBringToFront}
+        initialZIndex={Math.max(initialZIndex, 10000)}
+        initialPosition={initialPosition}
+      >
+        <div className="argue-popup">
+          {/* Title bar with grill pattern like Store */}
+          <div className="argue-title-bar">
+            <div className="argue-title-text">Argue with Craig</div>
+            <button 
+              className="argue-close-btn"
+              onClick={onClose}
+              aria-label="Close argue popup"
+            >
+              ×
+            </button>
+          </div>
 
         <div className="window-body">
           <form onSubmit={handleSubmit} className="input-form">
@@ -230,16 +233,29 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       </div>
 
       <style jsx>{`
+        .argue-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.3);
+          z-index: 9998;
+        }
+
         .argue-popup {
-          width: 520px;
-          height: 580px;
+          width: 600px;
+          height: 650px;
+          max-width: 90vw;
+          max-height: 90vh;
           border: 2px solid #000000;
           background: #ffffff;
           display: flex;
           flex-direction: column;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 12px;
-          box-shadow: 2px 2px 0px #000000;
+          font-size: 13px;
+          box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
+          color: #000000;
         }
         
         .argue-title-bar {
@@ -249,7 +265,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           position: relative;
           padding: 8px 16px;
           background: #ffffff;
-          border-bottom: 1px solid #000000;
+          border-bottom: 2px solid #000000;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
         
         .argue-title-bar::before {
@@ -274,6 +291,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-size: 12px;
           font-weight: bold;
           color: #000000;
+          text-align: center;
+          background: #ffffff;
+          padding: 0 8px;
           z-index: 2;
           position: relative;
         }
@@ -284,18 +304,24 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           top: 50%;
           transform: translateY(-50%);
           background: #ffffff;
-          border: none;
+          border: 1px solid #000000;
           font-size: 16px;
           color: #000000;
           cursor: pointer;
           padding: 2px 6px;
           line-height: 1;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          z-index: 2;
+          z-index: 3;
+          min-width: 20px;
+          min-height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .argue-close-btn:hover {
           background: #e0e0e0;
+          border-color: #000000;
         }
         
         .argue-close-btn:active {
@@ -315,10 +341,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           height: 60px;
           border: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 12px;
-          padding: 6px;
+          font-size: 11px;
+          padding: 8px;
           resize: none;
           background: #ffffff;
+          color: #000000;
           box-shadow: inset 1px 1px 0px #808080;
         }
         
@@ -336,7 +363,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         button {
           border: 2px solid #000000;
           background: #ffffff;
-          padding: 6px 12px;
+          color: #000000;
+          padding: 8px 12px;
           cursor: pointer;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 11px;
@@ -360,13 +388,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
         
         .error-box {
-          margin-top: 10px;
-          padding: 8px;
+          margin-top: 12px;
+          padding: 10px;
           border: 2px solid #000000;
           background: #ffe0e0;
           color: #800000;
           font-size: 11px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-weight: bold;
         }
         
         .response-section {
@@ -378,23 +407,24 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         
         .response-label {
           font-weight: bold;
-          margin-bottom: 6px;
+          margin-bottom: 8px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 12px;
+          font-size: 11px;
           color: #000000;
         }
         
         .response-box {
           flex: 1;
           border: 2px solid #000000;
-          padding: 10px;
+          padding: 12px;
           overflow-y: auto;
-          line-height: 1.5;
+          line-height: 1.4;
           color: #000000;
           background: #ffffff;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 11px;
           box-shadow: inset 1px 1px 0px #808080;
+          min-height: 200px;
         }
         
         .response-box p {
@@ -449,6 +479,25 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 10px;
           box-shadow: inset 1px 1px 0px #808080;
+        }
+        
+        .analysis-box::-webkit-scrollbar {
+          width: 16px;
+        }
+        
+        .analysis-box::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-left: 2px solid #000000;
+        }
+        
+        .analysis-box::-webkit-scrollbar-thumb {
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 1px 1px 0px #808080;
+        }
+        
+        .analysis-box::-webkit-scrollbar-thumb:hover {
+          background: #f0f0f0;
         }
       `}</style>
     </DraggableWindow>
