@@ -94,7 +94,11 @@ const HomePage = () => {
 
     try {
       setIsWrapFetching(true);
-      console.log('[HomePage] Fetching wrap summary for authenticated user...');
+      console.log('[HomePage] Fetching wrap summary for authenticated user...', {
+        userProfile: userProfile?.email,
+        hasAuth,
+        timestamp: new Date().toISOString()
+      });
       const response = await fetch('/api/wrap-summary', {
         method: 'POST',
         headers: {
@@ -172,25 +176,46 @@ const HomePage = () => {
 
   // Periodic check for capsule state changes (every 5 minutes for authenticated users)
   useEffect(() => {
+    console.log('[HomePage] Periodic check useEffect triggered', {
+      hasUser: !!user,
+      hasAuth: !!(accessToken || apiKey),
+      timestamp: new Date().toISOString()
+    });
+    
     if (!user || (!accessToken && !apiKey)) {
       // Clear any existing interval if user logs out
       if (wrapCheckIntervalRef.current) {
+        console.log('[HomePage] Clearing existing interval due to no auth');
         clearInterval(wrapCheckIntervalRef.current);
         wrapCheckIntervalRef.current = null;
       }
       return;
     }
 
+    // Clear any existing interval before creating a new one
+    if (wrapCheckIntervalRef.current) {
+      console.log('[HomePage] Clearing existing interval before creating new one');
+      clearInterval(wrapCheckIntervalRef.current);
+      wrapCheckIntervalRef.current = null;
+    }
+
     // Set up periodic state check
     const checkForStateChanges = async () => {
+      // Access current values without dependencies
+      const currentWrapStateHash = wrapStateHash;
+      const currentIsWrapFetching = isWrapFetching;
+      
       // Skip if already fetching wrap summary
-      if (isWrapFetching) {
+      if (currentIsWrapFetching) {
         console.log('[HomePage] Skipping periodic check - wrap request already in progress');
         return;
       }
       
       try {
-        console.log('[HomePage] Checking for capsule state changes...');
+        console.log('[HomePage] Periodic check: Checking for capsule state changes...', {
+          timestamp: new Date().toISOString(),
+          lastStateHash: currentWrapStateHash
+        });
         const response = await fetch('/api/wrap-summary', {
           method: 'POST',
           headers: {
@@ -199,7 +224,7 @@ const HomePage = () => {
           body: JSON.stringify({
             accessToken,
             apiKey,
-            lastStateHash: wrapStateHash,
+            lastStateHash: currentWrapStateHash,
             username: user?.email?.split('@')[0] || user?.username || 'user'
           }),
         });
@@ -226,10 +251,12 @@ const HomePage = () => {
     };
 
     // Initial check after 30 seconds (to avoid immediate duplicate with auth flow)
+    console.log('[HomePage] Setting up periodic wrap checks - initial timeout in 30s, then every 5 minutes');
     const initialTimeout = setTimeout(checkForStateChanges, 30000);
     
     // Then check every 5 minutes
     wrapCheckIntervalRef.current = setInterval(checkForStateChanges, 5 * 60 * 1000);
+    console.log('[HomePage] Periodic interval created:', wrapCheckIntervalRef.current);
 
     return () => {
       clearTimeout(initialTimeout);
@@ -238,7 +265,7 @@ const HomePage = () => {
         wrapCheckIntervalRef.current = null;
       }
     };
-  }, [user, accessToken, apiKey, wrapStateHash, lastWrapSummary, isWrapFetching]);
+  }, [user, accessToken, apiKey]); // Removed wrapStateHash, lastWrapSummary, isWrapFetching to prevent cycles
 
   useEffect(() => {
     setIsClient(true);
