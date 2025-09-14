@@ -60,6 +60,7 @@ const HomePage = () => {
   const [showDemoWelcomeWindow, setShowDemoWelcomeWindow] = useState(false);
   const [wrapStateHash, setWrapStateHash] = useState<string>('');
   const [lastWrapSummary, setLastWrapSummary] = useState<string>('');
+  const [isWrapFetching, setIsWrapFetching] = useState<boolean>(false);
   const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [showStore, setShowStore] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
@@ -85,7 +86,14 @@ const HomePage = () => {
       return `Welcome ${userProfile?.email || userProfile?.username || 'User'}!`;
     }
 
+    // Prevent multiple concurrent requests
+    if (isWrapFetching) {
+      console.log('[HomePage] Wrap request already in progress, skipping...');
+      return lastWrapSummary || `Welcome ${userProfile.email || userProfile.username}!`;
+    }
+
     try {
+      setIsWrapFetching(true);
       console.log('[HomePage] Fetching wrap summary for authenticated user...');
       const response = await fetch('/api/wrap-summary', {
         method: 'POST',
@@ -111,11 +119,13 @@ const HomePage = () => {
       }
     } catch (error) {
       console.error('[HomePage] Error fetching wrap summary:', error);
+    } finally {
+      setIsWrapFetching(false);
     }
 
     // Fallback to welcome message for authenticated users too
     return `Welcome ${userProfile.email || userProfile.username}!`;
-  }, [accessToken, apiKey, wrapStateHash]);
+  }, [accessToken, apiKey, wrapStateHash, isWrapFetching, lastWrapSummary]);
 
   // Animate status message with typewriter effect (like Argue tool)
   const animateStatusMessage = useCallback((fullMessage: string) => {
@@ -173,6 +183,12 @@ const HomePage = () => {
 
     // Set up periodic state check
     const checkForStateChanges = async () => {
+      // Skip if already fetching wrap summary
+      if (isWrapFetching) {
+        console.log('[HomePage] Skipping periodic check - wrap request already in progress');
+        return;
+      }
+      
       try {
         console.log('[HomePage] Checking for capsule state changes...');
         const response = await fetch('/api/wrap-summary', {
@@ -222,7 +238,7 @@ const HomePage = () => {
         wrapCheckIntervalRef.current = null;
       }
     };
-  }, [user, accessToken, apiKey, wrapStateHash, lastWrapSummary]);
+  }, [user, accessToken, apiKey, wrapStateHash, lastWrapSummary, isWrapFetching]);
 
   useEffect(() => {
     setIsClient(true);
@@ -416,7 +432,7 @@ const HomePage = () => {
     if (isClient) {
       handleAuth();
     }
-  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey, setUserData, logout, fetchWrapSummary]);
+  }, [isClient, user, accessToken, isLoading, authProcessed, apiKey]);
 
   const statusMessages = {
     signal: user ? [

@@ -47,6 +47,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
   const [error, setError] = useState<string>('');
   const [metadata, setMetadata] = useState<WrapResponse['metadata']>();
   const [stateHash, setStateHash] = useState<string>('');
+  const [lastRequestTime, setLastRequestTime] = useState<number>(0);
 
   const fetchWrapSummary = useCallback(async (manualTrigger = false) => {
     if (!user || (!accessToken && !apiKey)) {
@@ -54,8 +55,17 @@ const WrapTool: React.FC<WrapToolProps> = ({
       return;
     }
 
+    // Rate limiting: minimum 2 seconds between requests
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    if (timeSinceLastRequest < 2000 && !manualTrigger) {
+      console.log('[WrapTool] Rate limited: too soon since last request');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
+    setLastRequestTime(now);
 
     // Only call callbacks for manual triggers (button clicks)
     if (manualTrigger) {
@@ -117,7 +127,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [user, accessToken, apiKey, lastStateHash, onSummaryUpdate, onStateHashUpdate]);
+  }, [user, accessToken, apiKey, lastStateHash, onSummaryUpdate, onStateHashUpdate, lastRequestTime]);
 
   // Auto-fetch on mount if enabled - start early for optimal timing
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
