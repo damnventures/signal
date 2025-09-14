@@ -230,9 +230,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             </div>
           )}
         </div>
-      </div>
 
-      <style jsx>{`
+        <style jsx>{`
         .argue-backdrop {
           position: fixed;
           top: 0;
@@ -499,8 +498,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         .analysis-box::-webkit-scrollbar-thumb:hover {
           background: #f0f0f0;
         }
-      `}</style>
+        `}</style>
+      </div>
     </DraggableWindow>
+    </>
   );
 };
 
