@@ -5,6 +5,18 @@ import DraggableWindow from './DraggableWindow';
 import { getArguePrompt } from './ArguePrompt';
 import { useAuth } from '../contexts/AuthContext';
 
+interface Capsule {
+  _id: string;
+  name: string;
+  isPublic: boolean;
+  shared?: boolean;
+  isShared?: boolean;
+  owner?: {
+    email?: string;
+    username?: string;
+  };
+}
+
 interface ArguePopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,6 +26,8 @@ interface ArguePopupProps {
   initialPosition: { x: number; y: number };
   id: string;
   initialQuestion?: string;
+  userCapsules?: Capsule[];
+  accessibleShrinkedCapsules?: string[];
 }
 
 const ArguePopup: React.FC<ArguePopupProps> = ({
@@ -25,6 +39,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   initialPosition,
   id,
   initialQuestion = '',
+  userCapsules = [],
+  accessibleShrinkedCapsules = [],
 }) => {
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +49,52 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [error, setError] = useState('');
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
-  const [currentCapsuleId, setCurrentCapsuleId] = useState(capsuleId);
-  const { apiKey } = useAuth();
+  const [selectedCapsuleIds, setSelectedCapsuleIds] = useState<string[]>([capsuleId]);
+  const { apiKey, user } = useAuth();
 
   useEffect(() => {
-    setCurrentCapsuleId(capsuleId);
+    setSelectedCapsuleIds([capsuleId]);
   }, [capsuleId]);
+
+  // Get available capsules for dropdown
+  const getAvailableCapsules = () => {
+    const capsules = [];
+
+    // Add user's own capsules
+    if (user && userCapsules.length > 0) {
+      userCapsules.forEach(capsule => {
+        capsules.push({
+          id: capsule._id,
+          name: capsule.name || 'Untitled Capsule',
+          type: 'user'
+        });
+      });
+    }
+
+    // Add accessible Shrinked capsules
+    const shrinkedCapsuleMap: Record<string, string> = {
+      '6887e02fa01e2f4073d3bb51': 'YC Reducto AI',
+      '68c32cf3735fb4ac0ef3ccbf': 'LastWeekTonight Preview',
+      '6887e02fa01e2f4073d3bb52': 'AI Research Papers',
+      '6887e02fa01e2f4073d3bb53': 'Startup Insights',
+      '6887e02fa01e2f4073d3bb54': 'Tech Podcasts',
+    };
+
+    accessibleShrinkedCapsules.forEach(capsuleId => {
+      const name = shrinkedCapsuleMap[capsuleId];
+      if (name) {
+        capsules.push({
+          id: capsuleId,
+          name: name,
+          type: 'shrinked'
+        });
+      }
+    });
+
+    return capsules;
+  };
+
+  const availableCapsules = getAvailableCapsules();
 
   useEffect(() => {
     if (isOpen && initialQuestion && !question) {
@@ -62,23 +118,32 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     setIsStreamingComplete(false);
 
     try {
-      const contextUrl = apiKey
-        ? `/api/capsules/${currentCapsuleId}/context?userApiKey=${apiKey}`
-        : `/api/capsules/${currentCapsuleId}/context`;
-      const contextResponse = await fetch(contextUrl);
-      if (!contextResponse.ok) throw new Error('Failed to fetch context');
+      // Fetch context from all selected capsules
+      const contextPromises = selectedCapsuleIds.map(async (capsuleId) => {
+        const contextUrl = apiKey
+          ? `/api/capsules/${capsuleId}/context?userApiKey=${apiKey}`
+          : `/api/capsules/${capsuleId}/context`;
+        const response = await fetch(contextUrl);
+        if (!response.ok) throw new Error(`Failed to fetch context for capsule ${capsuleId}`);
+        return await response.json();
+      });
 
-      const contextData = await contextResponse.json();
+      const contextResults = await Promise.all(contextPromises);
+
+      // Combine all contexts
+      const combinedContext = contextResults.map((data, index) => {
+        const capsuleName = availableCapsules.find(c => c.id === selectedCapsuleIds[index])?.name || `Capsule ${index + 1}`;
+        const context = data.context || data.fullContext || JSON.stringify(data);
+        return `=== ${capsuleName} ===\n${context}`;
+      }).join('\n\n');
+
       const workerUrl = 'https://craig-argue-machine.shrinked.workers.dev';
 
       const argumentResponse = await fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          context:
-            contextData.context ||
-            contextData.fullContext ||
-            JSON.stringify(contextData),
+          context: combinedContext,
           question: question.trim(),
           systemPrompt: getArguePrompt(),
         }),
@@ -137,7 +202,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [question, currentCapsuleId, apiKey]);
+  }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
 
   const handleClear = useCallback(() => {
     setQuestion('');
@@ -164,7 +229,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           {/* Title bar with grill pattern like Store */}
           <div className="argue-title-bar">
             <div className="argue-title-text">Argue with Craig</div>
-            <button 
+            <button
               className="argue-close-btn"
               onClick={onClose}
               aria-label="Close argue popup"
@@ -173,63 +238,111 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             </button>
           </div>
 
-        <div className="window-body">
-          <form onSubmit={handleSubmit} className="input-form">
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="e.g., 'Remote work is more productive'..."
-              disabled={isLoading}
-            />
-            <div className="button-row">
-              <button type="submit" disabled={isLoading || !question.trim()}>
-                {isLoading ? 'Generating…' : 'Generate'}
-              </button>
-              <button onClick={handleClear} disabled={isLoading} type="button">
-                Clear
-              </button>
-            </div>
-          </form>
-
-          {error && <div className="error-box">Error: {error}</div>}
-
-          {chatResponse && (
-            <div className="response-section">
-              <div className="response-label">Craig’s Argument:</div>
-              <div className="response-box">
-                {chatResponse
-                  .split(/\n\n|(?<=[.?!])\s+(?=[A-Z])/g)
-                  .map((p, i) => (
-                    <p key={i}>
-                      {p.split(/(\[\[\d+\]\])/).map((part, j) =>
-                        /\[\[\d+\]\]/.test(part) ? (
-                          <span key={j} className="ref">
-                            {part}
-                          </span>
-                        ) : (
-                          part
-                        )
-                      )}
-                    </p>
-                  ))}
+          <div className="window-body">
+            {/* Help text area at top */}
+            <div className="help-section">
+              <div className="help-text">
+                Argue uses capsule content to generate counter-arguments. Select one or more capsules below, then enter your statement to debate.
               </div>
             </div>
-          )}
 
-          {reasoningResponse && (
-            <div className="analysis">
-              <button
-                onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
-                type="button"
-              >
-                {isReasoningExpanded ? 'Hide Analysis' : 'Show Analysis'}
-              </button>
-              {isReasoningExpanded && (
-                <div className="analysis-box">{reasoningResponse}</div>
+            {/* Capsule selection dropdown */}
+            <div className="capsule-section">
+              <div className="section-label">Select Capsules:</div>
+              <div className="capsule-dropdown-container">
+                <select
+                  multiple
+                  value={selectedCapsuleIds}
+                  onChange={(e) => {
+                    const values = Array.from(e.target.selectedOptions, option => option.value);
+                    setSelectedCapsuleIds(values.length > 0 ? values : [capsuleId]);
+                  }}
+                  className="capsule-dropdown"
+                  disabled={isLoading}
+                >
+                  {availableCapsules.map(capsule => (
+                    <option key={capsule.id} value={capsule.id}>
+                      {capsule.name} {capsule.type === 'shrinked' ? '(Shrinked)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <div className="dropdown-hint">
+                  Hold Ctrl/Cmd to select multiple capsules
+                </div>
+              </div>
+            </div>
+
+            {/* Chat response area - takes most space */}
+            <div className="chat-section">
+              {chatResponse ? (
+                <div className="response-section">
+                  <div className="response-label">Craig's Argument:</div>
+                  <div className="response-box">
+                    {chatResponse
+                      .split(/\n\n|(?<=[.?!])\s+(?=[A-Z])/g)
+                      .map((p, i) => (
+                        <p key={i}>
+                          {p.split(/(\[\[\d+\]\])/).map((part, j) =>
+                            /\[\[\d+\]\]/.test(part) ? (
+                              <span key={j} className="ref">
+                                {part}
+                              </span>
+                            ) : (
+                              part
+                            )
+                          )}
+                        </p>
+                      ))}
+                  </div>
+
+                  {reasoningResponse && (
+                    <div className="analysis">
+                      <button
+                        onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
+                        type="button"
+                      >
+                        {isReasoningExpanded ? 'Hide Analysis' : 'Show Analysis'}
+                      </button>
+                      {isReasoningExpanded && (
+                        <div className="analysis-box">{reasoningResponse}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="empty-chat">
+                  <div className="empty-message">
+                    Enter a statement below to start arguing with Craig
+                  </div>
+                </div>
               )}
             </div>
-          )}
-        </div>
+
+            {error && <div className="error-box">Error: {error}</div>}
+
+            {/* Input form at bottom - chat-like */}
+            <div className="input-section">
+              <form onSubmit={handleSubmit} className="input-form">
+                <div className="input-row">
+                  <textarea
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="e.g., 'Remote work is more productive'..."
+                    disabled={isLoading}
+                    className="question-input"
+                  />
+                  <div className="button-group">
+                    <button type="submit" disabled={isLoading || !question.trim()} className="generate-btn">
+                      {isLoading ? 'Generating…' : 'Generate'}
+                    </button>
+                    <button onClick={handleClear} disabled={isLoading} type="button" className="clear-btn">
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
 
         <style jsx>{`
         .argue-backdrop {
@@ -243,10 +356,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .argue-popup {
-          width: 600px;
-          height: 650px;
-          max-width: 90vw;
-          max-height: 90vh;
+          width: 700px;
+          height: 600px;
+          max-width: 95vw;
+          max-height: 95vh;
           border: 2px solid #000000;
           background: #ffffff;
           display: flex;
@@ -256,7 +369,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
           color: #000000;
         }
-        
+
         .argue-title-bar {
           display: flex;
           justify-content: center;
@@ -267,7 +380,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           border-bottom: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
-        
+
         .argue-title-bar::before {
           content: '';
           position: absolute;
@@ -284,7 +397,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           );
           z-index: 1;
         }
-        
+
         .argue-title-text {
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 12px;
@@ -296,7 +409,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           z-index: 2;
           position: relative;
         }
-        
+
         .argue-close-btn {
           position: absolute;
           right: 8px;
@@ -317,105 +430,127 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           align-items: center;
           justify-content: center;
         }
-        
+
         .argue-close-btn:hover {
           background: #e0e0e0;
           border-color: #000000;
         }
-        
+
         .argue-close-btn:active {
           background: #d0d0d0;
         }
+
         .window-body {
           flex: 1;
-          padding: 16px;
+          padding: 12px;
           overflow: hidden;
           display: flex;
           flex-direction: column;
           background: #ffffff;
+          gap: 8px;
         }
-        
-        textarea {
-          width: 100%;
-          height: 60px;
+
+        .help-section {
+          background: #f5f5f5;
+          border: 1px solid #c0c0c0;
+          padding: 8px;
+          border-radius: 0;
+        }
+
+        .help-text {
+          font-size: 10px;
+          color: #666666;
+          line-height: 1.3;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        .capsule-section {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .section-label {
+          font-size: 11px;
+          font-weight: bold;
+          color: #000000;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        .capsule-dropdown-container {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .capsule-dropdown {
           border: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 11px;
-          padding: 8px;
-          resize: none;
+          padding: 4px;
           background: #ffffff;
           color: #000000;
           box-shadow: inset 1px 1px 0px #808080;
+          min-height: 60px;
+          max-height: 60px;
         }
-        
-        textarea:focus {
+
+        .capsule-dropdown:focus {
           outline: none;
           border: 2px solid #000000;
         }
-        
-        .button-row {
-          margin-top: 8px;
-          display: flex;
-          gap: 8px;
-        }
-        
-        button {
-          border: 2px solid #000000;
-          background: #ffffff;
-          color: #000000;
-          padding: 8px 12px;
-          cursor: pointer;
+
+        .dropdown-hint {
+          font-size: 9px;
+          color: #999999;
+          font-style: italic;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 11px;
-          font-weight: bold;
-          box-shadow: 1px 1px 0px #808080;
         }
-        
-        button:hover:not(:disabled) {
-          background: #f0f0f0;
-        }
-        
-        button:active:not(:disabled) {
-          background: #e0e0e0;
-          box-shadow: inset 1px 1px 0px #808080;
-        }
-        
-        button:disabled {
-          color: #808080;
-          cursor: default;
-          background: #f5f5f5;
-        }
-        
-        .error-box {
-          margin-top: 12px;
-          padding: 10px;
-          border: 2px solid #000000;
-          background: #ffe0e0;
-          color: #800000;
-          font-size: 11px;
-          font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-weight: bold;
-        }
-        
-        .response-section {
-          margin-top: 16px;
+
+        .chat-section {
           flex: 1;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
         }
-        
+
+        .empty-chat {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #000000;
+          background: #f8f8f8;
+          box-shadow: inset 1px 1px 0px #808080;
+        }
+
+        .empty-message {
+          color: #999999;
+          font-style: italic;
+          font-size: 11px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          text-align: center;
+        }
+
+        .response-section {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
         .response-label {
           font-weight: bold;
-          margin-bottom: 8px;
+          margin-bottom: 4px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 11px;
           color: #000000;
         }
-        
+
         .response-box {
           flex: 1;
           border: 2px solid #000000;
-          padding: 12px;
+          padding: 8px;
           overflow-y: auto;
           line-height: 1.4;
           color: #000000;
@@ -423,55 +558,70 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 11px;
           box-shadow: inset 1px 1px 0px #808080;
-          min-height: 200px;
         }
-        
+
         .response-box p {
-          margin: 0 0 12px 0;
+          margin: 0 0 8px 0;
         }
-        
+
         .response-box p:last-child {
           margin-bottom: 0;
         }
-        
+
         .response-box::-webkit-scrollbar {
           width: 16px;
         }
-        
+
         .response-box::-webkit-scrollbar-track {
           background: #f0f0f0;
           border-left: 2px solid #000000;
         }
-        
+
         .response-box::-webkit-scrollbar-thumb {
           background: #ffffff;
           border: 2px solid #000000;
           box-shadow: 1px 1px 0px #808080;
         }
-        
+
         .response-box::-webkit-scrollbar-thumb:hover {
           background: #f0f0f0;
         }
-        
+
         .ref {
           color: #666666;
           font-style: italic;
         }
-        
+
         .analysis {
-          margin-top: 12px;
+          margin-top: 8px;
         }
-        
+
         .analysis button {
           font-size: 10px;
           padding: 4px 8px;
+          border: 2px solid #000000;
+          background: #ffffff;
+          color: #000000;
+          cursor: pointer;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-weight: bold;
+          box-shadow: 1px 1px 0px #808080;
         }
-        
+
+        .analysis button:hover:not(:disabled) {
+          background: #f0f0f0;
+        }
+
+        .analysis button:active:not(:disabled) {
+          background: #e0e0e0;
+          box-shadow: inset 1px 1px 0px #808080;
+        }
+
         .analysis-box {
           border: 2px solid #000000;
-          padding: 8px;
-          margin-top: 6px;
-          max-height: 120px;
+          padding: 6px;
+          margin-top: 4px;
+          max-height: 80px;
           overflow-y: auto;
           color: #000000;
           background: #ffffff;
@@ -479,24 +629,83 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-size: 10px;
           box-shadow: inset 1px 1px 0px #808080;
         }
-        
-        .analysis-box::-webkit-scrollbar {
-          width: 16px;
-        }
-        
-        .analysis-box::-webkit-scrollbar-track {
-          background: #f0f0f0;
-          border-left: 2px solid #000000;
-        }
-        
-        .analysis-box::-webkit-scrollbar-thumb {
-          background: #ffffff;
+
+        .error-box {
+          padding: 8px;
           border: 2px solid #000000;
-          box-shadow: 1px 1px 0px #808080;
+          background: #ffe0e0;
+          color: #800000;
+          font-size: 11px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-weight: bold;
         }
-        
-        .analysis-box::-webkit-scrollbar-thumb:hover {
+
+        .input-section {
+          border-top: 1px solid #c0c0c0;
+          padding-top: 8px;
+        }
+
+        .input-form {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .input-row {
+          display: flex;
+          gap: 8px;
+          align-items: flex-end;
+        }
+
+        .question-input {
+          flex: 1;
+          height: 40px;
+          border: 2px solid #000000;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-size: 11px;
+          padding: 6px;
+          resize: none;
+          background: #ffffff;
+          color: #000000;
+          box-shadow: inset 1px 1px 0px #808080;
+        }
+
+        .question-input:focus {
+          outline: none;
+          border: 2px solid #000000;
+        }
+
+        .button-group {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .generate-btn, .clear-btn {
+          border: 2px solid #000000;
+          background: #ffffff;
+          color: #000000;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-size: 10px;
+          font-weight: bold;
+          box-shadow: 1px 1px 0px #808080;
+          min-width: 80px;
+        }
+
+        .generate-btn:hover:not(:disabled), .clear-btn:hover:not(:disabled) {
           background: #f0f0f0;
+        }
+
+        .generate-btn:active:not(:disabled), .clear-btn:active:not(:disabled) {
+          background: #e0e0e0;
+          box-shadow: inset 1px 1px 0px #808080;
+        }
+
+        .generate-btn:disabled, .clear-btn:disabled {
+          color: #808080;
+          cursor: default;
+          background: #f5f5f5;
         }
         `}</style>
       </div>

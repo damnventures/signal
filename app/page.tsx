@@ -1930,6 +1930,8 @@ const HomePage = () => {
               initialPosition={{ x: 100, y: 100 }}
               id="argue-popup"
               initialQuestion={argueQuestion}
+              userCapsules={capsules}
+              accessibleShrinkedCapsules={accessibleShrinkedCapsules}
             />
 
             {showDemoWelcomeWindow && (
