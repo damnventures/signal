@@ -78,7 +78,11 @@ const WrapTool: React.FC<WrapToolProps> = ({
     }
 
     try {
-      console.log('[WrapTool] Fetching wrap summary...');
+      console.log('[WrapTool] Fetching wrap summary...', {
+        manualTrigger,
+        timestamp: new Date().toISOString(),
+        stack: new Error().stack?.split('\n')[2]
+      });
       const response = await fetch('/api/wrap-summary', {
         method: 'POST',
         headers: {

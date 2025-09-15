@@ -61,6 +61,9 @@ const HomePage = () => {
   const [wrapStateHash, setWrapStateHash] = useState<string>('');
   const [lastWrapSummary, setLastWrapSummary] = useState<string>('');
   const [isWrapFetching, setIsWrapFetching] = useState<boolean>(false);
+  
+  // Global wrap request tracker to prevent overlaps from any component
+  const globalWrapRequestRef = useRef<boolean>(false);
   const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [showStore, setShowStore] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
@@ -86,14 +89,19 @@ const HomePage = () => {
       return `Welcome ${userProfile?.email || userProfile?.username || 'User'}!`;
     }
 
-    // Prevent multiple concurrent requests
-    if (isWrapFetching) {
-      console.log('[HomePage] Wrap request already in progress, skipping...');
+    // Prevent multiple concurrent requests (local and global)
+    if (isWrapFetching || globalWrapRequestRef.current) {
+      console.log('[HomePage] Wrap request already in progress, skipping...', {
+        isWrapFetching,
+        globalInProgress: globalWrapRequestRef.current,
+        currentStack: new Error().stack?.split('\n')[2]
+      });
       return lastWrapSummary || `Welcome ${userProfile.email || userProfile.username}!`;
     }
 
     try {
       setIsWrapFetching(true);
+      globalWrapRequestRef.current = true;
       console.log('[HomePage] Fetching wrap summary for authenticated user...', {
         userProfile: userProfile?.email,
         hasAuth,
@@ -125,6 +133,7 @@ const HomePage = () => {
       console.error('[HomePage] Error fetching wrap summary:', error);
     } finally {
       setIsWrapFetching(false);
+      globalWrapRequestRef.current = false;
     }
 
     // Fallback to welcome message for authenticated users too
@@ -205,9 +214,12 @@ const HomePage = () => {
       const currentWrapStateHash = wrapStateHash;
       const currentIsWrapFetching = isWrapFetching;
       
-      // Skip if already fetching wrap summary
-      if (currentIsWrapFetching) {
-        console.log('[HomePage] Skipping periodic check - wrap request already in progress');
+      // Skip if already fetching wrap summary (local or global)
+      if (currentIsWrapFetching || globalWrapRequestRef.current) {
+        console.log('[HomePage] Skipping periodic check - wrap request already in progress', {
+          localFetching: currentIsWrapFetching,
+          globalInProgress: globalWrapRequestRef.current
+        });
         return;
       }
       
