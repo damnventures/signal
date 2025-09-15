@@ -345,6 +345,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           </div>
 
         <style jsx>{`
+        .argue-popup * {
+          box-sizing: border-box;
+        }
+
         .argue-backdrop {
           position: fixed;
           top: 0;
@@ -368,6 +372,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-size: 13px;
           box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
           color: #000000;
+          box-sizing: border-box;
         }
 
         .argue-title-bar {
@@ -493,6 +498,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           box-shadow: inset 1px 1px 0px #808080;
           min-height: 60px;
           max-height: 60px;
+          width: 100%;
         }
 
         .capsule-dropdown:focus {
@@ -654,6 +660,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           display: flex;
           gap: 8px;
           align-items: flex-end;
+          width: 100%;
         }
 
         .question-input {
@@ -667,6 +674,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           background: #ffffff;
           color: #000000;
           box-shadow: inset 1px 1px 0px #808080;
+          min-width: 0;
         }
 
         .question-input:focus {
@@ -678,6 +686,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           display: flex;
           flex-direction: column;
           gap: 4px;
+          flex-shrink: 0;
         }
 
         .generate-btn, .clear-btn {
@@ -691,6 +700,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-weight: bold;
           box-shadow: 1px 1px 0px #808080;
           min-width: 80px;
+          white-space: nowrap;
         }
 
         .generate-btn:hover:not(:disabled), .clear-btn:hover:not(:disabled) {

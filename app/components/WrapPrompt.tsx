@@ -5,9 +5,11 @@ export function getWrapPrompt(): string {
 FORMAT: "Morning {{username}}! Ran wrap() on your capsules - found [specific topics with speakers]."
 
 REQUIREMENTS:
-- Include speaker names from content (Malcolm, John Oliver, etc.)
+- Include ONLY real speaker names from actual content (John Oliver, podcast hosts, article authors, etc.)
+- EXCLUDE internal system personas (Malcolm, Craig, Narrative Analyst, etc.)
 - Mention specific topics from actual content/highlights
 - Under 50 words, direct response only
+- If no real speakers found, just mention topics without attribution
 
 USER'S CAPSULES:
 {{capsuleData}}
