@@ -58,7 +58,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
-    const capsules = [];
+    const capsules: Array<{ id: string; name: string; type: 'user' | 'shrinked' }> = [];
 
     // Add user's own capsules
     if (user && userCapsules.length > 0) {
