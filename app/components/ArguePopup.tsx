@@ -59,19 +59,23 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
     const capsules: Array<{ id: string; name: string; type: 'user' | 'shrinked' }> = [];
+    const addedIds = new Set<string>();
 
     // Add user's own capsules
     if (user && userCapsules.length > 0) {
       userCapsules.forEach(capsule => {
-        capsules.push({
-          id: capsule._id,
-          name: capsule.name || 'Untitled Capsule',
-          type: 'user'
-        });
+        if (!addedIds.has(capsule._id)) {
+          capsules.push({
+            id: capsule._id,
+            name: capsule.name || 'Untitled Capsule',
+            type: 'user'
+          });
+          addedIds.add(capsule._id);
+        }
       });
     }
 
-    // Add accessible Shrinked capsules
+    // Add accessible Shrinked capsules (only if not already added as user capsule)
     const shrinkedCapsuleMap: Record<string, string> = {
       '6887e02fa01e2f4073d3bb51': 'YC Reducto AI',
       '68c32cf3735fb4ac0ef3ccbf': 'LastWeekTonight Preview',
@@ -82,12 +86,13 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
     accessibleShrinkedCapsules.forEach(capsuleId => {
       const name = shrinkedCapsuleMap[capsuleId];
-      if (name) {
+      if (name && !addedIds.has(capsuleId)) {
         capsules.push({
           id: capsuleId,
           name: name,
           type: 'shrinked'
         });
+        addedIds.add(capsuleId);
       }
     });
 
@@ -262,7 +267,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 >
                   {availableCapsules.map(capsule => (
                     <option key={capsule.id} value={capsule.id}>
-                      {capsule.name} {capsule.type === 'shrinked' ? '(Shrinked)' : ''}
+                      {capsule.name.toLowerCase()} {capsule.type === 'shrinked' ? '(shrinked)' : ''}
                     </option>
                   ))}
                 </select>
@@ -360,10 +365,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .argue-popup {
+          width: 700px;
           height: 600px;
           max-width: 95vw;
           max-height: 95vh;
-          border: 2px solid #000000;
+          border: 1px solid #000000;
           background: #ffffff;
           display: flex;
           flex-direction: column;
@@ -585,7 +591,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           color: #000000;
           background: #ffffff;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 11px;
           box-shadow: inset 1px 1px 0px #808080;
         }
 
