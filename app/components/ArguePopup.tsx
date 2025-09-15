@@ -274,7 +274,13 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
             {/* Chat response area - takes most space */}
             <div className="chat-section">
-              {chatResponse ? (
+              {isLoading ? (
+                <div className="thinking-chat">
+                  <div className="thinking-message">
+                    Craig is thinking...
+                  </div>
+                </div>
+              ) : chatResponse ? (
                 <div className="response-section">
                   <div className="response-label">Craig's Argument:</div>
                   <div className="response-box">
@@ -311,9 +317,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 </div>
               ) : (
                 <div className="empty-chat">
-                  <div className="empty-message">
-                    Enter a statement below to start arguing with Craig
-                  </div>
                 </div>
               )}
             </div>
@@ -334,9 +337,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   <div className="button-group">
                     <button type="submit" disabled={isLoading || !question.trim()} className="generate-btn">
                       {isLoading ? 'Generating…' : 'Generate'}
-                    </button>
-                    <button onClick={handleClear} disabled={isLoading} type="button" className="clear-btn">
-                      Clear
                     </button>
                   </div>
                 </div>
@@ -490,7 +490,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         .capsule-dropdown {
           border: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 11px;
           padding: 4px;
           background: #ffffff;
           color: #000000;
@@ -498,6 +497,25 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           min-height: 60px;
           max-height: 60px;
           width: 100%;
+        }
+
+        .capsule-dropdown::-webkit-scrollbar {
+          width: 16px;
+        }
+
+        .capsule-dropdown::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-left: 2px solid #000000;
+        }
+
+        .capsule-dropdown::-webkit-scrollbar-thumb {
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 1px 1px 0px #808080;
+        }
+
+        .capsule-dropdown::-webkit-scrollbar-thumb:hover {
+          background: #f0f0f0;
         }
 
         .capsule-dropdown:focus {
@@ -521,18 +539,24 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
         .empty-chat {
           flex: 1;
+          border: 2px solid #000000;
+          background: #f0f0f0;
+          box-shadow: inset 1px 1px 0px #808080;
+        }
+
+        .thinking-chat {
+          flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
           border: 2px solid #000000;
-          background: #f8f8f8;
+          background: #ffffff;
           box-shadow: inset 1px 1px 0px #808080;
         }
 
-        .empty-message {
-          color: #999999;
+        .thinking-message {
+          color: #666666;
           font-style: italic;
-          font-size: 11px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           text-align: center;
         }
@@ -646,7 +670,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .input-section {
-          border-top: 1px solid #c0c0c0;
           padding-top: 8px;
         }
 
@@ -664,11 +687,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
         .question-input {
           flex: 1;
-          height: 40px;
+          height: 28px;
           border: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 11px;
-          padding: 6px;
+          padding: 4px 6px;
           resize: none;
           background: #ffffff;
           color: #000000;
@@ -683,38 +705,41 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
         .button-group {
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           gap: 4px;
           flex-shrink: 0;
+          align-items: center;
         }
 
-        .generate-btn, .clear-btn {
-          border: 2px solid #000000;
-          background: #ffffff;
-          color: #000000;
-          padding: 6px 12px;
+        .generate-btn {
+          border: 1px solid #999999;
+          background: #f5f5f5;
+          color: #999999;
+          padding: 4px 8px;
           cursor: pointer;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 10px;
           font-weight: bold;
-          box-shadow: 1px 1px 0px #808080;
-          min-width: 80px;
+          min-width: 60px;
           white-space: nowrap;
+          height: 28px;
         }
 
-        .generate-btn:hover:not(:disabled), .clear-btn:hover:not(:disabled) {
-          background: #f0f0f0;
+        .generate-btn:hover:not(:disabled) {
+          background: #e8e8e8;
+          border-color: #888888;
+          color: #888888;
         }
 
-        .generate-btn:active:not(:disabled), .clear-btn:active:not(:disabled) {
-          background: #e0e0e0;
-          box-shadow: inset 1px 1px 0px #808080;
+        .generate-btn:active:not(:disabled) {
+          background: #d0d0d0;
+          box-shadow: inset 1px 1px 0px #999999;
         }
 
-        .generate-btn:disabled, .clear-btn:disabled {
-          color: #808080;
+        .generate-btn:disabled {
+          color: #cccccc;
           cursor: default;
-          background: #f5f5f5;
+          background: #f8f8f8;
+          border-color: #cccccc;
         }
         `}</style>
       </div>
