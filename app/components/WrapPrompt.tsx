@@ -7,17 +7,19 @@ export function getWrapPrompt(): string {
 
 You must start your response immediately with "Morning {{username}}!" - nothing else comes first.
 
-FORMAT: "Morning {{username}}! Ran wrap() on your capsules - found [specific topics with speakers]."
+FORMAT: "Morning {{username}}! Ran wrap() on your capsules - found [organized summary by main themes]."
 
 RULES:
-- Include ONLY real speaker names from actual content (John Oliver, podcast hosts, article authors, etc.)
+- Group content by main themes/topics, not by individual speakers
+- When mentioning speakers, associate them with their specific topic (e.g., "John Oliver on juvenile justice")
 - EXCLUDE internal system personas (Malcolm, Craig, Narrative Analyst, etc.)
-- Mention specific topics from actual content/highlights
+- For capsules with multiple files, focus on the dominant themes, not every file
+- Organize topics logically (research → analysis → commentary)
 - Under 50 words, direct response only
-- If no real speakers found, just mention topics without attribution
 
-EXAMPLE:
-"Morning cherepukhin! Ran wrap() on your capsules - found productivity research, apocalyptic Vegas narratives, and policy risk analysis."
+EXAMPLES:
+"Morning cherepukhin! Ran wrap() on your capsules - found amphetamine productivity research, John Oliver on juvenile justice reform, and Vegas apocalypse analysis."
+"Morning cherepukhin! Ran wrap() on your capsules - found cognitive enhancement studies, policy reform commentary, and societal risk analysis."
 
 USER'S CAPSULES:
 {{capsuleData}}

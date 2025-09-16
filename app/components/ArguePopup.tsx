@@ -132,24 +132,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     return capsules;
   };
 
-  const availableCapsules = getAvailableCapsules();
-
-  useEffect(() => {
-    if (isOpen && initialQuestion && !question) {
-      console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
-      setQuestion(initialQuestion);
-
-      // Auto-submit if question is provided via intent
-      const autoSubmitTimer = setTimeout(() => {
-        console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
-        // Directly call handleSubmit with a fake event
-        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-      }, 300); // Increased delay to ensure state is set
-
-      return () => clearTimeout(autoSubmitTimer);
-    }
-  }, [isOpen, initialQuestion, question]); // Removed handleSubmit from dependencies
-
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -259,6 +241,24 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       setIsLoading(false);
     }
   }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
+
+  const availableCapsules = getAvailableCapsules();
+
+  useEffect(() => {
+    if (isOpen && initialQuestion && !question) {
+      console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
+      setQuestion(initialQuestion);
+
+      // Auto-submit if question is provided via intent
+      const autoSubmitTimer = setTimeout(() => {
+        console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
+        // Directly call handleSubmit with a fake event
+        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      }, 300); // Increased delay to ensure state is set
+
+      return () => clearTimeout(autoSubmitTimer);
+    }
+  }, [isOpen, initialQuestion, question, handleSubmit]);
 
   const handleClear = useCallback(() => {
     setQuestion('');

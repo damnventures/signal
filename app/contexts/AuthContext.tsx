@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 
 interface User {
   id: string;
@@ -39,6 +39,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Prevent multiple refresh attempts
+  const refreshInProgress = useRef(false);
 
 
   // Load stored authentication data on mount
@@ -146,17 +149,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const refreshToken = async (): Promise<boolean> => {
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    // Prevent multiple concurrent refresh attempts
+    if (refreshInProgress.current) {
+      console.log('[AuthContext] Refresh already in progress, skipping...');
+      return false;
+    }
+
     try {
+      refreshInProgress.current = true;
       const storedRefreshToken = localStorage.getItem('auth_refresh_token');
-      
+
       if (!storedRefreshToken) {
         console.error('[AuthContext] No refresh token available');
         return false;
       }
 
       console.log('[AuthContext] Attempting to refresh access token...');
-      
+
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         headers: {
@@ -169,38 +179,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!response.ok) {
         console.error('[AuthContext] Token refresh failed:', response.status);
-        // If refresh fails, clear all auth data and logout
-        logout();
+        // Only logout on 401/403 - not on network errors
+        if (response.status === 401 || response.status === 403) {
+          logout();
+        }
         return false;
       }
 
       const data = await response.json();
-      
+
       // Update tokens
       setAccessToken(data.accessToken);
       localStorage.setItem('auth_access_token', data.accessToken);
       localStorage.setItem('auth_refresh_token', data.refreshToken);
-      
+
       console.log('[AuthContext] Token refreshed successfully');
       return true;
     } catch (error) {
       console.error('[AuthContext] Error refreshing token:', error);
-      logout();
+      // Don't logout on network errors - only on auth failures
       return false;
+    } finally {
+      refreshInProgress.current = false;
     }
-  };
+  }, []);
 
-  const refreshTokenIfNeeded = async (): Promise<boolean> => {
+  const refreshTokenIfNeeded = useCallback(async (): Promise<boolean> => {
     // Check if we need to refresh proactively
     if (accessToken && !isTokenExpiringSoon(accessToken)) {
       return true; // Token is still valid, no refresh needed
     }
-    
+
     console.log('[AuthContext] Token is expiring soon or expired, refreshing...');
     return await refreshToken();
-  };
+  }, [accessToken, refreshToken]);
 
-  // Periodic token refresh check (every 4 minutes)
+  // Periodic token refresh check (every 10 minutes - less aggressive)
   useEffect(() => {
     if (!user || !accessToken) return;
 
@@ -208,16 +222,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       refreshTokenIfNeeded().catch(error => {
         console.error('[AuthContext] Periodic refresh check failed:', error);
       });
-    }, 4 * 60 * 1000); // 4 minutes
+    }, 10 * 60 * 1000); // 10 minutes instead of 4
 
     return () => clearInterval(interval);
   }, [user, accessToken, refreshTokenIfNeeded]);
 
-  // Refresh token when user returns to the tab after being away
+  // Refresh token when user returns to the tab after being away (throttled)
   useEffect(() => {
     if (!user || !accessToken) return;
 
+    let lastFocusCheck = 0;
     const handleFocus = () => {
+      const now = Date.now();
+      // Only check on focus if it's been more than 2 minutes since last check
+      if (now - lastFocusCheck < 2 * 60 * 1000) {
+        console.log('[AuthContext] Tab focus ignored - too recent');
+        return;
+      }
+      lastFocusCheck = now;
       console.log('[AuthContext] Tab regained focus, checking token freshness...');
       refreshTokenIfNeeded().catch(error => {
         console.error('[AuthContext] Focus refresh check failed:', error);
