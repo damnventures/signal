@@ -1831,6 +1831,7 @@ const HomePage = () => {
                     lastArgueTimeRef.current = Date.now();
                     setArgueQuestion(question);
                     setShowArguePopup(true);
+                    console.log('[HomePage] DEBUG: ArguePopup should open with question:', question);
                     // Hide demo welcome window when argue starts to prevent interference
                     if (showDemoWelcomeWindow) {
                       console.log('[HomePage] Hiding demo welcome window for argue');

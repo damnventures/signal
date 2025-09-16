@@ -44,6 +44,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   userCapsules = [],
   accessibleShrinkedCapsules = [],
 }) => {
+  console.log('[ArguePopup] Component rendered - isOpen:', isOpen, 'initialQuestion:', initialQuestion);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [chatResponse, setChatResponse] = useState('');
