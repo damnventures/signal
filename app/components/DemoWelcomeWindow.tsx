@@ -51,22 +51,28 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   // For demo users, show demo message
   // For non-auth users, show demo variants
   const getMessageVariants = () => {
+    console.log('[DemoWelcomeWindow] getMessageVariants called - demoMessage:', demoMessage, 'userEmail:', userEmail, 'wrapSummary:', wrapSummary);
+
     if (demoMessage) {
       // Demo intent flow - prioritize demo message regardless of auth status
+      console.log('[DemoWelcomeWindow] Using demo message:', demoMessage);
       return createWrapVariants(demoMessage);
     } else if (userEmail) {
       // Authenticated user flow (no demo intent)
-      if (!wrapSummary) {
+      if (!wrapSummary || wrapSummary.trim() === '') {
         // Still loading wrap summary - show minimal loading state
+        console.log('[DemoWelcomeWindow] No wrap summary yet, showing loading state');
         return [
           "Analyzing your capsules..."
         ];
       } else {
         // Break wrap summary into progressive variants like demo mode
+        console.log('[DemoWelcomeWindow] Using wrap summary:', wrapSummary);
         return createWrapVariants(wrapSummary);
       }
     } else {
       // Non-authenticated user - show default demo variants
+      console.log('[DemoWelcomeWindow] Using default demo variants for non-auth user');
       return [
         "Good morning, Vanya! Checking your signals...",
         "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
@@ -170,7 +176,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   // Cycle through variants with pause
   // Watch for prop changes (wrap summary arriving) and restart demo-style animation
   useEffect(() => {
+    console.log('[DemoWelcomeWindow] wrapSummary changed:', wrapSummary, 'userEmail:', userEmail);
     if (userEmail && wrapSummary) {
+      console.log('[DemoWelcomeWindow] Restarting animation with new wrap summary');
       // Reset animation when wrap summary arrives and use demo-style progression
       setVariantIndex(0);
       setShowDiff(false);

@@ -139,22 +139,16 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
       setQuestion(initialQuestion);
 
-      // Auto-submit if question is provided via intent - use a more reliable approach
-      setTimeout(() => {
-        // Trigger form submission programmatically
-        const event = new Event('submit', { bubbles: true, cancelable: true });
-        const form = document.getElementById('argue-form') as HTMLFormElement;
-        if (form && initialQuestion.trim()) {
-          console.log('[ArguePopup] Auto-submitting initial question via form event:', initialQuestion);
-          form.dispatchEvent(event);
-        } else {
-          console.warn('[ArguePopup] Form not found for auto-submit, trying direct submission');
-          // Fallback: call handleSubmit directly
-          handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-        }
-      }, 200); // Slightly longer delay to ensure everything is ready
+      // Auto-submit if question is provided via intent
+      const autoSubmitTimer = setTimeout(() => {
+        console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
+        // Directly call handleSubmit with a fake event
+        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      }, 300); // Increased delay to ensure state is set
+
+      return () => clearTimeout(autoSubmitTimer);
     }
-  }, [isOpen, initialQuestion, question, handleSubmit]);
+  }, [isOpen, initialQuestion, question]); // Removed handleSubmit from dependencies
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
