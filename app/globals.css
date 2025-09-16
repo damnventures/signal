@@ -277,6 +277,10 @@ body {
         font-size: 16px;
         text-align: left;
     }
+
+    .main-text h3 {
+        font-size: 16px;
+    }
 }
 
 @media (min-width: 768px) {
@@ -289,6 +293,10 @@ body {
     }
     
     .main-text {
+        font-size: 18px;
+    }
+
+    .main-text h3 {
         font-size: 18px;
     }
 }
@@ -307,6 +315,10 @@ body {
     }
     
     .main-text {
+        font-size: 13px;
+    }
+
+    .main-text h3 {
         font-size: 13px;
     }
 }
