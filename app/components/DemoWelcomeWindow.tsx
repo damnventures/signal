@@ -51,8 +51,11 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   // For demo users, show demo message
   // For non-auth users, show demo variants
   const getMessageVariants = () => {
-    if (userEmail) {
-      // Authenticated user flow
+    if (demoMessage) {
+      // Demo intent flow - prioritize demo message regardless of auth status
+      return createWrapVariants(demoMessage);
+    } else if (userEmail) {
+      // Authenticated user flow (no demo intent)
       if (!wrapSummary) {
         // Still loading wrap summary - show minimal loading state
         return [
@@ -62,9 +65,6 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         // Break wrap summary into progressive variants like demo mode
         return createWrapVariants(wrapSummary);
       }
-    } else if (demoMessage) {
-      // Demo user flow - break demo message into progressive variants
-      return createWrapVariants(demoMessage);
     } else {
       // Non-authenticated user - show default demo variants
       return [

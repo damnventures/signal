@@ -1991,7 +1991,7 @@ const HomePage = () => {
                 }}
                 wrapSummary={user ? lastWrapSummary : null}
                 userEmail={user?.email}
-                demoMessage={!user ? demoMessage : null}
+                demoMessage={demoMessage}
               />
             )}
 
