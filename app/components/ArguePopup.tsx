@@ -587,10 +587,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           border: 2px solid #000000;
           padding: 8px;
           overflow-y: auto;
-          line-height: 1.4;
+          line-height: 1.2;
           color: #000000;
           background: #ffffff;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-size: 15px;
           box-shadow: inset 1px 1px 0px #808080;
         }
 
@@ -717,9 +718,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .generate-btn {
-          border: 1px solid #999999;
-          background: #f5f5f5;
-          color: #999999;
+          border: 1px solid #000000;
+          background: #000000;
+          color: #ffffff;
           padding: 4px 8px;
           cursor: pointer;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
@@ -730,14 +731,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .generate-btn:hover:not(:disabled) {
-          background: #e8e8e8;
-          border-color: #888888;
-          color: #888888;
+          background: #333333;
+          border-color: #000000;
+          color: #ffffff;
         }
 
         .generate-btn:active:not(:disabled) {
-          background: #d0d0d0;
-          box-shadow: inset 1px 1px 0px #999999;
+          background: #666666;
+          box-shadow: inset 1px 1px 0px #000000;
         }
 
         .generate-btn:disabled {
