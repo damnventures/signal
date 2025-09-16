@@ -122,8 +122,7 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
   const startShrinkedJobPolling = useCallback(async (jobName: string) => {
     const pollForJob = async () => {
       try {
-        setJobCreationAttempts(prev => prev + 1);
-        console.log(`[ToolProgress] Polling attempt ${jobCreationAttempts + 1} for job with name: ${jobName}`);
+        console.log(`[ToolProgress] Polling for job with name: ${jobName}`);
 
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
