@@ -20,6 +20,7 @@ interface Capsule {
 interface ArguePopupProps {
   isOpen: boolean;
   onClose: () => void;
+  onArgueComplete?: () => void;
   capsuleId: string;
   onBringToFront: (id: string) => void;
   initialZIndex: number;
@@ -33,6 +34,7 @@ interface ArguePopupProps {
 const ArguePopup: React.FC<ArguePopupProps> = ({
   isOpen,
   onClose,
+  onArgueComplete,
   capsuleId,
   onBringToFront,
   initialZIndex,
@@ -169,6 +171,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         const { done, value } = await reader.read();
         if (done) {
           setIsStreamingComplete(true);
+          // Notify parent that argue operation is complete
+          if (onArgueComplete) {
+            onArgueComplete();
+          }
           break;
         }
 
@@ -204,6 +210,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      // Notify parent that argue operation is complete (even with error)
+      if (onArgueComplete) {
+        onArgueComplete();
+      }
     } finally {
       setIsLoading(false);
     }

@@ -65,6 +65,10 @@ const HomePage = () => {
   // Global wrap request tracker to prevent overlaps from any component
   const globalWrapRequestRef = useRef<boolean>(false);
   const wrapCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track when argue is in progress to prevent wrap interference
+  const argueInProgressRef = useRef<boolean>(false);
+  const lastArgueTimeRef = useRef<number>(0);
   const [showStore, setShowStore] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
   const [accessibleShrinkedCapsules, setAccessibleShrinkedCapsules] = useState<string[]>([]);
@@ -220,6 +224,16 @@ const HomePage = () => {
         console.log('[HomePage] Skipping periodic check - wrap request already in progress', {
           localFetching: currentIsWrapFetching,
           globalInProgress: globalWrapRequestRef.current
+        });
+        return;
+      }
+
+      // Skip if argue operation is in progress or recently completed (within 10 seconds)
+      const timeSinceLastArgue = Date.now() - lastArgueTimeRef.current;
+      if (argueInProgressRef.current || timeSinceLastArgue < 10000) {
+        console.log('[HomePage] Skipping periodic check - argue operation in progress or recent', {
+          argueInProgress: argueInProgressRef.current,
+          timeSinceLastArgue: timeSinceLastArgue
         });
         return;
       }
@@ -1254,13 +1268,15 @@ const HomePage = () => {
           setLoadingPhase('signal');
           updateStatusMessage('signal');
           
-          // Show wrap welcome window immediately
-          if (user) {
+          // Show wrap welcome window immediately (only if not triggered by demo intent)
+          if (user && !demoMessage) {
             console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
             setShowDemoWelcomeWindow(true);
-            
+
             // Wrap summary is already fetched and animated in auth flow
             console.log('[HomePage] Wrap summary already handled by auth flow');
+          } else if (demoMessage) {
+            console.log(`[HomePage] Skipping auto welcome window - demo message already set:`, demoMessage);
           }
           
           // Phase 2: After 3 seconds, move to insights phase + show capsules + fetch data
@@ -1809,6 +1825,9 @@ const HomePage = () => {
                   capsuleId={selectedCapsuleId || ''}
                   capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
                   onArgueRequest={(question: string) => {
+                    console.log('[HomePage] Argue request started - setting argue tracking');
+                    argueInProgressRef.current = true;
+                    lastArgueTimeRef.current = Date.now();
                     setArgueQuestion(question);
                     setShowArguePopup(true);
                   }}
@@ -1935,8 +1954,16 @@ const HomePage = () => {
             <ArguePopup
               isOpen={showArguePopup}
               onClose={() => {
+                console.log('[HomePage] Argue popup closed - clearing argue tracking');
+                argueInProgressRef.current = false;
+                lastArgueTimeRef.current = Date.now();
                 setShowArguePopup(false);
                 setArgueQuestion(''); // Clear question when closing
+              }}
+              onArgueComplete={() => {
+                console.log('[HomePage] Argue operation completed - clearing argue in progress flag');
+                argueInProgressRef.current = false;
+                lastArgueTimeRef.current = Date.now();
               }}
               capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
@@ -1954,7 +1981,14 @@ const HomePage = () => {
                 onBringToFront={handleBringToFront}
                 initialZIndex={nextZIndex + 300}
                 initialPosition={{ x: 50, y: 50 }} // Adjust position as needed
-                onClose={() => setShowDemoWelcomeWindow(false)}
+                onClose={() => {
+                  setShowDemoWelcomeWindow(false);
+                  // Clear demo message when closing to prevent interference
+                  if (demoMessage) {
+                    console.log('[HomePage] Clearing demo message on window close');
+                    setDemoMessage(null);
+                  }
+                }}
                 wrapSummary={user ? lastWrapSummary : null}
                 userEmail={user?.email}
                 demoMessage={!user ? demoMessage : null}

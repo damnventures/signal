@@ -94,7 +94,7 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
   // Enhanced polling logic for Signal jobs
   useEffect(() => {
     // Only start enhanced polling if this is a media processing job that completed download phase
-    if (execution.toolId === 'process-media' && execution.status === 'completed' && currentPhase === 'downloading') {
+    if (execution.toolId === 'media-collector' && execution.status === 'completed' && currentPhase === 'downloading') {
       console.log('[ToolProgress] Download completed, starting enhanced polling for Shrinked job');
       setCurrentPhase('craig_processing');
       setStatusMessage('sending to craig for processing');

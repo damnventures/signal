@@ -121,6 +121,19 @@ function fallbackClassification(input: string): WorkerResponse {
     };
   }
   
+  // Check for demo intent
+  const demoWords = ['demo', 'show me', 'example', 'sample', 'preview', 'try', 'test'];
+  if (demoWords.some(word => input.toLowerCase().includes(word))) {
+    return {
+      intent: 'demo',
+      action: 'start_demo',
+      confidence: 0.8,
+      data: { message: input },
+      requiresConfirmation: false,
+      launchMessage: "Good morning, Vanya! Let me show you what your AI-powered insight feed looks like. YC covered Reducto AI's memory parsing, Ryan Petersen is on today's TBPN stream, and your July 30 call with The Residency set deliverables."
+    };
+  }
+
   const questionWords = ['what', 'why', 'how', 'argue', 'think'];
   if (questionWords.some(word => input.toLowerCase().includes(word))) {
     return {
@@ -131,7 +144,7 @@ function fallbackClassification(input: string): WorkerResponse {
       requiresConfirmation: false
     };
   }
-  
+
   return {
     intent: 'communicate',
     action: 'general_response',

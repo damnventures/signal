@@ -77,10 +77,10 @@ export async function POST(request: NextRequest) {
 
       for (const line of lines) {
         if (!line.trim()) continue;
-        
+
         try {
           const parsed = JSON.parse(line);
-          
+
           if (parsed.type === 'filtered') {
             if (parsed.content && !parsed.content.includes('NO_RELEVANT_CONTEXT')) {
               // Try to extract reasoning from the filtered content if it's JSON
