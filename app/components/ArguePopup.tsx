@@ -279,7 +279,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
             {/* Chat response area - takes most space */}
             <div className="chat-section">
-              {isLoading ? (
+              {isLoading && !chatResponse ? (
                 <div className="thinking-chat">
                   <div className="thinking-message">
                     Craig is thinking...
@@ -304,6 +304,18 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                           )}
                         </p>
                       ))}
+
+                    {/* Show streaming indicator if still loading */}
+                    {isLoading && !isStreamingComplete && (
+                      <div className="streaming-indicator" style={{
+                        fontSize: '12px',
+                        color: '#666',
+                        fontStyle: 'italic',
+                        marginTop: '8px'
+                      }}>
+                        <span>...</span>
+                      </div>
+                    )}
                   </div>
 
                   {reasoningResponse && (
@@ -365,7 +377,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .argue-popup {
-          width: 700px;
           height: 600px;
           max-width: 95vw;
           max-height: 95vh;
@@ -632,7 +643,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .analysis button {
-          font-size: 10px;
           padding: 4px 8px;
           border: 2px solid #000000;
           background: #ffffff;

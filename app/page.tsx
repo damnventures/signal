@@ -1438,6 +1438,10 @@ const HomePage = () => {
   const renderMarkdown = useCallback((text: string) => {
     let processedText = text.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
     processedText = processedText.replace(/### (.*)/g, '<h3>$1</h3>');
+
+    // Wrap references like [28, 29, 40-43] in styled spans with passive #666 color
+    processedText = processedText.replace(/(\[[\d\s,\-]+\])/g, '<span style="color: #666; font-size: 0.9em;">$1</span>');
+
     return <span dangerouslySetInnerHTML={{ __html: processedText }} />;
   }, []);
 
