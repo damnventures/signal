@@ -11,6 +11,7 @@ import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
 import DemoWelcomeWindow from './components/DemoWelcomeWindow';
+import HeaderMessageWindow from './components/HeaderMessageWindow';
 import WrapTool, { WrapToolRef } from './components/WrapTool';
 import Store from './components/Store';
 
@@ -58,6 +59,7 @@ const HomePage = () => {
   const [hasHeaderCompleted, setHasHeaderCompleted] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [showDemoWelcomeWindow, setShowDemoWelcomeWindow] = useState(false);
+  const [showHeaderMessageWindow, setShowHeaderMessageWindow] = useState(false);
   const [wrapStateHash, setWrapStateHash] = useState<string>('');
   const [lastWrapSummary, setLastWrapSummary] = useState<string>('');
   const [isWrapFetching, setIsWrapFetching] = useState<boolean>(false);
@@ -1839,6 +1841,11 @@ const HomePage = () => {
                     } else {
                       console.log('[HomePage] Demo welcome window already hidden, showDemoWelcomeWindow:', showDemoWelcomeWindow);
                     }
+                    // Also hide header message window when argue starts
+                    if (showHeaderMessageWindow) {
+                      console.log('[HomePage] Hiding header message window for argue');
+                      setShowHeaderMessageWindow(false);
+                    }
                   }}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
@@ -1857,8 +1864,9 @@ const HomePage = () => {
                     }
                   }}
                   onShowResponse={(message: string) => {
-                    console.log('[HomePage] Showing response in header:', message);
+                    console.log('[HomePage] Showing response in header window:', message);
                     setHeaderResponseMessage(message);
+                    setShowHeaderMessageWindow(true);
                   }}
                   onStartThinking={startThinking}
                   onStopThinking={stopThinking}
@@ -2004,6 +2012,21 @@ const HomePage = () => {
                 wrapSummary={user ? lastWrapSummary : null}
                 userEmail={user?.email}
                 demoMessage={demoMessage}
+              />
+            )}
+
+            {showHeaderMessageWindow && headerResponseMessage && (
+              <HeaderMessageWindow
+                id="header-message-window"
+                onBringToFront={handleBringToFront}
+                initialZIndex={nextZIndex + 400} // Higher than welcome window
+                initialPosition={{ x: 60, y: 60 }} // Slightly offset from welcome window
+                onClose={() => {
+                  console.log('[HomePage] Header message window closed');
+                  setShowHeaderMessageWindow(false);
+                  setHeaderResponseMessage(''); // Clear message when closing
+                }}
+                message={headerResponseMessage}
               />
             )}
 
