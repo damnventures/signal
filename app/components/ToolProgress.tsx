@@ -10,21 +10,26 @@ interface ToolProgressProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   onRefreshCapsule?: () => void;
+  onRefreshWrap?: () => void;
+  capsuleName?: string;
 }
 
 const ToolProgress: React.FC<ToolProgressProps> = ({
   execution,
   onBringToFront,
   initialZIndex,
-  onRefreshCapsule
+  onRefreshCapsule,
+  onRefreshWrap,
+  capsuleName
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [zIndex, setZIndex] = useState(initialZIndex);
-  const [currentPhase, setCurrentPhase] = useState<'sieve' | 'waiting_shrinked' | 'polling_shrinked' | 'completed'>('sieve');
+  const [currentPhase, setCurrentPhase] = useState<'downloading' | 'craig_processing' | 'waiting_backend' | 'backend_processing' | 'adding_to_capsule' | 'refreshing_wrap' | 'completed'>('downloading');
   const [shrinkedJob, setShrinkedJob] = useState<any>(null);
-  const [pollingMessage, setPollingMessage] = useState('Processing media files...');
+  const [statusMessage, setStatusMessage] = useState('downloading video');
+  const [progress, setProgress] = useState(0);
   
   const { removeExecution } = useToolState();
   const { apiKey } = useAuth();
@@ -34,8 +39,8 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
   // Calculate initial position
   useEffect(() => {
     if (position.x === 0 && position.y === 0) {
-      const initialX = (window.innerWidth - 400) / 2 + Math.random() * 100 - 50;
-      const initialY = Math.max(50, (window.innerHeight - 200) / 2 + Math.random() * 100 - 50);
+      const initialX = (window.innerWidth - 300) / 2 + Math.random() * 100 - 50;
+      const initialY = Math.max(50, (window.innerHeight - 80) / 2 + Math.random() * 100 - 50);
       setPosition({ x: initialX, y: initialY });
     }
   }, [position.x, position.y]);
@@ -88,19 +93,22 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
 
   // Enhanced polling logic for Signal jobs
   useEffect(() => {
-    // Only start enhanced polling if this is a media processing job that completed Sieve phase
-    if (execution.toolId === 'process-media' && execution.status === 'completed' && currentPhase === 'sieve') {
-      console.log('[ToolProgress] Sieve job completed, starting enhanced polling for Shrinked job');
-      setCurrentPhase('waiting_shrinked');
-      setPollingMessage('Waiting for job to appear in your jobs list...');
-      
+    // Only start enhanced polling if this is a media processing job that completed download phase
+    if (execution.toolId === 'process-media' && execution.status === 'completed' && currentPhase === 'downloading') {
+      console.log('[ToolProgress] Download completed, starting enhanced polling for Shrinked job');
+      setCurrentPhase('craig_processing');
+      setStatusMessage('sending to craig for processing');
+      setProgress(25);
+
       // Start polling for the new Shrinked job
       const jobName = execution.result?.jobName || execution.input?.jobName;
       if (jobName) {
         startShrinkedJobPolling(jobName);
       } else {
         console.warn('[ToolProgress] No job name found for polling');
-        setPollingMessage('Job completed, but unable to track further progress');
+        setStatusMessage('completed, unable to track');
+        setCurrentPhase('completed');
+        setProgress(100);
       }
     }
 
@@ -114,16 +122,17 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
   const startShrinkedJobPolling = useCallback(async (jobName: string) => {
     const pollForJob = async () => {
       try {
-        console.log(`[ToolProgress] Polling for job with name: ${jobName}`);
-        
+        setJobCreationAttempts(prev => prev + 1);
+        console.log(`[ToolProgress] Polling attempt ${jobCreationAttempts + 1} for job with name: ${jobName}`);
+
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        
+
         if (apiKey) {
           headers['x-api-key'] = apiKey;
         }
-        
+
         const response = await fetch('/api/jobs', {
           headers,
         });
@@ -146,9 +155,10 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
         if (matchingJob) {
           console.log(`[ToolProgress] Found matching job:`, matchingJob);
           setShrinkedJob(matchingJob);
-          setCurrentPhase('polling_shrinked');
-          setPollingMessage(`Tracking job: ${matchingJob.name || matchingJob.jobName}`);
-          
+          setCurrentPhase('backend_processing');
+          setStatusMessage('craig transforming content');
+          setProgress(50);
+
           // Start polling this specific job's status
           startJobStatusPolling(matchingJob._id || matchingJob.id);
           return true;
@@ -161,30 +171,35 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
       }
     };
     
+    // Wait a bit for job to be created on the backend before first check
+    setCurrentPhase('waiting_backend');
+    setStatusMessage('waiting for shrinked backend');
+    setProgress(35);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     // Initial check
     const found = await pollForJob();
     if (!found) {
-      // Poll every 3 seconds for up to 2 minutes
+      // Poll every 4 seconds for up to 3 minutes to give more time for job creation
       let attempts = 0;
-      const maxAttempts = 40; // 2 minutes / 3 seconds
-      
+      const maxAttempts = 45; // 3 minutes / 4 seconds
+
       pollingIntervalRef.current = setInterval(async () => {
         attempts++;
         const found = await pollForJob();
-        
+
         if (found || attempts >= maxAttempts) {
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
           }
-          
+
           if (!found) {
-            setPollingMessage('Job created successfully, but unable to track progress');
+            setStatusMessage('completed, unable to track');
             setCurrentPhase('completed');
+            setProgress(100);
           }
-        } else {
-          setPollingMessage(`Waiting for job to appear... (${attempts}/${maxAttempts})`);
         }
-      }, 3000);
+      }, 4000);
     }
   }, [apiKey]);
 
@@ -215,39 +230,59 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
         
         // Update message based on job status
         if (jobData.status === 'completed' || jobData.status === 'finished') {
-          setPollingMessage(`✅ Job completed: ${jobData.name || jobData.jobName}`);
-          setCurrentPhase('completed');
-          
+          setCurrentPhase('adding_to_capsule');
+          setStatusMessage(capsuleName ? `adding to ${capsuleName.toLowerCase()} capsule` : 'adding to capsule');
+          setProgress(75);
+
           // Clear polling
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
           }
-          
-          // Refresh the capsule content to show the new document
-          console.log('[ToolProgress] Job completed, triggering capsule refresh');
-          if (onRefreshCapsule) {
-            setPollingMessage('✅ Job completed! Refreshing capsule content...');
-            // Add a small delay to ensure the document is fully processed
-            setTimeout(() => {
+
+          // Refresh both capsule content and wrap summary
+          console.log('[ToolProgress] Job completed, triggering capsule and wrap refresh');
+
+          // Add a small delay to ensure the document is fully processed
+          setTimeout(async () => {
+            // Refresh capsule content first
+            if (onRefreshCapsule) {
               onRefreshCapsule();
-              setPollingMessage('✅ Content refreshed! New document added to capsule.');
+            }
+
+            setCurrentPhase('refreshing_wrap');
+            setStatusMessage('updating wrap summary');
+            setProgress(90);
+
+            // Then refresh wrap summary to include the new content
+            if (onRefreshWrap) {
+              console.log('[ToolProgress] Triggering wrap refresh after job completion');
+              onRefreshWrap();
+            }
+
+            // Final completion
+            setTimeout(() => {
+              setCurrentPhase('completed');
+              setStatusMessage(capsuleName ? `added to ${capsuleName.toLowerCase()}` : 'media added successfully');
+              setProgress(100);
             }, 2000);
-          }
+          }, 2000);
           
           return true;
         } else if (jobData.status === 'error' || jobData.status === 'failed') {
-          setPollingMessage(`❌ Job failed: ${jobData.error || 'Unknown error'}`);
+          setStatusMessage(`failed: ${jobData.error || 'unknown error'}`);
           setCurrentPhase('completed');
-          
+          setProgress(100);
+
           // Clear polling
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
           }
           return true;
         } else {
-          // Job still processing
+          // Job still processing - keep progress at 50-65%
           const statusText = jobData.status || 'processing';
-          setPollingMessage(`🔄 Job ${statusText}: ${jobData.name || jobData.jobName}`);
+          setStatusMessage(`craig ${statusText}`);
+          setProgress(50 + Math.random() * 15); // Subtle progress variation
         }
         
         return false;
@@ -257,37 +292,18 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
       }
     };
     
-    // Poll every 5 seconds for job status
+    // Poll every 6 seconds for job status (slightly slower to reduce server load)
     pollingIntervalRef.current = setInterval(async () => {
       const completed = await pollJobStatus();
       if (completed && pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
-    }, 5000);
+    }, 6000);
     
     // Also do initial check
     await pollJobStatus();
   }, [apiKey]);
 
-  const getStatusIcon = () => {
-    switch (execution.status) {
-      case 'pending': return '⏳';
-      case 'processing': return '🔄';
-      case 'completed': return '✅';
-      case 'error': return '❌';
-      default: return '❓';
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (execution.status) {
-      case 'pending': return '#FFC107';
-      case 'processing': return '#2196F3';
-      case 'completed': return '#4CAF50';
-      case 'error': return '#F44336';
-      default: return '#757575';
-    }
-  };
 
   return (
     <div
@@ -298,213 +314,83 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
         left: `${position.x}px`,
         top: `${position.y}px`,
         zIndex: zIndex,
-        width: '400px',
+        width: '300px',
+        height: '80px',
         cursor: isDragging ? 'grabbing' : 'default',
-        background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
-        border: '1px solid black',
-        boxShadow: '8px 8px 0px #808080, 16px 16px 0px #404040',
-        borderRadius: '20px',
+        background: '#c0c0c0',
+        border: '2px outset #c0c0c0',
+        fontFamily: 'MS Sans Serif, Geneva, sans-serif',
+        fontSize: '11px',
       }}
     >
-      {/* Header */}
+      {/* Title Bar */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)',
-          color: 'black',
-          padding: '6px 12px',
-          fontWeight: 'bold',
-          fontSize: '13px',
-          fontFamily: 'Geneva, sans-serif',
+          background: 'linear-gradient(90deg, #0000ff 0%, #000080 100%)',
+          color: 'white',
+          padding: '2px 4px',
+          fontWeight: 'normal',
+          fontSize: '11px',
           userSelect: 'none',
           cursor: isDragging ? 'grabbing' : 'grab',
-          position: 'absolute',
-          top: '-1px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'fit-content',
-          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
         onMouseDown={handleMouseDown}
       >
-        {getStatusIcon()} Tool Progress
-      </div>
+        <span>media processing</span>
 
-      {/* Close Button */}
-      <button
-        onClick={handleClose}
-        style={{
-          position: 'absolute',
-          top: '4px',
-          right: '4px',
-          width: '20px',
-          height: '20px',
-          background: '#c0c0c0',
-          border: '2px outset #c0c0c0',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'black',
-          zIndex: 10,
-        }}
-      >
-        ×
-      </button>
+        <button
+          onClick={handleClose}
+          style={{
+            width: '16px',
+            height: '14px',
+            background: '#c0c0c0',
+            border: '1px outset #c0c0c0',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            color: 'black',
+          }}
+        >
+          ×
+        </button>
+      </div>
 
       {/* Content */}
-      <div style={{ padding: '20px', fontSize: '12px', fontFamily: 'Geneva, sans-serif' }}>
-        {/* Status */}
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px',
-            marginBottom: '8px'
-          }}>
-            <span style={{ fontSize: '16px' }}>{getStatusIcon()}</span>
-            <span style={{ 
-              fontWeight: 'bold', 
-              color: getStatusColor(),
-              textTransform: 'capitalize'
-            }}>
-              {execution.status}
-            </span>
-          </div>
-          
-          {/* Progress Bar (for processing status) */}
-          {execution.status === 'processing' && execution.progress !== undefined && (
-            <div style={{
-              width: '100%',
-              height: '20px',
-              background: '#f0f0f0',
-              border: '2px inset #c0c0c0',
-              marginBottom: '8px'
-            }}>
-              <div style={{
-                width: `${execution.progress}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #4CAF50 0%, #45a049 100%)',
-                transition: 'width 0.3s ease'
-              }} />
-            </div>
-          )}
-          
-          {execution.progress !== undefined && (
-            <div style={{ fontSize: '11px', color: '#666' }}>
-              Progress: {Math.round(execution.progress)}%
-            </div>
-          )}
+      <div style={{ padding: '8px' }}>
+        {/* Progress Bar */}
+        <div style={{
+          width: '100%',
+          height: '12px',
+          background: '#ffffff',
+          border: '1px inset #c0c0c0',
+          marginBottom: '6px'
+        }}>
+          <div style={{
+            width: `${progress}%`,
+            height: '100%',
+            background: currentPhase === 'completed' && statusMessage.includes('failed')
+              ? '#ff0000'
+              : '#0000ff',
+            transition: 'width 0.3s ease'
+          }} />
         </div>
 
-        {/* Tool Info */}
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-            Tool: {execution.toolId}
-          </div>
-          <div style={{ fontSize: '11px', color: '#666' }}>
-            Started: {execution.createdAt.toLocaleString()}
-          </div>
-          {execution.completedAt && (
-            <div style={{ fontSize: '11px', color: '#666' }}>
-              Completed: {execution.completedAt.toLocaleString()}
-            </div>
-          )}
+        {/* Status and Progress */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '10px',
+          color: '#000000'
+        }}>
+          <span>{statusMessage}</span>
+          <span>{Math.round(progress)}%</span>
         </div>
-
-        {/* Result or Error */}
-        {execution.result && (
-          <div style={{
-            marginBottom: '12px',
-            padding: '8px',
-            background: '#e8f5e8',
-            border: '1px solid #4CAF50',
-            borderRadius: '4px'
-          }}>
-            <div style={{ fontWeight: 'bold', color: '#4CAF50', marginBottom: '4px' }}>
-              ✅ Success:
-            </div>
-            <div style={{ fontSize: '11px' }}>
-              {execution.result.message || JSON.stringify(execution.result)}
-            </div>
-          </div>
-        )}
-
-        {execution.error && (
-          <div style={{
-            marginBottom: '12px',
-            padding: '8px',
-            background: '#ffe8e8',
-            border: '1px solid #F44336',
-            borderRadius: '4px'
-          }}>
-            <div style={{ fontWeight: 'bold', color: '#F44336', marginBottom: '4px' }}>
-              ❌ Error:
-            </div>
-            <div style={{ fontSize: '11px' }}>
-              {execution.error}
-            </div>
-          </div>
-        )}
-
-        {/* Enhanced Status Information */}
-        {currentPhase !== 'completed' && (
-          <div style={{ 
-            marginBottom: '12px',
-            padding: '8px',
-            background: '#e8f4f8',
-            border: '1px solid #2196F3',
-            borderRadius: '4px'
-          }}>
-            <div style={{ fontWeight: 'bold', color: '#2196F3', marginBottom: '4px' }}>
-              📊 Processing Status:
-            </div>
-            <div style={{ fontSize: '11px' }}>
-              Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}
-            </div>
-            {shrinkedJob && (
-              <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                Job ID: {shrinkedJob._id || shrinkedJob.id}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Processing Animation */}
-        {(execution.status === 'processing' || currentPhase !== 'completed') && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px',
-            color: '#2196F3'
-          }}>
-            <div style={{ display: 'flex', gap: '2px' }}>
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: '4px',
-                    height: '4px',
-                    background: '#2196F3',
-                    borderRadius: '50%',
-                    animation: `bounce 1.4s infinite ease-in-out both`,
-                    animationDelay: `${i * 0.16}s`
-                  }}
-                />
-              ))}
-            </div>
-            {pollingMessage}
-          </div>
-        )}
       </div>
 
-      <style jsx>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 };

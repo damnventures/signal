@@ -11,7 +11,7 @@ import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
 import DemoWelcomeWindow from './components/DemoWelcomeWindow';
-import WrapTool from './components/WrapTool';
+import WrapTool, { WrapToolRef } from './components/WrapTool';
 import Store from './components/Store';
 
 interface Highlight {
@@ -69,6 +69,7 @@ const HomePage = () => {
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
   const [accessibleShrinkedCapsules, setAccessibleShrinkedCapsules] = useState<string[]>([]);
   const [wrapSummaryShown, setWrapSummaryShown] = useState(false);
+  const wrapToolRef = useRef<WrapToolRef>(null);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -1815,6 +1816,14 @@ const HomePage = () => {
                       fetchCapsuleContent(apiKey, selectedCapsuleId);
                     }
                   }}
+                  onRefreshWrap={() => {
+                    console.log('[HomePage] Triggering wrap refresh after job completion');
+                    // Trigger a manual wrap update to include new content
+                    if (user && (accessToken || apiKey) && wrapToolRef.current) {
+                      console.log('[HomePage] Calling WrapTool.triggerWrap() programmatically');
+                      wrapToolRef.current.triggerWrap();
+                    }
+                  }}
                   onShowResponse={(message: string) => {
                     console.log('[HomePage] Showing response in header:', message);
                     setHeaderResponseMessage(message);
@@ -1863,6 +1872,7 @@ const HomePage = () => {
                   {/* Wrap button - for authenticated users only */}
                   {user && (
                     <WrapTool
+                      ref={wrapToolRef}
                       showAsButton={true}
                       autoFetch={false}  // Disabled - using original auto wrap system
                       className="action-button wrap-button"

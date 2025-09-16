@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface WrapToolProps {
@@ -13,6 +13,10 @@ interface WrapToolProps {
   onWrapStart?: () => void;  // Called when wrap starts
   onStatusMessage?: (message: string) => void;  // For status bar updates
   isManualTrigger?: boolean;  // Distinguish manual vs auto wrap
+}
+
+export interface WrapToolRef {
+  triggerWrap: () => void;
 }
 
 interface WrapResponse {
@@ -30,7 +34,7 @@ interface WrapResponse {
   error?: string;
 }
 
-const WrapTool: React.FC<WrapToolProps> = ({ 
+const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
   onSummaryUpdate,
   className = '',
   showAsButton = false,
@@ -40,7 +44,7 @@ const WrapTool: React.FC<WrapToolProps> = ({
   onWrapStart,
   onStatusMessage,
   isManualTrigger = false
-}) => {
+}, ref) => {
   const { user, accessToken, apiKey } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<string>('');
@@ -132,6 +136,11 @@ const WrapTool: React.FC<WrapToolProps> = ({
       setIsLoading(false);
     }
   }, [user, accessToken, apiKey, lastStateHash, onSummaryUpdate, onStateHashUpdate, lastRequestTime]);
+
+  // Expose the triggerWrap method via ref
+  useImperativeHandle(ref, () => ({
+    triggerWrap: () => fetchWrapSummary(true)
+  }), [fetchWrapSummary]);
 
   // Auto-fetch on mount if enabled - start early for optimal timing
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
@@ -336,6 +345,8 @@ const WrapTool: React.FC<WrapToolProps> = ({
       `}</style>
     </div>
   );
-};
+});
+
+WrapTool.displayName = 'WrapTool';
 
 export default WrapTool;

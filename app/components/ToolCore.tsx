@@ -17,6 +17,7 @@ interface ToolCoreProps {
   onBringToFront: (id: string) => void;
   initialZIndex: number;
   onRefreshCapsule?: () => void;
+  onRefreshWrap?: () => void;
   onShowResponse?: (message: string) => void;
   onStartThinking?: () => void;
   onStopThinking?: () => void;
@@ -25,13 +26,14 @@ interface ToolCoreProps {
   onDemoRequest?: (message: string) => void;
 }
 
-const ToolCore: React.FC<ToolCoreProps> = ({ 
-  capsuleId, 
+const ToolCore: React.FC<ToolCoreProps> = ({
+  capsuleId,
   capsuleName,
-  onArgueRequest, 
-  onBringToFront, 
+  onArgueRequest,
+  onBringToFront,
   initialZIndex,
   onRefreshCapsule,
+  onRefreshWrap,
   onShowResponse,
   onStartThinking,
   onStopThinking,
@@ -658,6 +660,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           onBringToFront={onBringToFront}
           initialZIndex={initialZIndex + 200}
           onRefreshCapsule={onRefreshCapsule}
+          onRefreshWrap={onRefreshWrap}
+          capsuleName={capsuleName}
         />
       ))}
     </>
