@@ -1826,6 +1826,7 @@ const HomePage = () => {
                   capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
                   onArgueRequest={(question: string) => {
                     console.log('[HomePage] Argue request started - setting argue tracking');
+                    console.log('[HomePage] Current state - showDemoWelcomeWindow:', showDemoWelcomeWindow, 'question:', question);
                     argueInProgressRef.current = true;
                     lastArgueTimeRef.current = Date.now();
                     setArgueQuestion(question);
@@ -1834,6 +1835,8 @@ const HomePage = () => {
                     if (showDemoWelcomeWindow) {
                       console.log('[HomePage] Hiding demo welcome window for argue');
                       setShowDemoWelcomeWindow(false);
+                    } else {
+                      console.log('[HomePage] Demo welcome window already hidden, showDemoWelcomeWindow:', showDemoWelcomeWindow);
                     }
                   }}
                   onBringToFront={handleBringToFront}

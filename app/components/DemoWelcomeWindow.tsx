@@ -53,32 +53,35 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const getMessageVariants = () => {
     console.log('[DemoWelcomeWindow] getMessageVariants called - demoMessage:', demoMessage, 'userEmail:', userEmail, 'wrapSummary:', wrapSummary);
 
-    if (demoMessage) {
-      // Demo intent flow - prioritize demo message regardless of auth status
-      console.log('[DemoWelcomeWindow] Using demo message:', demoMessage);
-      return createWrapVariants(demoMessage);
-    } else if (userEmail) {
-      // Authenticated user flow (no demo intent)
+    if (userEmail) {
+      // Authenticated user flow - NEVER show demo content, only wrap summaries
       if (!wrapSummary || wrapSummary.trim() === '') {
         // Still loading wrap summary - show minimal loading state
-        console.log('[DemoWelcomeWindow] No wrap summary yet, showing loading state');
+        console.log('[DemoWelcomeWindow] Authenticated user - showing loading state');
         return [
           "Analyzing your capsules..."
         ];
       } else {
         // Break wrap summary into progressive variants like demo mode
-        console.log('[DemoWelcomeWindow] Using wrap summary:', wrapSummary);
+        console.log('[DemoWelcomeWindow] Authenticated user - using wrap summary:', wrapSummary);
         return createWrapVariants(wrapSummary);
       }
     } else {
-      // Non-authenticated user - show default demo variants
-      console.log('[DemoWelcomeWindow] Using default demo variants for non-auth user');
-      return [
-        "Good morning, Vanya! Checking your signals...",
-        "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
-        "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
-        "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
-      ];
+      // Non-authenticated user only - show demo content
+      if (demoMessage) {
+        // Demo intent flow - only for non-auth users
+        console.log('[DemoWelcomeWindow] Non-auth user - using demo message:', demoMessage);
+        return createWrapVariants(demoMessage);
+      } else {
+        // Default demo variants for non-auth users
+        console.log('[DemoWelcomeWindow] Non-auth user - using default demo variants');
+        return [
+          "Good morning, Vanya! Checking your signals...",
+          "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
+          "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
+          "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
+        ];
+      }
     }
   };
 

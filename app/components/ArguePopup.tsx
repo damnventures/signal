@@ -245,6 +245,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const availableCapsules = getAvailableCapsules();
 
   useEffect(() => {
+    console.log('[ArguePopup] useEffect triggered - isOpen:', isOpen, 'initialQuestion:', initialQuestion, 'question:', question);
     if (isOpen && initialQuestion && !question) {
       console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
       setQuestion(initialQuestion);
@@ -257,6 +258,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       }, 300); // Increased delay to ensure state is set
 
       return () => clearTimeout(autoSubmitTimer);
+    } else {
+      console.log('[ArguePopup] Auto-submit conditions not met - isOpen:', isOpen, 'initialQuestion:', !!initialQuestion, 'question:', !!question);
     }
   }, [isOpen, initialQuestion, question, handleSubmit]);
 
