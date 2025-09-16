@@ -136,17 +136,25 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
   useEffect(() => {
     if (isOpen && initialQuestion && !question) {
+      console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
       setQuestion(initialQuestion);
-      // Auto-submit if question is provided via intent
+
+      // Auto-submit if question is provided via intent - use a more reliable approach
       setTimeout(() => {
-        const form = document.querySelector('.argue-popup .input-form') as HTMLFormElement;
+        // Trigger form submission programmatically
+        const event = new Event('submit', { bubbles: true, cancelable: true });
+        const form = document.getElementById('argue-form') as HTMLFormElement;
         if (form && initialQuestion.trim()) {
-          console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
-          form.requestSubmit();
+          console.log('[ArguePopup] Auto-submitting initial question via form event:', initialQuestion);
+          form.dispatchEvent(event);
+        } else {
+          console.warn('[ArguePopup] Form not found for auto-submit, trying direct submission');
+          // Fallback: call handleSubmit directly
+          handleSubmit({ preventDefault: () => {} } as React.FormEvent);
         }
-      }, 100); // Small delay to ensure form is rendered
+      }, 200); // Slightly longer delay to ensure everything is ready
     }
-  }, [isOpen, initialQuestion, question]);
+  }, [isOpen, initialQuestion, question, handleSubmit]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -391,7 +399,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
             {/* Input form at bottom - chat-like */}
             <div className="input-section">
-              <form onSubmit={handleSubmit} className="input-form">
+              <form id="argue-form" onSubmit={handleSubmit} className="input-form">
                 <div className="input-row">
                   <textarea
                     value={question}

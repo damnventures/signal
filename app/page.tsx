@@ -1931,9 +1931,12 @@ const HomePage = () => {
                           setLastWrapSummary(summary);
                         }
                         // Resume periodic status updates and return to idle phase
-                        setLoadingPhase('idle');
-                        updateStatusMessage('idle');
-                        console.log('[HomePage] Wrap tool updated welcome window and resumed status');
+                        // Small delay to ensure wrap status message is processed before switching to idle
+                        setTimeout(() => {
+                          setLoadingPhase('idle');
+                          updateStatusMessage('idle');
+                          console.log('[HomePage] Wrap tool updated welcome window and resumed status');
+                        }, 100);
                       }}
                       onStateHashUpdate={setWrapStateHash}
                       lastStateHash={wrapStateHash}
