@@ -55,8 +55,17 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const { apiKey, user } = useAuth();
 
   useEffect(() => {
+    console.log('[ArguePopup] Setting selected capsule to:', capsuleId);
+    console.log('[ArguePopup] Available capsules:', availableCapsules.map(c => `${c.id}: ${c.name}`));
+
+    // Validate that the capsule exists in available list
+    const capsuleExists = availableCapsules.some(c => c.id === capsuleId);
+    if (!capsuleExists && capsuleId) {
+      console.warn('[ArguePopup] Current capsule not found in available list!', capsuleId);
+    }
+
     setSelectedCapsuleIds([capsuleId]);
-  }, [capsuleId]);
+  }, [capsuleId, availableCapsules]);
 
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
@@ -98,6 +107,28 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       }
     });
 
+    // Ensure current capsule is included in the list (important for argue popup)
+    if (capsuleId && !addedIds.has(capsuleId)) {
+      // Find the current capsule in userCapsules to get its proper name
+      const currentCapsule = userCapsules.find(c => c._id === capsuleId);
+      if (currentCapsule) {
+        console.log('[ArguePopup] Adding current user capsule to available list:', currentCapsule.name);
+        capsules.unshift({
+          id: capsuleId,
+          name: currentCapsule.name || 'Current Capsule',
+          type: 'user'
+        });
+      } else {
+        // Current capsule not found in user capsules, it might be a system capsule
+        console.log('[ArguePopup] Current capsule not found in user list, adding as unknown:', capsuleId);
+        capsules.unshift({
+          id: capsuleId,
+          name: 'Current Capsule',
+          type: 'user'
+        });
+      }
+    }
+
     return capsules;
   };
 
@@ -106,6 +137,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   useEffect(() => {
     if (isOpen && initialQuestion && !question) {
       setQuestion(initialQuestion);
+      // Auto-submit if question is provided via intent
+      setTimeout(() => {
+        const form = document.querySelector('.argue-popup .input-form') as HTMLFormElement;
+        if (form && initialQuestion.trim()) {
+          console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
+          form.requestSubmit();
+        }
+      }, 100); // Small delay to ensure form is rendered
     }
   }, [isOpen, initialQuestion, question]);
 

@@ -1830,6 +1830,11 @@ const HomePage = () => {
                     lastArgueTimeRef.current = Date.now();
                     setArgueQuestion(question);
                     setShowArguePopup(true);
+                    // Hide demo welcome window when argue starts to prevent interference
+                    if (showDemoWelcomeWindow) {
+                      console.log('[HomePage] Hiding demo welcome window for argue');
+                      setShowDemoWelcomeWindow(false);
+                    }
                   }}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
