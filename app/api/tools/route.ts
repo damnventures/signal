@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const workerResponse = await fetch(workerEndpoint, {
       method: 'POST',
       headers,
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, userApiKey })
     });
 
     console.log(`[Tools Proxy] Worker response status:`, workerResponse.status);
