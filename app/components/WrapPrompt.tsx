@@ -38,14 +38,14 @@ Source Material:
 **EXAMPLES:**
 
 <think>
-User has capsules containing: research on amphetamines and productivity, John Oliver segment on juvenile justice, analysis of Las Vegas societal issues.
+User has capsules containing: research on renewable energy, tech startup coverage, climate policy analysis.
 
-Main themes: cognitive enhancement research, policy reform commentary, societal analysis.
-Sources: John Oliver (juvenile justice topic).
-Flow: research → policy commentary → societal analysis.
+Main themes: energy innovation, entrepreneurship insights, environmental policy.
+Sources: specific articles and videos on these topics.
+Flow: technical research → business analysis → policy implications.
 </think>
 
-Hey cherepukhin! Ran wrap() on your capsules and found cognitive enhancement research, societal analysis, productivity optimization, media analysis, AI technology insights, systemic reform analysis.
+Hey [username]! Ran wrap() on your capsules and found energy innovation research, entrepreneurship insights, environmental policy analysis.
 
 **Your task:** Follow this format exactly. Analyze the capsule data in <think>, then deliver a flowing thematic summary that groups content logically. Be direct and conversational while staying under 50 words. No emojis, no formatting, just straight summary of the themes found.`;
 }
