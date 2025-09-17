@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import DraggableWindow from './DraggableWindow';
 import { getArguePrompt } from './ArguePrompt';
 import { useAuth } from '../contexts/AuthContext';
@@ -121,7 +121,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     return capsules;
   };
 
-  const availableCapsules = getAvailableCapsules();
+  // Memoize availableCapsules to prevent render loops
+  const availableCapsules = useMemo(() => {
+    return getAvailableCapsules();
+  }, [user, userCapsules, accessibleShrinkedCapsules, capsuleId]);
 
   useEffect(() => {
     console.log('[ArguePopup] Setting selected capsule to:', capsuleId);
