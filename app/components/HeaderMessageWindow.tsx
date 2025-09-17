@@ -30,12 +30,16 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }
 
     // For short messages, just show as-is
-    if (message.replace(/<[^>]+>/g, '').length < 50) {
+    const cleanLength = message.replace(/<[^>]+>/g, '').length;
+    if (cleanLength < 50) {
+      console.log('[HeaderMessageWindow] Message too short for chunking:', cleanLength, 'chars');
       return [message];
     }
 
     // For longer messages, create progressive variants using shared utility
-    return createMessageVariants(message);
+    const variants = createMessageVariants(message);
+    console.log('[HeaderMessageWindow] Created variants:', variants.length, variants);
+    return variants;
   };
 
   const variants = getMessageVariants();

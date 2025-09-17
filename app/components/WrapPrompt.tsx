@@ -45,7 +45,7 @@ Sources: specific articles and videos on these topics.
 Flow: technical research → business analysis → policy implications.
 </think>
 
-Hey [username]! Ran wrap() on your capsules and found energy innovation research, entrepreneurship insights, environmental policy analysis.
+Hey {{username}}! Ran wrap() on your capsules and found energy innovation research, entrepreneurship insights, environmental policy analysis.
 
 **Your task:** Follow this format exactly. Analyze the capsule data in <think>, then deliver a flowing thematic summary that groups content logically. Be direct and conversational while staying under 50 words. No emojis, no formatting, just straight summary of the themes found.`;
 }

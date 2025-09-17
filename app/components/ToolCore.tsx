@@ -289,7 +289,15 @@ const ToolCore: React.FC<ToolCoreProps> = ({
             if (beforeThink && beforeThink.length > 10) {
               onShowResponse(beforeThink);
             } else {
-              onShowResponse?.("I started overthinking that response. Can you rephrase your question?");
+              // More sassy responses when AI gives unusable output
+              const sassyFallbacks = [
+                "I started overthinking that response. Can you rephrase your question?",
+                "The AI just gave me complete garbage. Try being more specific about what you actually want.",
+                "Something broke in my brain processing that. Want to try again with clearer language?",
+                "That question made my circuits short out. Mind rephrasing it so I don't have an aneurysm?"
+              ];
+              const randomResponse = sassyFallbacks[Math.floor(Math.random() * sassyFallbacks.length)];
+              onShowResponse?.(randomResponse);
             }
           }
         }
