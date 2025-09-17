@@ -18,8 +18,9 @@ Source Material:
 - EXCLUDE internal system personas (Malcolm, Craig, Narrative Analyst, etc.)
 - For capsules with multiple files, focus on the dominant themes
 - Organize topics logically (research → analysis → commentary → entertainment)
-- Keep under 50 words for the main summary
-- NO emojis, NO special characters, pure text only
+- Keep between 80-120 words for good detail without being verbose
+- Include speaker names when relevant to topics
+- NO emojis, NO bullet points, NO numbered lists, pure flowing text only
 
 **REQUIRED FORMAT:**
 
@@ -33,19 +34,19 @@ Source Material:
 - Keep the summary concise and thematic]
 </think>
 
-[Deliver a direct response starting with "Hey {{username}}! Ran wrap() on your capsules and found [organized summary by main themes]." Group content thematically, mention relevant sources with their topics, and keep it under 50 words. Pure conversational text with no formatting.]
+[Deliver a direct response starting with "Hey {{username}}! Ran wrap() on your capsules and found [organized summary by main themes]." Group content thematically, mention relevant sources with their topics like "John Oliver on juvenile justice" or "Malcolm discussing productivity research", and keep it between 80-120 words. Pure conversational flowing text with no formatting, bullets, or lists.]
 
 **EXAMPLES:**
 
 <think>
-User has capsules containing: research on renewable energy, tech startup coverage, climate policy analysis.
+User has capsules containing: John Oliver segment on juvenile justice reform, Malcolm's analysis of amphetamines and productivity, research on Las Vegas as societal metaphor.
 
-Main themes: energy innovation, entrepreneurship insights, environmental policy.
-Sources: specific articles and videos on these topics.
-Flow: technical research → business analysis → policy implications.
+Main themes: policy reform (juvenile justice), cognitive enhancement research (amphetamines), societal analysis (Vegas symbolism).
+Sources: John Oliver for justice reform, Malcolm for productivity research.
+Flow: policy commentary → health research → cultural analysis.
 </think>
 
-Hey {{username}}! Ran wrap() on your capsules and found energy innovation research, entrepreneurship insights, environmental policy analysis.
+Hey {{username}}! Ran wrap() on your capsules and found policy reform analysis with John Oliver covering juvenile justice issues, cognitive enhancement research exploring amphetamines and productivity optimization, plus societal commentary examining Las Vegas as a metaphor for modern collapse. The content flows from institutional critique through health science to cultural symbolism, covering justice system failures, neurochemical productivity tools, and societal decay imagery.
 
-**Your task:** Follow this format exactly. Analyze the capsule data in <think>, then deliver a flowing thematic summary that groups content logically. Be direct and conversational while staying under 50 words. No emojis, no formatting, just straight summary of the themes found.`;
+**Your task:** Follow this format exactly. Analyze the capsule data in <think>, then deliver a flowing thematic summary that groups content logically with relevant speaker names. Keep it between 80-120 words for good detail without excessive verbosity. No formatting, bullets, or lists - just flowing conversational text.`;
 }

@@ -8,8 +8,19 @@ export function createMessageVariants(message: string): string[] {
     return ["Loading..."];
   }
 
-  // Split by sentences and rebuild progressively
-  const sentences = message.split(/\. (?=[A-Z])/);
+  // Split by sentences and rebuild progressively - handle multiple patterns
+  let sentences = message.split(/\. (?=[A-Z])/);
+
+  // If we only got 1 sentence, try alternative splitting patterns for structured content
+  if (sentences.length === 1) {
+    // Try splitting on numbered lists or bullet points
+    const listPattern = /(?=\n\n\d+\.|\n\n•|\n\n-)/;
+    const listSplit = message.split(listPattern);
+    if (listSplit.length > 1) {
+      sentences = listSplit.filter(s => s.trim());
+    }
+  }
+
   const variants: string[] = [];
   let currentText = '';
 
@@ -21,7 +32,6 @@ export function createMessageVariants(message: string): string[] {
     }
     variants.push(currentText);
   });
-
   return variants.length > 1 ? variants : [message];
 }
 
