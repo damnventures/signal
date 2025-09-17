@@ -458,7 +458,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .argue-popup {
-          height: 600px;
+          min-height: 400px;
           max-width: 95vw;
           max-height: 95vh;
           border: 1px solid #000000;
@@ -754,6 +754,25 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 10px;
           box-shadow: inset 1px 1px 0px #808080;
+        }
+
+        .analysis-box::-webkit-scrollbar {
+          width: 16px;
+        }
+
+        .analysis-box::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-left: 2px solid #000000;
+        }
+
+        .analysis-box::-webkit-scrollbar-thumb {
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 1px 1px 0px #808080;
+        }
+
+        .analysis-box::-webkit-scrollbar-thumb:hover {
+          background: #f0f0f0;
         }
 
         .error-box {
