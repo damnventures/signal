@@ -8,58 +8,45 @@ export function createMessageVariants(message: string): string[] {
     return ["Loading..."];
   }
 
-  // For wrap summaries, split on natural breakpoints: ", and " or ", "
-  // This creates smaller, more digestible chunks
-  let splitPoints: string[] = [];
+  // Simple approach: split on sentences, then commas if sentences are too long
+  let sentences = message.split(/\. (?=[A-Z])/);
 
-  if (message.includes(', and ')) {
-    splitPoints = message.split(/, and /);
-  } else if (message.includes(', ')) {
-    splitPoints = message.split(/, /);
-  } else if (message.includes('. ')) {
-    splitPoints = message.split(/\. (?=[A-Z])/);
-  } else {
-    // Single long sentence - split at word boundaries every ~50-60 chars
-    const words = message.split(' ');
-    const targetLength = 50;
-    let currentChunk = '';
-
-    words.forEach(word => {
-      if (currentChunk.length + word.length + 1 > targetLength && currentChunk.length > 0) {
-        splitPoints.push(currentChunk.trim());
-        currentChunk = word;
-      } else {
-        currentChunk += (currentChunk ? ' ' : '') + word;
-      }
-    });
-    if (currentChunk) {
-      splitPoints.push(currentChunk.trim());
+  // If sentences are too long (>80 chars), try splitting on commas
+  const processedSentences: string[] = [];
+  sentences.forEach(sentence => {
+    if (sentence.length > 80 && sentence.includes(', ')) {
+      const parts = sentence.split(', ');
+      parts.forEach((part, index) => {
+        if (index === 0) {
+          processedSentences.push(part + ',');
+        } else if (index === parts.length - 1) {
+          processedSentences.push(part);
+        } else {
+          processedSentences.push(part + ',');
+        }
+      });
+    } else {
+      processedSentences.push(sentence);
     }
-  }
+  });
 
-  // Build progressive variants by accumulating split points
+  // Build progressive variants
   const variants: string[] = [];
+  let currentText = '';
 
-  splitPoints.forEach((_, index) => {
-    const chunks = splitPoints.slice(0, index + 1);
-    let combined = '';
-
-    chunks.forEach((chunk, i) => {
-      if (i === 0) {
-        combined = chunk;
-      } else if (i === chunks.length - 1 && message.includes(', and ')) {
-        combined += ' and ' + chunk;
-      } else {
-        combined += ', ' + chunk;
+  processedSentences.forEach((sentence, index) => {
+    if (index === 0) {
+      currentText = sentence;
+      if (!currentText.endsWith('.') && !currentText.endsWith(',')) {
+        currentText += '.';
       }
-    });
-
-    // Ensure proper ending punctuation
-    if (!combined.endsWith('.') && !combined.endsWith('!') && !combined.endsWith('?')) {
-      combined += '.';
+    } else {
+      currentText += ' ' + sentence;
+      if (index === processedSentences.length - 1 && !currentText.endsWith('.')) {
+        currentText += '.';
+      }
     }
-
-    variants.push(combined);
+    variants.push(currentText);
   });
 
   return variants.length > 1 ? variants : [message];

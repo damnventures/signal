@@ -141,8 +141,8 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       <div className="window-content">
         <p className="main-text">
           <MessageDiff
-            oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
-            newContent={variants.slice(0, variantIndex + 1).join(' ')}
+            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+            newContent={variants[variantIndex] || ''}
             showDiff={showDiff}
           />
         </p>
