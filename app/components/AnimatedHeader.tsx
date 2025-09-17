@@ -191,8 +191,8 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
             {showingResponse && responseMessage ? (
               responseVariants.length > 0 ? (
                 <MessageDiff
-                  oldContent={responseVariants[Math.max(0, currentResponseVariant - 1)]}
-                  newContent={responseVariants[currentResponseVariant]}
+                  oldContent={currentResponseVariant === 0 ? '' : responseVariants[currentResponseVariant - 1] || ''}
+                  newContent={responseVariants[currentResponseVariant] || ''}
                   showDiff={showDiff}
                 />
               ) : (
@@ -202,8 +202,8 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
               getFinalContent()
             ) : (
               <MessageDiff
-                oldContent={variants[Math.max(0, variantIndex - 1)]}
-                newContent={variants[variantIndex]}
+                oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+                newContent={variants[variantIndex] || ''}
                 showDiff={showDiff}
               />
             )}

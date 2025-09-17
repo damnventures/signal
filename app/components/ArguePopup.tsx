@@ -57,6 +57,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const { apiKey, user } = useAuth();
 
+  const questionRef = useRef(question);
+  questionRef.current = question;
+
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
     const capsules: Array<{ id: string; name: string; type: 'user' | 'shrinked' }> = [];
@@ -143,7 +146,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!question.trim()) {
+    const finalQuestion = questionRef.current;
+
+    if (!finalQuestion.trim()) {
       setError('Please enter a question');
       return;
     }
@@ -195,7 +200,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             context: combinedContext,
-            question: question.trim(),
+            question: finalQuestion.trim(),
             systemPrompt: getArguePrompt(),
           }),
         });
@@ -265,7 +270,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
+  }, [selectedCapsuleIds, apiKey, availableCapsules]);
 
   useEffect(() => {
     console.log('[ArguePopup] useEffect triggered - isOpen:', isOpen, 'initialQuestion:', initialQuestion, 'question:', question, 'hasAutoSubmitted:', hasAutoSubmitted);

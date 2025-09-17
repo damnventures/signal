@@ -61,11 +61,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
         setVariantIndex(prev => prev + 1);
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
-        // Animation complete - auto-close after delay
-        setTimeout(() => {
-          console.log('[HeaderMessageWindow] Animation complete, auto-closing');
-          onClose();
-        }, 3000);
+        // Animation complete
+        console.log('[HeaderMessageWindow] Animation complete');
       }
     }, delay);
 
@@ -87,8 +84,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
       <div className="window-content">
         <p className="main-text">
           <MessageDiff
-            oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
-            newContent={variants.slice(0, variantIndex + 1).join(' ')}
+            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+            newContent={variants[variantIndex] || ''}
             showDiff={showDiff}
           />
         </p>
