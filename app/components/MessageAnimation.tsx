@@ -8,30 +8,60 @@ export function createMessageVariants(message: string): string[] {
     return ["Loading..."];
   }
 
-  // Split by sentences and rebuild progressively - handle multiple patterns
-  let sentences = message.split(/\. (?=[A-Z])/);
+  // For wrap summaries, split on natural breakpoints: ", and " or ", "
+  // This creates smaller, more digestible chunks
+  let splitPoints: string[] = [];
 
-  // If we only got 1 sentence, try alternative splitting patterns for structured content
-  if (sentences.length === 1) {
-    // Try splitting on numbered lists or bullet points
-    const listPattern = /(?=\n\n\d+\.|\n\n•|\n\n-)/;
-    const listSplit = message.split(listPattern);
-    if (listSplit.length > 1) {
-      sentences = listSplit.filter(s => s.trim());
+  if (message.includes(', and ')) {
+    splitPoints = message.split(/, and /);
+  } else if (message.includes(', ')) {
+    splitPoints = message.split(/, /);
+  } else if (message.includes('. ')) {
+    splitPoints = message.split(/\. (?=[A-Z])/);
+  } else {
+    // Single long sentence - split at word boundaries every ~50-60 chars
+    const words = message.split(' ');
+    const targetLength = 50;
+    let currentChunk = '';
+
+    words.forEach(word => {
+      if (currentChunk.length + word.length + 1 > targetLength && currentChunk.length > 0) {
+        splitPoints.push(currentChunk.trim());
+        currentChunk = word;
+      } else {
+        currentChunk += (currentChunk ? ' ' : '') + word;
+      }
+    });
+    if (currentChunk) {
+      splitPoints.push(currentChunk.trim());
     }
   }
 
+  // Build progressive variants by accumulating split points
   const variants: string[] = [];
-  let currentText = '';
 
-  sentences.forEach((sentence, index) => {
-    if (index === 0) {
-      currentText = sentence + (sentence.endsWith('.') ? '' : '.');
-    } else {
-      currentText += ' ' + sentence + (sentence.endsWith('.') ? '' : '.');
+  splitPoints.forEach((_, index) => {
+    const chunks = splitPoints.slice(0, index + 1);
+    let combined = '';
+
+    chunks.forEach((chunk, i) => {
+      if (i === 0) {
+        combined = chunk;
+      } else if (i === chunks.length - 1 && message.includes(', and ')) {
+        combined += ' and ' + chunk;
+      } else {
+        combined += ', ' + chunk;
+      }
+    });
+
+    // Ensure proper ending punctuation
+    if (!combined.endsWith('.') && !combined.endsWith('!') && !combined.endsWith('?')) {
+      combined += '.';
     }
-    variants.push(currentText);
+
+    variants.push(combined);
   });
+
   return variants.length > 1 ? variants : [message];
 }
 
