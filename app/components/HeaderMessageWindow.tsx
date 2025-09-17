@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DraggableWindow from './DraggableWindow';
+import { createMessageVariants, MessageDiff, ANIMATION_CONFIG } from './MessageAnimation';
 
 interface HeaderMessageWindowProps {
   id: string;
@@ -23,98 +24,22 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
 
-  // Helper function to break text into sentence-based variants like welcome window
-  const createMessageVariants = useCallback((msg: string): string[] => {
-    // Split by sentences and rebuild progressively
-    const sentences = msg.split(/\. (?=[A-Z])/);
-    const variants: string[] = [];
-    let currentText = '';
-
-    sentences.forEach((sentence, index) => {
-      if (index === 0) {
-        currentText = sentence + (sentence.endsWith('.') ? '' : '.');
-      } else {
-        currentText += ' ' + sentence + (sentence.endsWith('.') ? '' : '.');
-      }
-      variants.push(currentText);
-    });
-
-    return variants.length > 1 ? variants : [msg];
-  }, []);
-
   const getMessageVariants = () => {
     if (!message || message.trim() === '') {
       return ["Loading..."];
     }
 
-    // Clean HTML tags for sentence splitting but preserve for display
-    const cleanMessage = message.replace(/<[^>]+>/g, '');
-
     // For short messages, just show as-is
-    if (cleanMessage.length < 50) {
+    if (message.replace(/<[^>]+>/g, '').length < 50) {
       return [message];
     }
 
-    // For longer messages, create progressive variants
-    return createMessageVariants(cleanMessage).map((variant, index) => {
-      // For the first variant, return as-is, for others we need to reconstruct with HTML
-      if (index === 0) {
-        // Find the first sentence in the original message
-        const firstSentence = message.split(/\. (?=[A-Z])/)[0];
-        return firstSentence + (firstSentence.endsWith('.') ? '' : '.');
-      }
-      // For subsequent variants, we'll use the clean version for now
-      // In a more sophisticated implementation, we'd preserve HTML through the splitting
-      return variant;
-    });
+    // For longer messages, create progressive variants using shared utility
+    return createMessageVariants(message);
   };
 
   const variants = getMessageVariants();
 
-  // Diff component for highlighting changes (similar to welcome window)
-  interface Segment {
-    text: string;
-    isDiff: boolean;
-  }
-
-  const Diff = ({ oldContent, newContent, showDiff }: { oldContent: string; newContent: string; showDiff: boolean }) => {
-    const segments: Segment[] = [];
-    const oldText = oldContent.replace(/<[^>]+>/g, '') || "";
-    const newText = newContent.replace(/<[^>]+>/g, '') || "";
-    const maxLength = Math.max(oldText.length, newText.length);
-    let currentSegment: Segment = { text: "", isDiff: false };
-
-    for (let i = 0; i < maxLength; i++) {
-      const oldChar = oldText[i] || "";
-      const newChar = newText[i] || "";
-      if (oldChar !== newChar) {
-        if (!currentSegment.isDiff && currentSegment.text) {
-          segments.push({ ...currentSegment });
-          currentSegment = { text: "", isDiff: true };
-        }
-        currentSegment.isDiff = true;
-        currentSegment.text += newChar;
-      } else {
-        if (currentSegment.isDiff && currentSegment.text) {
-          segments.push({ ...currentSegment });
-          currentSegment = { text: "", isDiff: false };
-        }
-        currentSegment.text += newChar;
-      }
-    }
-    if (currentSegment.text) {
-      segments.push(currentSegment);
-    }
-
-    // For HTML content, we'll return it directly with diff highlighting
-    let resultHtml = newContent;
-    if (showDiff && segments.some(s => s.isDiff)) {
-      // Simple approach: wrap the entire new content in diff highlight if there are changes
-      resultHtml = `<span class="diff-highlight">${newContent}</span>`;
-    }
-
-    return <span dangerouslySetInnerHTML={{ __html: resultHtml }} />;
-  };
 
   // Reset animation when new message arrives
   useEffect(() => {
@@ -125,14 +50,15 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }
   }, [message]);
 
-  // Cycle through variants with timing similar to welcome window
+  // Cycle through variants with shared timing configuration
   useEffect(() => {
-    const delay = variantIndex === 0 ? 1000 : 1200; // Slightly faster than welcome window
+    const config = ANIMATION_CONFIG.header;
+    const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
     const timer = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
         setShowDiff(true);
         setVariantIndex(prev => prev + 1);
-        setTimeout(() => setShowDiff(false), 800);
+        setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
         // Animation complete - auto-close after delay
         setTimeout(() => {
@@ -159,9 +85,9 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     >
       <div className="window-content">
         <p className="main-text">
-          <Diff
-            oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
-            newContent={variants.slice(0, variantIndex + 1).join(' ')}
+          <MessageDiff
+            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+            newContent={variants[variantIndex] || ''}
             showDiff={showDiff}
           />
         </p>
@@ -216,12 +142,6 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           80%, 100% { content: "..."; }
         }
 
-        .main-text :global(.diff-highlight) {
-          background-color: #ffeb3b;
-          padding: 2px 4px;
-          border-radius: 3px;
-          transition: background-color 0.8s ease;
-        }
 
         .main-text :global(.clickable-tag) {
           background: #e0e0e0;

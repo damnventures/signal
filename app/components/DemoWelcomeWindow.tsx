@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DraggableWindow from './DraggableWindow';
+import { createMessageVariants, MessageDiff, ANIMATION_CONFIG } from './MessageAnimation';
 
 interface DemoWelcomeWindowProps {
   id: string;
@@ -28,23 +29,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
 
-  // Helper function to break text into sentence-based variants like demo mode
+  // Use shared message variant creation utility
   const createWrapVariants = useCallback((summary: string): string[] => {
-    // Split by sentences and rebuild progressively like demo mode
-    const sentences = summary.split(/\. (?=[A-Z])/);
-    const variants: string[] = [];
-    let currentText = '';
-    
-    sentences.forEach((sentence, index) => {
-      if (index === 0) {
-        currentText = sentence + (sentence.endsWith('.') ? '' : '.');
-      } else {
-        currentText += ' ' + sentence + (sentence.endsWith('.') ? '' : '.');
-      }
-      variants.push(currentText);
-    });
-    
-    return variants.length > 1 ? variants : [summary];
+    return createMessageVariants(summary);
   }, []);
 
   // For authenticated users, show loading then wrap summary
@@ -84,94 +71,6 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     return getMessageVariants();
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
-  // Diff component for highlighting changes
-  interface Segment {
-    text: string;
-    isDiff: boolean;
-  }
-
-  const Diff = ({ oldContent, newContent, showDiff }: { oldContent: string; newContent: string; showDiff: boolean }) => {
-    const segments: Segment[] = [];
-    const oldText = oldContent.replace(/<[^>]+>/g, '') || "";
-    const newText = newContent.replace(/<[^>]+>/g, '') || "";
-    const maxLength = Math.max(oldText.length, newText.length);
-    let currentSegment: Segment = { text: "", isDiff: false };
-
-    for (let i = 0; i < maxLength; i++) {
-      const oldChar = oldText[i] || "";
-      const newChar = newText[i] || "";
-      if (oldChar !== newChar) {
-        if (!currentSegment.isDiff && currentSegment.text) {
-          segments.push({ ...currentSegment });
-          currentSegment = { text: "", isDiff: true };
-        }
-        currentSegment.isDiff = true;
-        currentSegment.text += newChar;
-      } else {
-        if (currentSegment.isDiff && currentSegment.text) {
-          segments.push({ ...currentSegment });
-          currentSegment = { text: "", isDiff: false };
-        }
-        currentSegment.text += newChar;
-      }
-    }
-    if (currentSegment.text) {
-      segments.push(currentSegment);
-    }
-
-    // Reconstruct HTML with diff highlighting
-    const renderHtml = () => {
-      let resultHtml = newContent;
-
-      // Apply diff highlighting first
-      if (showDiff) {
-        let currentHtmlIndex = 0;
-        segments.forEach(segment => {
-          const plainTextSegment = segment.text;
-          const plainTextIndex = newText.indexOf(plainTextSegment, currentHtmlIndex);
-
-          if (plainTextIndex !== -1 && segment.isDiff) {
-            let tempPlain = '';
-            let htmlIdx = 0;
-            while(tempPlain.length < plainTextIndex && htmlIdx < newContent.length) {
-              if (newContent[htmlIdx] === '<') {
-                while(newContent[htmlIdx] !== '>' && htmlIdx < newContent.length) {
-                  htmlIdx++;
-                }
-              } else {
-                tempPlain += newContent[htmlIdx];
-              }
-              htmlIdx++;
-            }
-            const actualHtmlIndex = htmlIdx - 1; 
-
-            const segmentHtml = newContent.substring(actualHtmlIndex, actualHtmlIndex + plainTextSegment.length + (newContent.substring(actualHtmlIndex + plainTextSegment.length).match(/^<[^>]+>/) || [''])[0].length);
-
-            resultHtml = resultHtml.replace(segmentHtml, `<span class="diff-highlight">${segmentHtml}</span>`);
-          }
-          currentHtmlIndex = plainTextIndex + plainTextSegment.length;
-        });
-      }
-
-      // Now, apply 'selected' class to the first 'Reducto AI' span
-      // This needs to be done carefully to avoid re-highlighting diffs
-      const tempElement = document.createElement('div');
-      tempElement.innerHTML = resultHtml;
-      const clickableTags = tempElement.querySelectorAll('.clickable-tag');
-      let reductoAIFound = false;
-
-      clickableTags.forEach(tag => {
-        if (tag.textContent === 'Reducto AI' && !reductoAIFound) {
-          tag.classList.add('selected');
-          reductoAIFound = true;
-        }
-      });
-
-      return <span dangerouslySetInnerHTML={{ __html: tempElement.innerHTML }} />;
-    };
-
-    return renderHtml();
-  };
 
   // Cycle through variants with pause
   // Watch for prop changes (wrap summary arriving) and restart demo-style animation
@@ -197,12 +96,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   }, [demoMessage, userEmail]);
 
   useEffect(() => {
-    const delay = variantIndex === 0 ? 2000 : 1500;
+    const config = ANIMATION_CONFIG.welcome;
+    const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
     const timer = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
         setShowDiff(true);
         setVariantIndex(prev => prev + 1);
-        setTimeout(() => setShowDiff(false), 1000);
+        setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
         // Animation complete
         if (userEmail) {
@@ -217,17 +117,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         }
       }
     }, delay);
-    
+
     return () => clearTimeout(timer);
   }, [variantIndex, variants.length, onClose, userEmail, demoMessage]);
 
   // Update displayed message
   useEffect(() => {
-    if (variantIndex === 0) {
-      setDisplayedMessage(variants[0]);
-    } else {
-      setDisplayedMessage(variants.slice(0, variantIndex + 1).join(' '));
-    }
+    setDisplayedMessage(variants[variantIndex] || '');
   }, [variantIndex, variants]);
 
   return (
@@ -240,9 +136,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     >
       <div className="window-content">
         <p className="main-text">
-          <Diff
-            oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
-            newContent={variants.slice(0, variantIndex + 1).join(' ')}
+          <MessageDiff
+            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+            newContent={variants[variantIndex] || ''}
             showDiff={showDiff}
           />
         </p>
