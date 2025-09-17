@@ -123,7 +123,11 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
 
   // Update displayed message
   useEffect(() => {
-    setDisplayedMessage(variants[variantIndex] || '');
+    if (variantIndex === 0) {
+      setDisplayedMessage(variants[0]);
+    } else {
+      setDisplayedMessage(variants.slice(0, variantIndex + 1).join(' '));
+    }
   }, [variantIndex, variants]);
 
   return (
@@ -137,12 +141,21 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       <div className="window-content">
         <p className="main-text">
           <MessageDiff
-            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
-            newContent={variants[variantIndex] || ''}
+            oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
+            newContent={variants.slice(0, variantIndex + 1).join(' ')}
             showDiff={showDiff}
           />
         </p>
       </div>
+
+      <style jsx>{`
+        .main-text :global(.diff-highlight) {
+          background-color: #ffeb3b;
+          padding: 2px 4px;
+          border-radius: 3px;
+          transition: background-color 0.8s ease;
+        }
+      `}</style>
     </DraggableWindow>
   );
 };

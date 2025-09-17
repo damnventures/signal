@@ -87,8 +87,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
       <div className="window-content">
         <p className="main-text">
           <MessageDiff
-            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
-            newContent={variants[variantIndex] || ''}
+            oldContent={variantIndex === 0 ? '' : variants.slice(0, variantIndex).join(' ')}
+            newContent={variants.slice(0, variantIndex + 1).join(' ')}
             showDiff={showDiff}
           />
         </p>
@@ -143,6 +143,12 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           80%, 100% { content: "..."; }
         }
 
+        .main-text :global(.diff-highlight) {
+          background-color: #ffeb3b;
+          padding: 2px 4px;
+          border-radius: 3px;
+          transition: background-color 0.8s ease;
+        }
 
         .main-text :global(.clickable-tag) {
           background: #e0e0e0;
