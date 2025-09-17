@@ -55,10 +55,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
   const [selectedCapsuleIds, setSelectedCapsuleIds] = useState<string[]>([capsuleId]);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
   const { apiKey, user } = useAuth();
-
-  const questionRef = useRef(question);
-  questionRef.current = question;
 
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
@@ -146,9 +144,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const finalQuestion = questionRef.current;
-
-    if (!finalQuestion.trim()) {
+    if (!question.trim()) {
       setError('Please enter a question');
       return;
     }
@@ -200,7 +196,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             context: combinedContext,
-            question: finalQuestion.trim(),
+            question: question.trim(),
             systemPrompt: getArguePrompt(),
           }),
         });
@@ -270,27 +266,22 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCapsuleIds, apiKey, availableCapsules]);
+  }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
 
   useEffect(() => {
-    console.log('[ArguePopup] useEffect triggered - isOpen:', isOpen, 'initialQuestion:', initialQuestion, 'question:', question, 'hasAutoSubmitted:', hasAutoSubmitted);
     if (isOpen && initialQuestion && !hasAutoSubmitted) {
-      console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
       setQuestion(initialQuestion);
       setHasAutoSubmitted(true);
-
-      // Auto-submit if question is provided via intent
-      const autoSubmitTimer = setTimeout(() => {
-        console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
-        // Directly call handleSubmit with a fake event
-        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-      }, 500); // Increased delay to ensure state is set
-
-      return () => clearTimeout(autoSubmitTimer);
-    } else {
-      console.log('[ArguePopup] Auto-submit conditions not met - isOpen:', isOpen, 'initialQuestion:', !!initialQuestion, 'hasAutoSubmitted:', hasAutoSubmitted);
+      setIsAutoSubmitting(true); // Trigger submission
     }
-  }, [isOpen, initialQuestion, hasAutoSubmitted, handleSubmit]);
+  }, [isOpen, initialQuestion, hasAutoSubmitted]);
+
+  useEffect(() => {
+    if (isAutoSubmitting && question) {
+      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      setIsAutoSubmitting(false); // Reset the trigger
+    }
+  }, [isAutoSubmitting, question, handleSubmit]);
 
   // Reset auto-submit flag when popup closes
   useEffect(() => {

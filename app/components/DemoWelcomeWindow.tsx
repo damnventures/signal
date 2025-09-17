@@ -28,6 +28,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
   const [displayedMessage, setDisplayedMessage] = useState('');
+  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
 
   // Use shared message variant creation utility
   const createWrapVariants = useCallback((summary: string): string[] => {
@@ -71,31 +72,28 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     return getMessageVariants();
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
-
   // Cycle through variants with pause
   // Watch for prop changes (wrap summary arriving) and restart demo-style animation
   useEffect(() => {
-    console.log('[DemoWelcomeWindow] wrapSummary changed:', wrapSummary, 'userEmail:', userEmail);
     if (userEmail && wrapSummary) {
-      console.log('[DemoWelcomeWindow] Restarting animation with new wrap summary');
-      // Reset animation when wrap summary arrives and use demo-style progression
       setVariantIndex(0);
       setShowDiff(false);
-      // Don't use word-based animation - let variant progression handle it
+      setIsAnimationComplete(false); // Reset completion flag
     }
   }, [wrapSummary, userEmail]);
 
   // Watch for demo message changes and restart demo-style animation
   useEffect(() => {
     if (demoMessage && !userEmail) {
-      // Reset animation when demo message arrives and use demo-style progression
       setVariantIndex(0);
       setShowDiff(false);
-      // Don't use word-based animation - let variant progression handle it
+      setIsAnimationComplete(false); // Reset completion flag
     }
   }, [demoMessage, userEmail]);
 
   useEffect(() => {
+    if (isAnimationComplete) return; // Don't run animation again if complete
+
     const config = ANIMATION_CONFIG.welcome;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
     const timer = setTimeout(() => {
@@ -105,12 +103,11 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
         // Animation complete
+        setIsAnimationComplete(true); // Set completion flag
         if (userEmail) {
           // For authenticated users, don't auto-close - let them close manually
-          console.log('[DemoWelcomeWindow] Animation complete for auth user');
         } else if (demoMessage) {
           // For demo users with demo message, don't auto-close - let them close manually
-          console.log('[DemoWelcomeWindow] Animation complete for demo user - keeping window open');
         } else {
           // For regular non-auth users (default demo variants), close after delay
           setTimeout(onClose, 3000);
@@ -119,7 +116,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, userEmail, demoMessage]);
+  }, [variantIndex, variants.length, onClose, userEmail, demoMessage, isAnimationComplete]);
 
   // Update displayed message
   useEffect(() => {
