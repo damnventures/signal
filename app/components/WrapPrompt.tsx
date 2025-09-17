@@ -13,40 +13,41 @@ Source Material:
 {{capsuleData}}
 
 **CRITICAL RULES:**
-- Group content by main themes/topics, not by individual speakers
-- When mentioning sources, associate them with their specific topic (e.g., "John Oliver on juvenile justice reform")
+- Focus on specific, concrete actions and content rather than abstract themes
+- Use precise language: "X covered Y's Z feature", "A discussed B", "Your call with C resulted in D"
+- Include specific company names, people, dates, and outcomes when available
 - EXCLUDE internal system personas (Malcolm, Craig, Narrative Analyst, etc.)
-- For capsules with multiple files, focus on the dominant themes
-- Organize topics logically (research → analysis → commentary → entertainment)
+- For multiple files/authors, list each key item with specific details
+- Prioritize actionable content, business updates, and concrete information
 - Keep between 80-120 words for good detail without being verbose
-- Include speaker names when relevant to topics
+- Include speaker names and their specific contributions
 - NO emojis, NO bullet points, NO numbered lists, pure flowing text only
 
 **REQUIRED FORMAT:**
 
 <think>
 [Analyze the capsule data:
-- Identify main themes and topics across all capsules
-- Group related content together
-- Note any prominent sources or speakers with their associated topics
+- Extract specific concrete actions, decisions, and updates
+- Identify company names, people, dates, and specific outcomes
+- Note what each source/speaker specifically covered or discussed
 - Exclude system personas and technical metadata
-- Plan a logical flow from research to commentary
-- Keep the summary concise and thematic]
+- Focus on actionable business content and concrete information
+- Plan specific, factual summary with details]
 </think>
 
-[Deliver a direct response starting with "Hey {{username}}! Ran wrap() on your capsules and found [organized summary by main themes]." Group content thematically, mention relevant sources with their topics like "John Oliver on juvenile justice" or "Malcolm discussing productivity research", and keep it between 80-120 words. Pure conversational flowing text with no formatting, bullets, or lists.]
+[Deliver a direct response starting with "Hey {{username}}! Ran wrap() on your capsules and found [specific concrete updates]." Focus on concrete actions and updates like "TechCrunch covered Anthropic's new Claude features", "Your meeting with Acme Corp scheduled next steps", "Sarah discussed Q3 revenue projections". Keep it between 80-120 words. Pure conversational flowing text with no formatting, bullets, or lists.]
 
 **EXAMPLES:**
 
 <think>
-User has capsules containing: John Oliver segment on juvenile justice reform, Malcolm's analysis of amphetamines and productivity, research on Las Vegas as societal metaphor.
+User has capsules containing: TechCrunch article about Reducto AI's memory parsing feature launch, transcript from Ryan Petersen's appearance on TBPN discussing supply chain automation, meeting notes from July 30 call with The Residency about deliverable schedules.
 
-Main themes: policy reform (juvenile justice), cognitive enhancement research (amphetamines), societal analysis (Vegas symbolism).
-Sources: John Oliver for justice reform, Malcolm for productivity research.
-Flow: policy commentary → health research → cultural analysis.
+Specific actions: TechCrunch covered Reducto AI's memory parsing launch, Ryan Petersen appeared on TBPN discussing supply chain tech, July 30 call with The Residency set project deliverables.
+Sources: TechCrunch article, Ryan Petersen on TBPN, The Residency meeting.
+Focus: concrete business updates and scheduled events.
 </think>
 
-Hey {{username}}! Ran wrap() on your capsules and found policy reform analysis with John Oliver covering juvenile justice issues, cognitive enhancement research exploring amphetamines and productivity optimization, plus societal commentary examining Las Vegas as a metaphor for modern collapse. The content flows from institutional critique through health science to cultural symbolism, covering justice system failures, neurochemical productivity tools, and societal decay imagery.
+Hey {{username}}! Ran wrap() on your capsules and found TechCrunch covered Reducto AI's new memory parsing feature launch, Ryan Petersen appeared on today's TBPN stream discussing supply chain automation developments, and your July 30 call with The Residency established project deliverable schedules and next milestones. The content spans recent tech launches, industry expert commentary on automation trends, and your concrete business meeting outcomes with actionable timelines.
 
-**Your task:** Follow this format exactly. Analyze the capsule data in <think>, then deliver a flowing thematic summary that groups content logically with relevant speaker names. Keep it between 80-120 words for good detail without excessive verbosity. No formatting, bullets, or lists - just flowing conversational text.`;
+**Your task:** Follow this format exactly. Analyze the capsule data in <think>, then deliver a flowing summary with specific concrete actions and updates. Include company names, people, dates, and outcomes. Keep it between 80-120 words for good detail without excessive verbosity. No formatting, bullets, or lists - just flowing conversational text focused on actionable content.`;
 }
