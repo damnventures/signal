@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { executeWrapRequest, retryOn3040 } from '../utils/requestManager';
 
 interface WrapToolProps {
   onSummaryUpdate?: (summary: string) => void;
@@ -59,17 +60,8 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
       return;
     }
 
-    // Rate limiting: minimum 2 seconds between requests
-    const now = Date.now();
-    const timeSinceLastRequest = now - lastRequestTime;
-    if (timeSinceLastRequest < 2000 && !manualTrigger) {
-      console.log('[WrapTool] Rate limited: too soon since last request');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-    setLastRequestTime(now);
+    const source = manualTrigger ? 'manual-button' : 'auto-trigger';
+    console.log('[WrapTool] Wrap request initiated from:', source);
 
     // Only call callbacks for manual triggers (button clicks)
     if (manualTrigger) {
@@ -81,29 +73,41 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
       }
     }
 
+    setIsLoading(true);
+    setError('');
+    setLastRequestTime(Date.now());
+
     try {
-      console.log('[WrapTool] Fetching wrap summary...', {
-        manualTrigger,
-        timestamp: new Date().toISOString(),
-        stack: new Error().stack?.split('\n')[2]
-      });
-      const response = await fetch('/api/wrap-summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessToken,
-          apiKey,
-          lastStateHash
-        }),
-      });
+      // Use simple request deduplication with 3040 retry
+      const minInterval = manualTrigger ? 2000 : 5000;
+      const result = await executeWrapRequest(async () => {
+        return await retryOn3040(async () => {
+          console.log('[WrapTool] Fetching wrap summary...', {
+            manualTrigger,
+            source,
+            timestamp: new Date().toISOString()
+          });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch wrap summary: ${response.status}`);
-      }
+          const response = await fetch('/api/wrap-summary', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accessToken,
+              apiKey,
+              lastStateHash
+            }),
+          });
 
-      const result: WrapResponse = await response.json();
+          if (!response.ok) {
+            throw new Error(`Failed to fetch wrap summary: ${response.status}`);
+          }
+
+          return await response.json();
+        });
+      }, source, minInterval);
+
       console.log('[WrapTool] Received wrap response:', result);
 
       if (result.success || result.summary || result.message) {
@@ -112,7 +116,7 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
         setSummary(summaryText);
         setMetadata(result.metadata);
         setStateHash(result.stateHash);
-        
+
         // Notify parent components
         if (onSummaryUpdate) {
           // Check if state changed significantly
@@ -131,7 +135,21 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
 
     } catch (error) {
       console.error('[WrapTool] Error fetching wrap summary:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error');
+
+      // Handle specific error cases gracefully
+      if (error instanceof Error) {
+        if (error.message.includes('already in progress')) {
+          console.log('[WrapTool] Wrap request already in progress, silently skipping');
+          // Don't show error for duplicate requests
+        } else if (error.message.includes('Rate limited')) {
+          console.log('[WrapTool] Rate limited, silently skipping');
+          // Don't show error for rate limiting
+        } else {
+          setError(error.message);
+        }
+      } else {
+        setError('Unknown error');
+      }
     } finally {
       setIsLoading(false);
     }

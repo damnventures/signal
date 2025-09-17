@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import DraggableWindow from './DraggableWindow';
 import { getArguePrompt } from './ArguePrompt';
 import { useAuth } from '../contexts/AuthContext';
+import { retryOn3040 } from '../utils/requestManager';
 
 interface Capsule {
   _id: string;
@@ -54,19 +55,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
   const [selectedCapsuleIds, setSelectedCapsuleIds] = useState<string[]>([capsuleId]);
   const { apiKey, user } = useAuth();
-
-  useEffect(() => {
-    console.log('[ArguePopup] Setting selected capsule to:', capsuleId);
-    console.log('[ArguePopup] Available capsules:', availableCapsules.map(c => `${c.id}: ${c.name}`));
-
-    // Validate that the capsule exists in available list
-    const capsuleExists = availableCapsules.some(c => c.id === capsuleId);
-    if (!capsuleExists && capsuleId) {
-      console.warn('[ArguePopup] Current capsule not found in available list!', capsuleId);
-    }
-
-    setSelectedCapsuleIds([capsuleId]);
-  }, [capsuleId, availableCapsules]);
 
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
@@ -133,6 +121,21 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     return capsules;
   };
 
+  const availableCapsules = getAvailableCapsules();
+
+  useEffect(() => {
+    console.log('[ArguePopup] Setting selected capsule to:', capsuleId);
+    console.log('[ArguePopup] Available capsules:', availableCapsules.map(c => `${c.id}: ${c.name}`));
+
+    // Validate that the capsule exists in available list
+    const capsuleExists = availableCapsules.some(c => c.id === capsuleId);
+    if (!capsuleExists && capsuleId) {
+      console.warn('[ArguePopup] Current capsule not found in available list!', capsuleId);
+    }
+
+    setSelectedCapsuleIds([capsuleId]);
+  }, [capsuleId, availableCapsules]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -149,14 +152,23 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     setIsStreamingComplete(false);
 
     try {
-      // Fetch context from all selected capsules
+      // Fetch context from all selected capsules with basic 3040 retry
+      console.log(`[ArguePopup] Fetching context for ${selectedCapsuleIds.length} capsules`);
+
       const contextPromises = selectedCapsuleIds.map(async (capsuleId) => {
         const contextUrl = apiKey
           ? `/api/capsules/${capsuleId}/context?userApiKey=${apiKey}`
           : `/api/capsules/${capsuleId}/context`;
-        const response = await fetch(contextUrl);
-        if (!response.ok) throw new Error(`Failed to fetch context for capsule ${capsuleId}`);
-        return await response.json();
+
+        console.log(`[ArguePopup] Fetching context for capsule: ${capsuleId}`);
+
+        return await retryOn3040(async () => {
+          const response = await fetch(contextUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch context for capsule ${capsuleId}: ${response.status}`);
+          }
+          return await response.json();
+        });
       });
 
       const contextResults = await Promise.all(contextPromises);
@@ -170,20 +182,28 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
       const workerUrl = 'https://craig-argue-machine.shrinked.workers.dev';
 
-      const argumentResponse = await fetch(workerUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          context: combinedContext,
-          question: question.trim(),
-          systemPrompt: getArguePrompt(),
-        }),
-      });
+      console.log('[ArguePopup] Making argue request to worker with 3040 retry');
 
-      if (!argumentResponse.ok) {
-        const errorData = await argumentResponse.text();
-        throw new Error(errorData || 'Failed to generate argument');
-      }
+      const argumentResponse = await retryOn3040(async () => {
+        console.log('[ArguePopup] Attempting argue worker request');
+        const response = await fetch(workerUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            context: combinedContext,
+            question: question.trim(),
+            systemPrompt: getArguePrompt(),
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error(`[ArguePopup] Worker request failed with status ${response.status}:`, errorData);
+          throw new Error(errorData || `Worker request failed: ${response.status}`);
+        }
+
+        return response;
+      });
 
       if (!argumentResponse.body) throw new Error('Response body is empty');
 
@@ -242,8 +262,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
       setIsLoading(false);
     }
   }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
-
-  const availableCapsules = getAvailableCapsules();
 
   useEffect(() => {
     console.log('[ArguePopup] useEffect triggered - isOpen:', isOpen, 'initialQuestion:', initialQuestion, 'question:', question);

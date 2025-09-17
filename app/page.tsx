@@ -14,6 +14,7 @@ import DemoWelcomeWindow from './components/DemoWelcomeWindow';
 import HeaderMessageWindow from './components/HeaderMessageWindow';
 import WrapTool, { WrapToolRef } from './components/WrapTool';
 import Store from './components/Store';
+import { executeWrapRequest, retryOn3040 } from './utils/requestManager';
 
 interface Highlight {
   title: string;
@@ -245,37 +246,56 @@ const HomePage = () => {
           timestamp: new Date().toISOString(),
           lastStateHash: currentWrapStateHash
         });
-        const response = await fetch('/api/wrap-summary', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accessToken,
-            apiKey,
-            lastStateHash: currentWrapStateHash,
-            username: user?.email?.split('@')[0] || user?.username || 'user'
-          }),
-        });
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.stateChanged && result.summary && result.summary !== lastWrapSummary) {
-            console.log('[HomePage] Capsule state changed, updating summary');
-            // Clear status intervals when periodic check updates summary
-            if (statusIntervalRef.current) {
-              clearInterval(statusIntervalRef.current);
-              statusIntervalRef.current = null;
+        // Use simple request deduplication for periodic checks
+        const result = await executeWrapRequest(async () => {
+          return await retryOn3040(async () => {
+            const response = await fetch('/api/wrap-summary', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                accessToken,
+                apiKey,
+                lastStateHash: currentWrapStateHash,
+                username: user?.email?.split('@')[0] || user?.username || 'user'
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`Periodic wrap check failed: ${response.status}`);
             }
-            setLastWrapSummary(result.summary);
-            setWrapStateHash(result.stateHash);
-            console.log('[HomePage] Periodic check updated status and cleared intervals');
-          } else {
-            console.log('[HomePage] No capsule state changes detected');
+
+            return await response.json();
+          });
+        }, 'periodic-check', 10000);
+
+        if (result.stateChanged && result.summary && result.summary !== lastWrapSummary) {
+          console.log('[HomePage] Capsule state changed, updating summary');
+          // Clear status intervals when periodic check updates summary
+          if (statusIntervalRef.current) {
+            clearInterval(statusIntervalRef.current);
+            statusIntervalRef.current = null;
           }
+          setLastWrapSummary(result.summary);
+          setWrapStateHash(result.stateHash);
+          console.log('[HomePage] Periodic check updated status and cleared intervals');
+        } else {
+          console.log('[HomePage] No capsule state changes detected');
         }
       } catch (error) {
         console.error('[HomePage] Error checking capsule state changes:', error);
+        // For periodic checks, handle gracefully - don't interrupt user experience
+        if (error instanceof Error) {
+          if (error.message.includes('already in progress')) {
+            console.log('[HomePage] Periodic check: Wrap request already active, skipping');
+          } else if (error.message.includes('Rate limited')) {
+            console.log('[HomePage] Periodic check: Rate limited, skipping');
+          } else {
+            console.error('[HomePage] Periodic wrap check failed:', error.message);
+          }
+        }
       }
     };
 
