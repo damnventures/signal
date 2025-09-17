@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DraggableWindow from './DraggableWindow';
 
 interface DemoWelcomeWindowProps {
@@ -50,31 +50,25 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   // For authenticated users, show loading then wrap summary
   // For demo users, show demo message
   // For non-auth users, show demo variants
-  const getMessageVariants = () => {
-    console.log('[DemoWelcomeWindow] getMessageVariants called - demoMessage:', demoMessage, 'userEmail:', userEmail, 'wrapSummary:', wrapSummary);
-
+  const getMessageVariants = useCallback(() => {
     if (userEmail) {
       // Authenticated user flow - NEVER show demo content, only wrap summaries
       if (!wrapSummary || wrapSummary.trim() === '') {
         // Still loading wrap summary - show minimal loading state
-        console.log('[DemoWelcomeWindow] Authenticated user - showing loading state');
         return [
           "Analyzing your capsules..."
         ];
       } else {
         // Break wrap summary into progressive variants like demo mode
-        console.log('[DemoWelcomeWindow] Authenticated user - using wrap summary:', wrapSummary);
         return createWrapVariants(wrapSummary);
       }
     } else {
       // Non-authenticated user only - show demo content
       if (demoMessage) {
         // Demo intent flow - only for non-auth users
-        console.log('[DemoWelcomeWindow] Non-auth user - using demo message:', demoMessage);
         return createWrapVariants(demoMessage);
       } else {
         // Default demo variants for non-auth users
-        console.log('[DemoWelcomeWindow] Non-auth user - using default demo variants');
         return [
           "Good morning, Vanya! Checking your signals...",
           "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
@@ -83,9 +77,12 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         ];
       }
     }
-  };
+  }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
-  const variants = getMessageVariants();
+  // Memoize variants to prevent render loops
+  const variants = useMemo(() => {
+    return getMessageVariants();
+  }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
   // Diff component for highlighting changes
   interface Segment {

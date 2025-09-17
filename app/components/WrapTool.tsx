@@ -110,8 +110,8 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
 
       console.log('[WrapTool] Received wrap response:', result);
 
-      if (result.success || result.summary || result.message) {
-        // Handle both 'summary' and 'message' fields from API response
+      // Handle both successful AI responses and fallback responses
+      if (result.summary || result.message) {
         const summaryText = result.summary || result.message || '';
         setSummary(summaryText);
         setMetadata(result.metadata);
@@ -119,15 +119,20 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
 
         // Notify parent components
         if (onSummaryUpdate) {
-          // Check if state changed significantly
+          // Check if state changed significantly (only for successful AI responses)
           let summaryToShow = summaryText;
-          if (!result.stateChanged && result.stateHash === lastStateHash) {
+          if (result.success && !result.stateChanged && result.stateHash === lastStateHash) {
             summaryToShow += '\n\n*Not much has changed since your last wrap - your capsules are up to date.*';
           }
           onSummaryUpdate(summaryToShow);
         }
         if (onStateHashUpdate) {
           onStateHashUpdate(result.stateHash);
+        }
+
+        // For fallback responses, also show the error
+        if (!result.success && result.error) {
+          console.warn('[WrapTool] Using fallback summary due to:', result.error);
         }
       } else {
         setError(result.error || 'Failed to generate summary');

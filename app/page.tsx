@@ -1951,15 +1951,20 @@ const HomePage = () => {
                       }}
                       onSummaryUpdate={(summary) => {
                         // When wrap result comes back, handle based on content
+                        console.log('[HomePage] Received wrap summary:', summary);
+
+                        // Check if this is a fallback message (contains "temporarily unavailable")
+                        const isFallback = summary && summary.includes('temporarily unavailable');
+
                         if (summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50)) {
                           // Short "no updates" message - preserve previous summary and add note
-                          if (lastWrapSummary) {
+                          if (lastWrapSummary && !isFallback) {
                             setLastWrapSummary(lastWrapSummary + '\n\n*No new updates since last wrap - your capsules remain current.*');
                           } else {
-                            setLastWrapSummary(summary); // First time, use as-is
+                            setLastWrapSummary(summary); // First time or fallback, use as-is
                           }
                         } else {
-                          // Full summary - use it directly
+                          // Full summary - use it directly (don't concatenate for fallbacks)
                           setLastWrapSummary(summary);
                         }
                         // Resume periodic status updates and return to idle phase
