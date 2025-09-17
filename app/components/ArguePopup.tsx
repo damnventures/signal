@@ -54,6 +54,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
   const [isStreamingComplete, setIsStreamingComplete] = useState(false);
   const [selectedCapsuleIds, setSelectedCapsuleIds] = useState<string[]>([capsuleId]);
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const { apiKey, user } = useAuth();
 
   // Get available capsules for dropdown
@@ -267,23 +268,31 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
 
   useEffect(() => {
-    console.log('[ArguePopup] useEffect triggered - isOpen:', isOpen, 'initialQuestion:', initialQuestion, 'question:', question);
-    if (isOpen && initialQuestion && !question) {
+    console.log('[ArguePopup] useEffect triggered - isOpen:', isOpen, 'initialQuestion:', initialQuestion, 'question:', question, 'hasAutoSubmitted:', hasAutoSubmitted);
+    if (isOpen && initialQuestion && !hasAutoSubmitted) {
       console.log('[ArguePopup] Setting initial question and auto-submitting:', initialQuestion);
       setQuestion(initialQuestion);
+      setHasAutoSubmitted(true);
 
       // Auto-submit if question is provided via intent
       const autoSubmitTimer = setTimeout(() => {
         console.log('[ArguePopup] Auto-submitting initial question:', initialQuestion);
         // Directly call handleSubmit with a fake event
         handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-      }, 300); // Increased delay to ensure state is set
+      }, 500); // Increased delay to ensure state is set
 
       return () => clearTimeout(autoSubmitTimer);
     } else {
-      console.log('[ArguePopup] Auto-submit conditions not met - isOpen:', isOpen, 'initialQuestion:', !!initialQuestion, 'question:', !!question);
+      console.log('[ArguePopup] Auto-submit conditions not met - isOpen:', isOpen, 'initialQuestion:', !!initialQuestion, 'hasAutoSubmitted:', hasAutoSubmitted);
     }
-  }, [isOpen, initialQuestion, question, handleSubmit]);
+  }, [isOpen, initialQuestion, hasAutoSubmitted, handleSubmit]);
+
+  // Reset auto-submit flag when popup closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasAutoSubmitted(false);
+    }
+  }, [isOpen]);
 
   const handleClear = useCallback(() => {
     setQuestion('');

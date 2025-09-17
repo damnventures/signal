@@ -1854,18 +1854,7 @@ const HomePage = () => {
                     setArgueQuestion(question);
                     setShowArguePopup(true);
                     console.log('[HomePage] DEBUG: ArguePopup should open with question:', question);
-                    // Hide demo welcome window when argue starts to prevent interference
-                    if (showDemoWelcomeWindow) {
-                      console.log('[HomePage] Hiding demo welcome window for argue');
-                      setShowDemoWelcomeWindow(false);
-                    } else {
-                      console.log('[HomePage] Demo welcome window already hidden, showDemoWelcomeWindow:', showDemoWelcomeWindow);
-                    }
-                    // Also hide header message window when argue starts
-                    if (showHeaderMessageWindow) {
-                      console.log('[HomePage] Hiding header message window for argue');
-                      setShowHeaderMessageWindow(false);
-                    }
+                    // Keep welcome window open - new argue response will spawn as separate header window
                   }}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
@@ -1957,11 +1946,11 @@ const HomePage = () => {
                         const isFallback = summary && summary.includes('temporarily unavailable');
 
                         if (summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50)) {
-                          // Short "no updates" message - preserve previous summary and add note
-                          if (lastWrapSummary && !isFallback) {
+                          // Short "no updates" message - only preserve previous summary if it wasn't a fallback
+                          if (lastWrapSummary && !isFallback && !lastWrapSummary.includes('temporarily unavailable')) {
                             setLastWrapSummary(lastWrapSummary + '\n\n*No new updates since last wrap - your capsules remain current.*');
                           } else {
-                            setLastWrapSummary(summary); // First time or fallback, use as-is
+                            setLastWrapSummary(summary); // First time, fallback, or previous was fallback - use as-is
                           }
                         } else {
                           // Full summary - use it directly (don't concatenate for fallbacks)
