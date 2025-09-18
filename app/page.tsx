@@ -77,6 +77,7 @@ const HomePage = () => {
   const [accessibleShrinkedCapsules, setAccessibleShrinkedCapsules] = useState<string[]>([]);
   const [wrapSummaryShown, setWrapSummaryShown] = useState(false);
   const wrapToolRef = useRef<WrapToolRef>(null);
+  const [recent3040Error, setRecent3040Error] = useState<boolean>(false);
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
@@ -298,6 +299,11 @@ const HomePage = () => {
             console.log('[HomePage] Periodic check: Rate limited, skipping');
           } else {
             console.error('[HomePage] Periodic wrap check failed:', error.message);
+            // Track 3040 errors
+            if (error.message.includes('3040') || error.message.includes('temporarily overloaded')) {
+              setRecent3040Error(true);
+              setTimeout(() => setRecent3040Error(false), 5 * 60 * 1000);
+            }
           }
         }
       }
@@ -1946,13 +1952,19 @@ const HomePage = () => {
                         // When wrap result comes back, handle based on content
                         console.log('[HomePage] Received wrap summary:', summary);
 
-                        if (summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50)) {
-                          // Show "no new updates" in a separate message window
+                        const isNoUpdatesResponse = summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50);
+
+                        // If 3040 error happened and manual refresh, always show full summary
+                        if (isNoUpdatesResponse && !recent3040Error) {
+                          // Show "no new updates" in header window
                           setHeaderResponseMessage('*No new updates since last wrap - your capsules remain current.*');
                           setShowHeaderMessageWindow(true);
                         } else {
-                          // Full summary - update the main welcome window
+                          // Show full summary in welcome window
                           setLastWrapSummary(summary);
+                          if (recent3040Error) {
+                            setRecent3040Error(false);
+                          }
                         }
                         // Resume periodic status updates and return to idle phase
                         // Small delay to ensure wrap status message is processed before switching to idle

@@ -46,28 +46,45 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     tempDiv.innerHTML = content;
     tempDiv.style.position = 'absolute';
     tempDiv.style.visibility = 'hidden';
-    tempDiv.style.padding = '30px'; // Match window-content padding
-    tempDiv.style.fontSize = '18px'; // Match main-text font-size on desktop
+    tempDiv.style.padding = '30px'; // Match global window-content padding
+    tempDiv.style.fontSize = '14px'; // Match welcome window font-size
     tempDiv.style.fontFamily = "'Geneva', sans-serif";
     tempDiv.style.lineHeight = '1.4';
-    tempDiv.style.maxWidth = '500px';
-    tempDiv.style.minWidth = '150px';
     tempDiv.style.wordWrap = 'break-word';
     document.body.appendChild(tempDiv);
-    
-    const width = Math.max(150, Math.min(500, Math.ceil(tempDiv.scrollWidth + 60))); // Add padding buffer
-    const height = Math.ceil(tempDiv.scrollHeight + 60); // Add padding buffer
+
+    // Get natural content size
+    const naturalWidth = tempDiv.scrollWidth;
+    const naturalHeight = tempDiv.scrollHeight;
+
+    // Smart sizing based on content length
+    const cleanText = content.replace(/<[^>]+>/g, '').trim();
+    const isShortMessage = cleanText.length < 20; // "thinking" = 8 chars
+
+    let width, maxWidth;
+    if (isShortMessage) {
+      // For short messages like "thinking", use minimal width
+      maxWidth = 200;
+      width = Math.max(120, Math.min(maxWidth, naturalWidth + 60)); // Account for 30px padding each side
+    } else {
+      // For longer messages, use more generous sizing like welcome window
+      maxWidth = 500;
+      width = Math.max(180, Math.min(maxWidth, naturalWidth + 60)); // Account for 30px padding each side
+    }
+
+    const height = Math.max(80, naturalHeight + 60); // Account for 30px padding top/bottom
+
     document.body.removeChild(tempDiv);
-    
+
     setIsAnimatingSize(true);
-    setWindowDimensions({ 
-      width: `${width}px`, 
-      height: `${height}px` 
+    setWindowDimensions({
+      width: `${width}px`,
+      height: `${height}px`
     });
-    
+
     setTimeout(() => {
       setIsAnimatingSize(false);
-    }, 500);
+    }, 400); // Faster animation like welcome window
   }, []);
 
   useEffect(() => {
