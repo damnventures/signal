@@ -117,6 +117,15 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     };
   }, [variants]);
 
+  // Reset second card state when needsSecondCard changes
+  useEffect(() => {
+    if (!needsSecondCard) {
+      setShowSecondCard(false);
+      setSecondCardVariantIndex(0);
+      setSecondCardShowDiff(false);
+    }
+  }, [needsSecondCard]);
+
   useEffect(() => {
     const config = ANIMATION_CONFIG.welcome;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
@@ -167,8 +176,8 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
           onBringToFront={onBringToFront}
           initialZIndex={initialZIndex - 1}
           initialPosition={{
-            x: initialPosition.x + 10,
-            y: initialPosition.y + 10
+            x: initialPosition.x + 40,
+            y: initialPosition.y + 20
           }}
           className="animated-header-window"
         >
