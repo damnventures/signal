@@ -8,8 +8,8 @@ export function createMessageVariants(message: string): string[] {
     return ["Loading..."];
   }
 
-  // Simple approach: split on sentences, then commas if sentences are too long
-  let sentences = message.split(/\. (?=[A-Z])/);
+  // Simple approach: split on sentences or newlines, then commas if sentences are too long
+  let sentences = message.split(/\. (?=[A-Z])|\n/).filter(s => s.trim() !== '');
 
   // If sentences are too long (>80 chars), try splitting on commas
   const processedSentences: string[] = [];
