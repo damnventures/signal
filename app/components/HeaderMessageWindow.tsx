@@ -23,24 +23,59 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 'auto', height: 'auto' });
+  const [isAnimatingSize, setIsAnimatingSize] = useState(false);
 
   const getMessageVariants = () => {
     if (!message || message.trim() === '') {
       return ["Loading..."];
     }
 
-    // For short messages, just show as-is
     const cleanLength = message.replace(/<[^>]+>/g, '').length;
     if (cleanLength < 50) {
       return [message];
     }
 
-    // For longer messages, create progressive variants using shared utility
     return createMessageVariants(message);
   };
 
   const variants = getMessageVariants();
 
+  const measureContentAndResize = useCallback((content: string) => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.style.padding = '16px'; // Match window-content padding
+    tempDiv.style.fontSize = '14px';
+    tempDiv.style.fontFamily = "'Chicago', 'Lucida Grande', sans-serif";
+    tempDiv.style.lineHeight = '1.4';
+    tempDiv.style.maxWidth = '500px'; // Match window max-width
+    tempDiv.style.minWidth = '150px'; // Set a smaller min-width
+    tempDiv.style.wordWrap = 'break-word';
+    document.body.appendChild(tempDiv);
+    
+    const width = Math.max(150, Math.min(500, Math.ceil(tempDiv.scrollWidth + 32))); // Add padding buffer
+    const height = Math.ceil(tempDiv.scrollHeight + 32); // Add padding buffer
+    document.body.removeChild(tempDiv);
+    
+    setIsAnimatingSize(true);
+    setWindowDimensions({ 
+      width: `${width}px`, 
+      height: `${height}px` 
+    });
+    
+    setTimeout(() => {
+      setIsAnimatingSize(false);
+    }, 500); // Match CSS transition duration
+  }, []);
+
+  useEffect(() => {
+    const contentToMeasure = variants[variantIndex] || '';
+    if (contentToMeasure) {
+      measureContentAndResize(contentToMeasure);
+    }
+  }, [variantIndex, variants, measureContentAndResize]);
 
   // Reset animation when new message arrives
   useEffect(() => {
@@ -79,6 +114,11 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
       onBringToFront={onBringToFront}
       initialZIndex={initialZIndex}
       initialPosition={initialPosition}
+      style={{
+        width: windowDimensions.width,
+        height: windowDimensions.height,
+        transition: isAnimatingSize ? 'width 0.4s cubic-bezier(0.4, 0.0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
+      }}
       className="header-message-window"
     >
       <div className="window-content">
@@ -97,8 +137,6 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           border: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 13px;
-          min-width: 300px;
-          max-width: 500px;
           box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
         }
 

@@ -119,12 +119,7 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
 
         // Notify parent components
         if (onSummaryUpdate) {
-          // Check if state changed significantly (only for successful AI responses)
-          let summaryToShow = summaryText;
-          if (result.success && !result.stateChanged && result.stateHash === lastStateHash) {
-            summaryToShow += '\n\n*Not much has changed since your last wrap - your capsules are up to date.*';
-          }
-          onSummaryUpdate(summaryToShow);
+          onSummaryUpdate(summaryText);
         }
         if (onStateHashUpdate) {
           onStateHashUpdate(result.stateHash);

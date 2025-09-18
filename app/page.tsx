@@ -271,16 +271,20 @@ const HomePage = () => {
           });
         }, 'periodic-check', 10000);
 
-        if (result.stateChanged && result.summary && result.summary !== lastWrapSummary) {
-          console.log('[HomePage] Capsule state changed, updating summary');
-          // Clear status intervals when periodic check updates summary
-          if (statusIntervalRef.current) {
-            clearInterval(statusIntervalRef.current);
-            statusIntervalRef.current = null;
+        if (result.stateChanged) {
+          if (result.summary && result.summary !== lastWrapSummary) {
+            console.log('[HomePage] Capsule state changed, updating summary');
+            // Clear status intervals when periodic check updates summary
+            if (statusIntervalRef.current) {
+              clearInterval(statusIntervalRef.current);
+              statusIntervalRef.current = null;
+            }
+            setLastWrapSummary(result.summary);
+            console.log('[HomePage] Periodic check updated status and cleared intervals');
+          } else {
+            console.log('[HomePage] Capsule state changed, but summary is the same.');
           }
-          setLastWrapSummary(result.summary);
-          setWrapStateHash(result.stateHash);
-          console.log('[HomePage] Periodic check updated status and cleared intervals');
+          setWrapStateHash(result.stateHash); // Update the hash regardless of summary change
         } else {
           console.log('[HomePage] No capsule state changes detected');
         }
@@ -1942,18 +1946,12 @@ const HomePage = () => {
                         // When wrap result comes back, handle based on content
                         console.log('[HomePage] Received wrap summary:', summary);
 
-                        // Check if this is a fallback message (contains "temporarily unavailable")
-                        const isFallback = summary && summary.includes('temporarily unavailable');
-
                         if (summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50)) {
-                          // Short "no updates" message - only preserve previous summary if it wasn't a fallback
-                          if (lastWrapSummary && !isFallback && !lastWrapSummary.includes('temporarily unavailable')) {
-                            setLastWrapSummary(lastWrapSummary + '\n\n*No new updates since last wrap - your capsules remain current.*');
-                          } else {
-                            setLastWrapSummary(summary); // First time, fallback, or previous was fallback - use as-is
-                          }
+                          // Show "no new updates" in a separate message window
+                          setHeaderResponseMessage('*No new updates since last wrap - your capsules remain current.*');
+                          setShowHeaderMessageWindow(true);
                         } else {
-                          // Full summary - use it directly (don't concatenate for fallbacks)
+                          // Full summary - update the main welcome window
                           setLastWrapSummary(summary);
                         }
                         // Resume periodic status updates and return to idle phase

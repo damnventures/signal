@@ -27,8 +27,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
-  const [displayedMessage, setDisplayedMessage] = useState('');
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const [visibleVariants, setVisibleVariants] = useState<string[]>([]);
+  const [overflowText, setOverflowText] = useState('');
 
   // Use shared message variant creation utility
   const createWrapVariants = useCallback((summary: string): string[] => {
@@ -72,43 +73,38 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     return getMessageVariants();
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
+  useEffect(() => {
+    const splitIndex = 3;
+    // Only apply stacked cards for authenticated users with long wrap summaries
+    if (userEmail && variants.length > splitIndex) {
+      setVisibleVariants(variants.slice(0, splitIndex));
+      const fullText = variants[variants.length - 1];
+      const visibleText = variants[splitIndex - 1];
+      // A simple substring might cut in the middle of a word or tag.
+      // It's better to find the end of the visibleText in fullText.
+      const splitPoint = fullText.indexOf(visibleText) + visibleText.length;
+      setOverflowText(fullText.substring(splitPoint));
+    } else {
+      setVisibleVariants(variants);
+      setOverflowText('');
+    }
+  }, [variants, userEmail]);
+
   // Cycle through variants with pause
-  // Watch for prop changes (wrap summary arriving) and restart demo-style animation
-  useEffect(() => {
-    if (userEmail && wrapSummary) {
-      setVariantIndex(0);
-      setShowDiff(false);
-      setIsAnimationComplete(false); // Reset completion flag
-    }
-  }, [wrapSummary, userEmail]);
-
-  // Watch for demo message changes and restart demo-style animation
-  useEffect(() => {
-    if (demoMessage && !userEmail) {
-      setVariantIndex(0);
-      setShowDiff(false);
-      setIsAnimationComplete(false); // Reset completion flag
-    }
-  }, [demoMessage, userEmail]);
-
   useEffect(() => {
     if (isAnimationComplete) return; // Don't run animation again if complete
 
     const config = ANIMATION_CONFIG.welcome;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
     const timer = setTimeout(() => {
-      if (variantIndex < variants.length - 1) {
+      if (variantIndex < visibleVariants.length - 1) {
         setShowDiff(true);
         setVariantIndex(prev => prev + 1);
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
         // Animation complete
         setIsAnimationComplete(true); // Set completion flag
-        if (userEmail) {
-          // For authenticated users, don't auto-close - let them close manually
-        } else if (demoMessage) {
-          // For demo users with demo message, don't auto-close - let them close manually
-        } else {
+        if (!userEmail && !demoMessage) {
           // For regular non-auth users (default demo variants), close after delay
           setTimeout(onClose, 3000);
         }
@@ -116,35 +112,44 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, userEmail, demoMessage, isAnimationComplete]);
-
-  // Update displayed message
-  useEffect(() => {
-    if (variantIndex === 0) {
-      setDisplayedMessage(variants[0]);
-    } else {
-      setDisplayedMessage(variants.slice(0, variantIndex + 1).join(' '));
-    }
-  }, [variantIndex, variants]);
+  }, [variantIndex, visibleVariants.length, onClose, userEmail, demoMessage, isAnimationComplete]);
 
   return (
-    <DraggableWindow
-      id={id}
-      onBringToFront={onBringToFront}
-      initialZIndex={initialZIndex}
-      initialPosition={initialPosition}
-      className="animated-header-window" // Re-use header styles
-    >
-      <div className="window-content">
-        <p className="main-text">
-          <MessageDiff
-            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
-            newContent={variants[variantIndex] || ''}
-            showDiff={showDiff}
-          />
-        </p>
-      </div>
-
+    <div style={{ position: 'relative' }}>
+      {overflowText && (
+        <div
+          className="animated-header-window back-card"
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            zIndex: initialZIndex - 1,
+            background: '#e0e0e0',
+            border: '2px solid #000',
+          }}
+        >
+          <div className="window-content">
+            <p className="main-text" dangerouslySetInnerHTML={{ __html: overflowText }} />
+          </div>
+        </div>
+      )}
+      <DraggableWindow
+        id={id}
+        onBringToFront={onBringToFront}
+        initialZIndex={initialZIndex}
+        initialPosition={initialPosition}
+        className="animated-header-window front-card" // Re-use header styles
+      >
+        <div className="window-content">
+          <p className="main-text">
+            <MessageDiff
+              oldContent={variantIndex === 0 ? '' : visibleVariants[variantIndex - 1] || ''}
+              newContent={visibleVariants[variantIndex] || ''}
+              showDiff={showDiff}
+            />
+          </p>
+        </div>
+      </DraggableWindow>
       <style jsx>{`
         .main-text :global(.diff-highlight) {
           background-color: #ffeb3b;
@@ -152,9 +157,19 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
           border-radius: 3px;
           transition: background-color 0.8s ease;
         }
+        .back-card .window-content {
+          padding: 20px;
+        }
+        .back-card .main-text {
+          font-size: 14px;
+          font-family: 'Geneva', sans-serif;
+          color: #333;
+          text-align: left;
+        }
       `}</style>
-    </DraggableWindow>
+    </div>
   );
+};
 };
 
 export default DemoWelcomeWindow;
