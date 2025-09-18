@@ -170,6 +170,5 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     </div>
   );
 };
-};
 
 export default DemoWelcomeWindow;
