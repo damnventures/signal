@@ -13,6 +13,7 @@ interface WrapToolProps {
   onStateHashUpdate?: (newHash: string) => void;
   onWrapStart?: () => void;  // Called when wrap starts
   onStatusMessage?: (message: string) => void;  // For status bar updates
+  onError?: (error: string) => void;  // Called on errors
   isManualTrigger?: boolean;  // Distinguish manual vs auto wrap
 }
 
@@ -44,6 +45,7 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
   onStateHashUpdate,
   onWrapStart,
   onStatusMessage,
+  onError,
   isManualTrigger = false
 }, ref) => {
   const { user, accessToken, apiKey } = useAuth();
@@ -146,6 +148,10 @@ const WrapTool = forwardRef<WrapToolRef, WrapToolProps>(({
           // Don't show error for rate limiting
         } else {
           setError(error.message);
+          // Notify parent about errors, especially 3040 errors
+          if (onError) {
+            onError(error.message);
+          }
         }
       } else {
         setError('Unknown error');

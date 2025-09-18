@@ -1936,11 +1936,10 @@ const HomePage = () => {
                       autoFetch={false}  // Disabled - using original auto wrap system
                       className="action-button wrap-button"
                       onWrapStart={() => {
-                        // Clear welcome window message and show wrapping status
-                        setLastWrapSummary('');
+                        // Don't clear welcome window - let animation handle it
                         setLoadingPhase('wrapping');
                         updateStatusMessage('wrapping');
-                        console.log('[HomePage] Manual wrap started - cleared welcome window');
+                        console.log('[HomePage] Manual wrap started');
                       }}
                       onStatusMessage={(message) => {
                         // Update loading phase to wrapping and show custom message
@@ -1951,18 +1950,23 @@ const HomePage = () => {
                       onSummaryUpdate={(summary) => {
                         // When wrap result comes back, handle based on content
                         console.log('[HomePage] Received wrap summary:', summary);
+                        console.log('[HomePage] recent3040Error state:', recent3040Error);
 
                         const isNoUpdatesResponse = summary && (summary.includes('No updates') || summary.includes('unchanged') || summary.length < 50);
+                        console.log('[HomePage] isNoUpdatesResponse:', isNoUpdatesResponse);
 
-                        // If 3040 error happened and manual refresh, always show full summary
+                        // If 3040 error happened recently, always show full summary (bypass "no updates")
                         if (isNoUpdatesResponse && !recent3040Error) {
-                          // Show "no new updates" in header window
+                          // Normal case: show "no new updates" in header window
+                          console.log('[HomePage] Showing no updates in header window');
                           setHeaderResponseMessage('*No new updates since last wrap - your capsules remain current.*');
                           setShowHeaderMessageWindow(true);
                         } else {
-                          // Show full summary in welcome window
+                          // Either has real updates OR bypass due to 3040 error - show full summary in welcome window
+                          console.log('[HomePage] Showing full summary in welcome window');
                           setLastWrapSummary(summary);
                           if (recent3040Error) {
+                            console.log('[HomePage] Clearing 3040 error flag after successful manual refresh');
                             setRecent3040Error(false);
                           }
                         }
@@ -1973,6 +1977,14 @@ const HomePage = () => {
                           updateStatusMessage('idle');
                           console.log('[HomePage] Wrap tool updated welcome window and resumed status');
                         }, 100);
+                      }}
+                      onError={(error) => {
+                        // Track 3040 errors from manual wrap attempts
+                        if (error.includes('3040') || error.includes('temporarily overloaded')) {
+                          console.log('[HomePage] Manual wrap 3040 error - enabling refresh exception');
+                          setRecent3040Error(true);
+                          setTimeout(() => setRecent3040Error(false), 5 * 60 * 1000);
+                        }
                       }}
                       onStateHashUpdate={setWrapStateHash}
                       lastStateHash={wrapStateHash}

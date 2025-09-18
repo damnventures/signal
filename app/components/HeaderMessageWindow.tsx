@@ -25,6 +25,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
   const [showDiff, setShowDiff] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({ width: 'auto', height: 'auto' });
   const [isAnimatingSize, setIsAnimatingSize] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [animationReady, setAnimationReady] = useState(false);
 
   const getMessageVariants = () => {
     if (!message || message.trim() === '') {
@@ -96,12 +98,29 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 
   useEffect(() => {
     if (message) {
+      console.log('[HeaderMessageWindow] New message received, starting clear animation');
+      // Step 1: Clear current content
+      setIsClearing(true);
+      setAnimationReady(false);
       setVariantIndex(0);
       setShowDiff(false);
+
+      // Step 2: Resize window for new content and start animation
+      setTimeout(() => {
+        const contentToMeasure = variants[0] || message;
+        measureContentAndResize(contentToMeasure);
+
+        setIsClearing(false);
+        setAnimationReady(true);
+        console.log('[HeaderMessageWindow] Ready to start animation');
+      }, 100); // Brief clear period
     }
-  }, [message]);
+  }, [message, variants, measureContentAndResize]);
 
   useEffect(() => {
+    // Only start animation when ready and not clearing
+    if (!animationReady || isClearing || variants.length === 0) return;
+
     const config = ANIMATION_CONFIG.header;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
     const timer = setTimeout(() => {
@@ -115,7 +134,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose]);
+  }, [variantIndex, variants.length, onClose, animationReady, isClearing]);
 
   if (!message) {
     return null;
@@ -136,11 +155,15 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     >
       <div className="window-content">
         <p className="main-text">
-          <MessageDiff
-            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
-            newContent={variants[variantIndex] || ''}
-            showDiff={showDiff}
-          />
+          {isClearing ? (
+            '' // Empty during clear
+          ) : (
+            <MessageDiff
+              oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+              newContent={variants[variantIndex] || ''}
+              showDiff={showDiff}
+            />
+          )}
         </p>
       </div>
 
