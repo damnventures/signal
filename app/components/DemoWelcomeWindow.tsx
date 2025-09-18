@@ -30,34 +30,22 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
   const [visibleVariants, setVisibleVariants] = useState<string[]>([]);
   const [overflowText, setOverflowText] = useState('');
+  const contentRef = useRef<HTMLParagraphElement>(null);
 
-  // Use shared message variant creation utility
   const createWrapVariants = useCallback((summary: string): string[] => {
     return createMessageVariants(summary);
   }, []);
 
-  // For authenticated users, show loading then wrap summary
-  // For demo users, show demo message
-  // For non-auth users, show demo variants
   const getMessageVariants = useCallback(() => {
     if (userEmail) {
-      // Authenticated user flow - NEVER show demo content, only wrap summaries
       if (!wrapSummary || wrapSummary.trim() === '') {
-        // Still loading wrap summary - show minimal loading state
-        return [
-          "Analyzing your capsules..."
-        ];
-      } else {
-        // Break wrap summary into progressive variants like demo mode
-        return createWrapVariants(wrapSummary);
+        return ["Analyzing your capsules..."];
       }
+      return createWrapVariants(wrapSummary);
     } else {
-      // Non-authenticated user only - show demo content
       if (demoMessage) {
-        // Demo intent flow - only for non-auth users
         return createWrapVariants(demoMessage);
       } else {
-        // Default demo variants for non-auth users
         return [
           "Good morning, Vanya! Checking your signals...",
           "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
@@ -68,20 +56,39 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     }
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
-  // Memoize variants to prevent render loops
   const variants = useMemo(() => {
     return getMessageVariants();
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
   useEffect(() => {
-    const splitIndex = 3;
-    // Only apply stacked cards for authenticated users with long wrap summaries
-    if (userEmail && variants.length > splitIndex) {
+    const maxHeight = 400; // Max height for the front card
+
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.style.width = '450px'; // Approximate width
+    tempDiv.style.padding = '20px';
+    tempDiv.style.fontSize = '14px';
+    tempDiv.style.fontFamily = 'Geneva, sans-serif';
+    tempDiv.style.lineHeight = '1.4';
+    document.body.appendChild(tempDiv);
+
+    let splitIndex = -1;
+
+    for (let i = 0; i < variants.length; i++) {
+      tempDiv.innerHTML = variants[i];
+      if (tempDiv.scrollHeight > maxHeight) {
+        splitIndex = i;
+        break;
+      }
+    }
+
+    document.body.removeChild(tempDiv);
+
+    if (userEmail && splitIndex !== -1) {
       setVisibleVariants(variants.slice(0, splitIndex));
       const fullText = variants[variants.length - 1];
       const visibleText = variants[splitIndex - 1];
-      // A simple substring might cut in the middle of a word or tag.
-      // It's better to find the end of the visibleText in fullText.
       const splitPoint = fullText.indexOf(visibleText) + visibleText.length;
       setOverflowText(fullText.substring(splitPoint));
     } else {
@@ -90,9 +97,8 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     }
   }, [variants, userEmail]);
 
-  // Cycle through variants with pause
   useEffect(() => {
-    if (isAnimationComplete) return; // Don't run animation again if complete
+    if (isAnimationComplete) return;
 
     const config = ANIMATION_CONFIG.welcome;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
@@ -102,10 +108,8 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         setVariantIndex(prev => prev + 1);
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
-        // Animation complete
-        setIsAnimationComplete(true); // Set completion flag
+        setIsAnimationComplete(true);
         if (!userEmail && !demoMessage) {
-          // For regular non-auth users (default demo variants), close after delay
           setTimeout(onClose, 3000);
         }
       }
@@ -115,41 +119,42 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   }, [variantIndex, visibleVariants.length, onClose, userEmail, demoMessage, isAnimationComplete]);
 
   return (
-    <div style={{ position: 'relative' }}>
-      {overflowText && (
-        <div
-          className="animated-header-window back-card"
-          style={{
+    <DraggableWindow
+      id={id}
+      onBringToFront={onBringToFront}
+      initialZIndex={initialZIndex}
+      initialPosition={initialPosition}
+      className="animated-header-window"
+    >
+      <div style={{ position: 'relative' }}>
+        {overflowText && (
+          <div className="back-card" style={{
             position: 'absolute',
             top: '10px',
             left: '10px',
-            zIndex: initialZIndex - 1,
+            zIndex: -1,
+            width: '100%',
+            padding: '20px',
             background: '#e0e0e0',
             border: '2px solid #000',
-          }}
-        >
+          }}>
+            <div className="window-content">
+              <p className="main-text" dangerouslySetInnerHTML={{ __html: overflowText }} />
+            </div>
+          </div>
+        )}
+        <div className="front-card">
           <div className="window-content">
-            <p className="main-text" dangerouslySetInnerHTML={{ __html: overflowText }} />
+            <p className="main-text" ref={contentRef}>
+              <MessageDiff
+                oldContent={variantIndex === 0 ? '' : visibleVariants[variantIndex - 1] || ''}
+                newContent={visibleVariants[variantIndex] || ''}
+                showDiff={showDiff}
+              />
+            </p>
           </div>
         </div>
-      )}
-      <DraggableWindow
-        id={id}
-        onBringToFront={onBringToFront}
-        initialZIndex={initialZIndex}
-        initialPosition={initialPosition}
-        className="animated-header-window front-card" // Re-use header styles
-      >
-        <div className="window-content">
-          <p className="main-text">
-            <MessageDiff
-              oldContent={variantIndex === 0 ? '' : visibleVariants[variantIndex - 1] || ''}
-              newContent={visibleVariants[variantIndex] || ''}
-              showDiff={showDiff}
-            />
-          </p>
-        </div>
-      </DraggableWindow>
+      </div>
       <style jsx>{`
         .main-text :global(.diff-highlight) {
           background-color: #ffeb3b;
@@ -167,7 +172,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
           text-align: left;
         }
       `}</style>
-    </div>
+    </DraggableWindow>
   );
 };
 
