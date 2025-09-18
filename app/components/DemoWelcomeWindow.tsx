@@ -61,31 +61,8 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
   useEffect(() => {
-    const maxHeight = 400; // Max height for the front card
-
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.visibility = 'hidden';
-    tempDiv.style.width = '450px'; // Approximate width
-    tempDiv.style.padding = '20px';
-    tempDiv.style.fontSize = '14px';
-    tempDiv.style.fontFamily = 'Geneva, sans-serif';
-    tempDiv.style.lineHeight = '1.4';
-    document.body.appendChild(tempDiv);
-
-    let splitIndex = -1;
-
-    for (let i = 0; i < variants.length; i++) {
-      tempDiv.innerHTML = variants[i];
-      if (tempDiv.scrollHeight > maxHeight) {
-        splitIndex = i;
-        break;
-      }
-    }
-
-    document.body.removeChild(tempDiv);
-
-    if (userEmail && splitIndex !== -1) {
+    const splitIndex = 3;
+    if (userEmail && variants.length > splitIndex) {
       setVisibleVariants(variants.slice(0, splitIndex));
       const fullText = variants[variants.length - 1];
       const visibleText = variants[splitIndex - 1];
