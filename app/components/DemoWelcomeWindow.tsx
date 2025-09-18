@@ -61,10 +61,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
 
   // Determine if we need a second card and where to split
   const { frontCardVariants, secondCardVariants, needsSecondCard } = useMemo(() => {
-    const FRONT_CARD_LIMIT = 300; // chars limit for front card
     const finalVariant = variants[variants.length - 1] || '';
 
-    if (finalVariant.length <= FRONT_CARD_LIMIT) {
+    // Split based on sentence count instead of character count
+    const sentences = finalVariant.split(/\.(?=\s+[A-Z])|\.(?=\s*$)/).filter(s => s.trim());
+
+    // If 3 or fewer sentences, keep in one card
+    if (sentences.length <= 3) {
       return {
         frontCardVariants: variants,
         secondCardVariants: [],
@@ -72,11 +75,18 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       };
     }
 
-    // Find the best split point - look for a good break around the limit
+    // Split at half the sentences, ensuring we end at a sentence boundary
+    const splitSentenceIndex = Math.ceil(sentences.length / 2);
+    const frontSentences = sentences.slice(0, splitSentenceIndex);
+    const backSentences = sentences.slice(splitSentenceIndex);
+
+    const frontContent = frontSentences.join('.').trim() + '.';
+
+    // Find which variant contains this split point
     let splitVariantIndex = -1;
     for (let i = 0; i < variants.length; i++) {
-      if (variants[i].length > FRONT_CARD_LIMIT) {
-        splitVariantIndex = Math.max(0, i - 1);
+      if (variants[i].includes(frontContent) || variants[i].length >= frontContent.length) {
+        splitVariantIndex = i;
         break;
       }
     }
@@ -88,15 +98,21 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     const frontVariants = variants.slice(0, splitVariantIndex + 1);
     const remainingVariants = variants.slice(splitVariantIndex + 1);
 
-    // Create second card variants that continue from where first card ended
-    const baseContent = frontVariants[frontVariants.length - 1];
-    const secondCardVariants = remainingVariants.map(variant =>
-      variant.substring(baseContent.length).trim()
-    );
+    // Create second card with remaining content
+    const secondCardVariants = remainingVariants.length > 0
+      ? remainingVariants.map(variant => {
+          // Extract content after the front card's final content
+          const frontFinal = frontVariants[frontVariants.length - 1];
+          if (variant.length > frontFinal.length) {
+            return variant.substring(frontFinal.length).trim();
+          }
+          return variant;
+        })
+      : [backSentences.join('.').trim() + '.'];
 
     return {
       frontCardVariants: frontVariants,
-      secondCardVariants: secondCardVariants,
+      secondCardVariants: secondCardVariants.filter(v => v.trim()),
       needsSecondCard: true
     };
   }, [variants]);

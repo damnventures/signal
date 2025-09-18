@@ -185,12 +185,18 @@ const HomePage = () => {
       console.log('[HomePage] Wrap summary already shown, skipping duplicate');
       return;
     }
-    
+
+    // Additional check - if we already have a wrap summary displayed, don't fetch another
+    if (lastWrapSummary && lastWrapSummary.trim() !== '') {
+      console.log('[HomePage] Wrap summary already exists, skipping duplicate fetch');
+      return;
+    }
+
     console.log('[HomePage] Showing wrap summary for first time');
     setWrapSummaryShown(true);
     const wrapMessage = await fetchWrapSummary(userProfile);
     animateStatusMessage(wrapMessage);
-  }, [wrapSummaryShown, fetchWrapSummary, animateStatusMessage]);
+  }, [wrapSummaryShown, fetchWrapSummary, animateStatusMessage, lastWrapSummary]);
 
   // Periodic check for capsule state changes (every 5 minutes for authenticated users)
   useEffect(() => {
