@@ -27,10 +27,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
-  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
-  const [visibleVariants, setVisibleVariants] = useState<string[]>([]);
-  const [overflowText, setOverflowText] = useState('');
-  const contentRef = useRef<HTMLParagraphElement>(null);
+  const [showSecondCard, setShowSecondCard] = useState(false);
+  const [secondCardVariantIndex, setSecondCardVariantIndex] = useState(0);
+  const [secondCardShowDiff, setSecondCardShowDiff] = useState(false);
 
   const createWrapVariants = useCallback((summary: string): string[] => {
     return createMessageVariants(summary);
@@ -60,36 +59,63 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     return getMessageVariants();
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
-  useEffect(() => {
-    // Only use card overflow for very long messages (>400 chars in final variant)
+  // Determine if we need a second card and where to split
+  const { frontCardVariants, secondCardVariants, needsSecondCard } = useMemo(() => {
+    const FRONT_CARD_LIMIT = 300; // chars limit for front card
     const finalVariant = variants[variants.length - 1] || '';
-    const isVeryLong = finalVariant.length > 400;
-    const splitIndex = 3;
 
-    if (userEmail && isVeryLong && variants.length > splitIndex) {
-      setVisibleVariants(variants.slice(0, splitIndex));
-      const fullText = variants[variants.length - 1];
-      const visibleText = variants[splitIndex - 1];
-      const splitPoint = fullText.indexOf(visibleText) + visibleText.length;
-      setOverflowText(fullText.substring(splitPoint));
-    } else {
-      setVisibleVariants(variants);
-      setOverflowText('');
+    if (finalVariant.length <= FRONT_CARD_LIMIT) {
+      return {
+        frontCardVariants: variants,
+        secondCardVariants: [],
+        needsSecondCard: false
+      };
     }
-  }, [variants, userEmail]);
+
+    // Find the best split point - look for a good break around the limit
+    let splitVariantIndex = -1;
+    for (let i = 0; i < variants.length; i++) {
+      if (variants[i].length > FRONT_CARD_LIMIT) {
+        splitVariantIndex = Math.max(0, i - 1);
+        break;
+      }
+    }
+
+    if (splitVariantIndex === -1) {
+      splitVariantIndex = Math.floor(variants.length / 2);
+    }
+
+    const frontVariants = variants.slice(0, splitVariantIndex + 1);
+    const remainingVariants = variants.slice(splitVariantIndex + 1);
+
+    // Create second card variants that continue from where first card ended
+    const baseContent = frontVariants[frontVariants.length - 1];
+    const secondCardVariants = remainingVariants.map(variant =>
+      variant.substring(baseContent.length).trim()
+    );
+
+    return {
+      frontCardVariants: frontVariants,
+      secondCardVariants: secondCardVariants,
+      needsSecondCard: true
+    };
+  }, [variants]);
 
   useEffect(() => {
-    if (isAnimationComplete) return;
-
     const config = ANIMATION_CONFIG.welcome;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
     const timer = setTimeout(() => {
-      if (variantIndex < visibleVariants.length - 1) {
+      if (variantIndex < frontCardVariants.length - 1) {
         setShowDiff(true);
         setVariantIndex(prev => prev + 1);
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
-        setIsAnimationComplete(true);
+        // Front card animation complete
+        if (needsSecondCard && !showSecondCard) {
+          // Show second card after a brief pause
+          setTimeout(() => setShowSecondCard(true), 500);
+        }
+
         if (!userEmail && !demoMessage) {
           setTimeout(onClose, 3000);
         }
@@ -97,63 +123,88 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, visibleVariants.length, onClose, userEmail, demoMessage, isAnimationComplete]);
+  }, [variantIndex, frontCardVariants.length, onClose, userEmail, demoMessage, needsSecondCard, showSecondCard]);
+
+  // Second card animation
+  useEffect(() => {
+    if (!showSecondCard || secondCardVariants.length === 0) return;
+
+    const config = ANIMATION_CONFIG.welcome;
+    const delay = secondCardVariantIndex === 0 ? config.firstDelay : config.subsequentDelay;
+    const timer = setTimeout(() => {
+      if (secondCardVariantIndex < secondCardVariants.length - 1) {
+        setSecondCardShowDiff(true);
+        setSecondCardVariantIndex(prev => prev + 1);
+        setTimeout(() => setSecondCardShowDiff(false), config.diffDuration);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [secondCardVariantIndex, secondCardVariants.length, showSecondCard]);
 
   return (
-    <DraggableWindow
-      id={id}
-      onBringToFront={onBringToFront}
-      initialZIndex={initialZIndex}
-      initialPosition={initialPosition}
-      className="animated-header-window"
-    >
-      <div style={{ position: 'relative' }}>
-        {overflowText && (
-          <div className="back-card" style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            zIndex: -1,
-            width: '100%',
-            padding: '20px',
-            background: '#e0e0e0',
-            border: '2px solid #000',
-          }}>
-            <div className="window-content">
-              <p className="main-text" dangerouslySetInnerHTML={{ __html: overflowText }} />
-            </div>
-          </div>
-        )}
-        <div className="front-card">
+    <>
+      {/* Second card - positioned behind first card */}
+      {needsSecondCard && showSecondCard && (
+        <DraggableWindow
+          id={`${id}-overflow`}
+          onBringToFront={onBringToFront}
+          initialZIndex={initialZIndex - 1}
+          initialPosition={{
+            x: initialPosition.x + 10,
+            y: initialPosition.y + 10
+          }}
+          className="animated-header-window"
+        >
           <div className="window-content">
-            <p className="main-text" ref={contentRef}>
+            <p className="main-text">
               <MessageDiff
-                oldContent={variantIndex === 0 ? '' : visibleVariants[variantIndex - 1] || ''}
-                newContent={visibleVariants[variantIndex] || ''}
-                showDiff={showDiff}
+                oldContent={secondCardVariantIndex === 0 ? '' : secondCardVariants[secondCardVariantIndex - 1] || ''}
+                newContent={secondCardVariants[secondCardVariantIndex] || ''}
+                showDiff={secondCardShowDiff}
               />
             </p>
           </div>
+
+          <style jsx>{`
+            .main-text :global(.diff-highlight) {
+              background-color: #ffeb3b;
+              padding: 2px 4px;
+              border-radius: 3px;
+              transition: background-color 0.8s ease;
+            }
+          `}</style>
+        </DraggableWindow>
+      )}
+
+      {/* Main front card - positioned on top */}
+      <DraggableWindow
+        id={id}
+        onBringToFront={onBringToFront}
+        initialZIndex={initialZIndex}
+        initialPosition={initialPosition}
+        className="animated-header-window"
+      >
+        <div className="window-content">
+          <p className="main-text">
+            <MessageDiff
+              oldContent={variantIndex === 0 ? '' : frontCardVariants[variantIndex - 1] || ''}
+              newContent={frontCardVariants[variantIndex] || ''}
+              showDiff={showDiff}
+            />
+          </p>
         </div>
-      </div>
-      <style jsx>{`
-        .main-text :global(.diff-highlight) {
-          background-color: #ffeb3b;
-          padding: 2px 4px;
-          border-radius: 3px;
-          transition: background-color 0.8s ease;
-        }
-        .back-card .window-content {
-          padding: 20px;
-        }
-        .back-card .main-text {
-          font-size: 14px;
-          font-family: 'Geneva', sans-serif;
-          color: #333;
-          text-align: left;
-        }
-      `}</style>
-    </DraggableWindow>
+
+        <style jsx>{`
+          .main-text :global(.diff-highlight) {
+            background-color: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background-color 0.8s ease;
+          }
+        `}</style>
+      </DraggableWindow>
+    </>
   );
 };
 

@@ -126,7 +126,15 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           />
         </p>
       </div>
-      {/* Styles are now inherited from globals.css via animated-header-window and main-text classes */}
+
+      <style jsx>{`
+        .main-text :global(.diff-highlight) {
+          background-color: #ffeb3b;
+          padding: 2px 4px;
+          border-radius: 3px;
+          transition: background-color 0.8s ease;
+        }
+      `}</style>
     </DraggableWindow>
   );
 };
