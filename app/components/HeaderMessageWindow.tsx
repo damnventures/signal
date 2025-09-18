@@ -89,12 +89,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }, 400); // Faster animation like welcome window
   }, []);
 
-  useEffect(() => {
-    const contentToMeasure = variants[variantIndex] || '';
-    if (contentToMeasure) {
-      measureContentAndResize(contentToMeasure);
-    }
-  }, [variantIndex, variants, measureContentAndResize]);
+  // Removed redundant useEffect that was causing infinite loop
+  // Resizing is now handled in the message change effect below
 
   useEffect(() => {
     if (message) {
@@ -107,7 +103,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 
       // Step 2: Resize window for new content and start animation
       setTimeout(() => {
-        const contentToMeasure = variants[0] || message;
+        const currentVariants = getMessageVariants();
+        const contentToMeasure = currentVariants[0] || message;
         measureContentAndResize(contentToMeasure);
 
         setIsClearing(false);
@@ -115,7 +112,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
         console.log('[HeaderMessageWindow] Ready to start animation');
       }, 100); // Brief clear period
     }
-  }, [message, variants, measureContentAndResize]);
+  }, [message, measureContentAndResize]); // Remove variants from dependencies to break the loop
 
   useEffect(() => {
     // Only start animation when ready and not clearing
