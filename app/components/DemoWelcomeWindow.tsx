@@ -61,8 +61,12 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
 
   useEffect(() => {
+    // Only use card overflow for very long messages (>400 chars in final variant)
+    const finalVariant = variants[variants.length - 1] || '';
+    const isVeryLong = finalVariant.length > 400;
     const splitIndex = 3;
-    if (userEmail && variants.length > splitIndex) {
+
+    if (userEmail && isVeryLong && variants.length > splitIndex) {
       setVisibleVariants(variants.slice(0, splitIndex));
       const fullText = variants[variants.length - 1];
       const visibleText = variants[splitIndex - 1];
