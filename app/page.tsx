@@ -1269,6 +1269,11 @@ const HomePage = () => {
     }
   }, [authFetch, accessToken]); // Added accessToken dependency
 
+  // Memoize the refresh function to prevent unnecessary re-renders
+  const onRefreshCapsules = useCallback(() => {
+    fetchCapsules(apiKey);
+  }, [fetchCapsules, apiKey]);
+
   useEffect(() => {
     // Load capsule content when selectedCapsuleId changes (both for demo and authenticated users)
     if (!isLoading && !authInProgress && selectedCapsuleId) {
@@ -2077,7 +2082,7 @@ const HomePage = () => {
               onClose={() => setShowStore(false)}
               userCapsules={capsules}
               user={user}
-              onRefreshCapsules={useCallback(() => fetchCapsules(apiKey), [apiKey, fetchCapsules])}
+              onRefreshCapsules={onRefreshCapsules}
               accessibleShrinkedCapsules={accessibleShrinkedCapsules}
             />
           </>
