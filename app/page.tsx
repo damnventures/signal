@@ -1213,14 +1213,19 @@ const HomePage = () => {
           console.log('[HomePage] No API key available, skipping shared capsules fetch');
         }
         
+        const oldCapsuleIds = new Set(capsules.map(c => c._id));
+        const newCapsules = allCapsules.filter((c: any) => !oldCapsuleIds.has(c._id));
+
         setCapsules(allCapsules);
+
         if (allCapsules.length > 0) {
-          // Only auto-select first capsule if no capsule is currently selected
-          if (!selectedCapsuleId) {
+          if (newCapsules.length > 0) {
+            setSelectedCapsuleId(newCapsules[0]._id);
+            console.log('[HomePage] New capsule detected, auto-selecting it:', newCapsules[0]._id);
+          } else if (!selectedCapsuleId) {
             setSelectedCapsuleId(allCapsules[0]._id);
             console.log('[HomePage] No capsule selected, auto-selecting first user capsule:', allCapsules[0]._id);
           } else {
-            // Check if currently selected capsule still exists in the updated list
             const currentCapsuleExists = allCapsules.some((c: any) => c._id === selectedCapsuleId);
             if (currentCapsuleExists) {
               console.log('[HomePage] User already has capsule selected and it exists, keeping it:', selectedCapsuleId);
@@ -1880,10 +1885,8 @@ const HomePage = () => {
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
                   onRefreshCapsule={() => {
-                    if (selectedCapsuleId) {
-                      console.log('[HomePage] Refreshing capsule content after job completion');
-                      fetchCapsuleContent(apiKey, selectedCapsuleId);
-                    }
+                    console.log('[HomePage] Refreshing capsules list after job completion');
+                    fetchCapsules(apiKey);
                   }}
                   onRefreshWrap={() => {
                     console.log('[HomePage] Triggering wrap refresh after job completion');
