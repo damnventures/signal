@@ -1198,8 +1198,8 @@ const HomePage = () => {
                 console.log('[HomePage] Owned capsule IDs:', Array.from(ownedIds));
                 const newSharedCapsules = sharedData.filter((c: any) => !ownedIds.has(c._id));
                 console.log('[HomePage] New shared capsules to add:', newSharedCapsules);
-                allCapsules = [...data, ...newSharedCapsules];
-                console.log('[HomePage] Final merged capsules:', allCapsules.map((c: any) => ({id: c._id, name: c.name})));
+                allCapsules = [...data, ...newSharedCapsules.map((c: any) => ({ ...c, isShared: true }))];
+                console.log('[HomePage] Final merged capsules:', allCapsules.map((c: any) => ({id: c._id, name: c.name, isShared: c.isShared })));
               }
             } else {
               const errorText = await sharedResponse.text();
@@ -1216,7 +1216,7 @@ const HomePage = () => {
         const oldCapsuleIds = new Set(capsules.map(c => c._id));
         const newCapsules = allCapsules.filter((c: any) => !oldCapsuleIds.has(c._id));
 
-        setCapsules(allCapsules);
+        setCapsules([...allCapsules]); // Explicitly create a new array
 
         if (allCapsules.length > 0) {
           if (newCapsules.length > 0) {
