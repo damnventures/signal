@@ -2077,7 +2077,7 @@ const HomePage = () => {
               onClose={() => setShowStore(false)}
               userCapsules={capsules}
               user={user}
-              onRefreshCapsules={() => fetchCapsules(apiKey)}
+              onRefreshCapsules={useCallback(() => fetchCapsules(apiKey), [apiKey, fetchCapsules])}
               accessibleShrinkedCapsules={accessibleShrinkedCapsules}
             />
           </>

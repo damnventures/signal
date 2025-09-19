@@ -31,7 +31,7 @@ interface StoreProps {
   accessibleShrinkedCapsules?: string[];
 }
 
-const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules, accessibleShrinkedCapsules = [] }) => {
+const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules, accessibleShrinkedCapsules = [] }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isCreatingCapsule, setIsCreatingCapsule] = useState(false);
   
@@ -475,8 +475,8 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
                 
                 if (source.type === 'add-new') {
                   handleCreateCapsule();
-                } else if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && user.email && isLoaded) {
-                  // LastWeekTonight Preview capsule - handle sharing (AUTH USERS ONLY)
+                } else if (source.type === 'shrinked' && source.capsuleId && user && user.email && isLoaded) {
+                  // Shrinked capsule - handle sharing (AUTH USERS ONLY)
                   handleShareToggle(source.capsuleId, source.name);
                 } else {
                   // Regular selection for non-auth users or other capsules
@@ -488,17 +488,17 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
               const userHasAccess = source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId);
               const isSharedWithUser = user && userHasAccess;
               
-              // Debug logging for accessible capsule styling
-              if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf') {
-                console.log(`[Store] LastWeekTonight Preview access check:`, {
-                  hasUser: !!user,
-                  sourceType: source.type,
-                  capsuleId: source.capsuleId,
-                  accessibleCapsules: accessibleShrinkedCapsules,
-                  userHasAccess,
-                  isSharedWithUser
-                });
-              }
+              // Debug logging for accessible capsule styling (commented out to reduce spam)
+              // if (source.capsuleId === '68c32cf3735fb4ac0ef3ccbf') {
+              //   console.log(`[Store] LastWeekTonight Preview access check:`, {
+              //     hasUser: !!user,
+              //     sourceType: source.type,
+              //     capsuleId: source.capsuleId,
+              //     accessibleCapsules: accessibleShrinkedCapsules,
+              //     userHasAccess,
+              //     isSharedWithUser
+              //   });
+              // }
               
               return (
                 <div 
@@ -895,6 +895,6 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       `}</style>
     </>
   );
-};
+});
 
 export default Store;
