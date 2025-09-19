@@ -279,6 +279,13 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: user.email }),
         });
+
+        // Refresh capsules to remove the unshared capsule from the list
+        if (onRefreshCapsules) {
+          setTimeout(() => {
+            onRefreshCapsules();
+          }, 1000);
+        }
       } catch (error) {
         console.error('Unsharing error:', error);
       }
@@ -333,8 +340,14 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   // User's capsules (real data when authenticated, fallback when not)
   const getUserCapsules = () => {
     if (user && userCapsules.length > 0) {
-      // Use real user capsule data
-      return userCapsules.map(capsule => ({
+      // Filter out capsules that are already defined as Shrinked system capsules to avoid duplicates
+      const shrinkedCapsuleIds = shrinkedCapsules.map(c => c.capsuleId);
+      const filteredUserCapsules = userCapsules.filter(capsule =>
+        !shrinkedCapsuleIds.includes(capsule._id)
+      );
+
+      // Use real user capsule data (excluding Shrinked system capsules)
+      return filteredUserCapsules.map(capsule => ({
         id: capsule._id,
         name: capsule.name || 'Untitled Capsule',
         author: user.email?.split('@')[0] || user.username || 'You',

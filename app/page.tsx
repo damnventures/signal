@@ -81,7 +81,7 @@ const HomePage = () => {
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
-    const defaultCapsuleId = '6887e02fa01e2f4073d3bb51';
+    const defaultCapsuleId = '68cdc3cf77fc9e53736d117e';
     setSelectedCapsuleId(defaultCapsuleId);
     setHasHeaderCompleted(false); // Reset header completed state
   }, []);
@@ -894,7 +894,7 @@ const HomePage = () => {
     
     // Check if this is a known shared system capsule
     const shrinkedCapsuleIds = [
-      '6887e02fa01e2f4073d3bb51', // YC Reducto AI  
+      '68cdc3cf77fc9e53736d117e', // Cooking Preview
       '68c32cf3735fb4ac0ef3ccbf', // LastWeekTonight Preview
       '6887e02fa01e2f4073d3bb52', // AI Research Papers
       '6887e02fa01e2f4073d3bb53', // Startup Insights
@@ -1111,7 +1111,7 @@ const HomePage = () => {
     
     // Store Shrinked capsules data for cross-reference
     const storeShrinkedCapsules = [
-      { id: '6887e02fa01e2f4073d3bb51', name: 'YC Reducto AI' },
+      { id: '68cdc3cf77fc9e53736d117e', name: 'Cooking Preview' },
       { id: '68c32cf3735fb4ac0ef3ccbf', name: 'LastWeekTonight Preview' },
       { id: '6887e02fa01e2f4073d3bb52', name: 'AI Research Papers' },
       { id: '6887e02fa01e2f4073d3bb53', name: 'Startup Insights' },
@@ -1124,7 +1124,7 @@ const HomePage = () => {
         console.log('[HomePage] Non-auth user detected, returning hardcoded capsule list');
         const hardcodedCapsules = [
           {
-            _id: '6887e02fa01e2f4073d3bb51',
+            _id: '68cdc3cf77fc9e53736d117e',
             name: 'Demo Capsule',
             isPublic: true
           },
@@ -1279,7 +1279,7 @@ const HomePage = () => {
       }
       
       // Prevent fetching demo capsule with user API key (race condition fix)
-      if (apiKey && selectedCapsuleId === '6887e02fa01e2f4073d3bb51') {
+      if (apiKey && selectedCapsuleId === '68cdc3cf77fc9e53736d117e') {
         console.log(`[HomePage] Skipping demo capsule fetch with user API key - will be cleared by auth useEffect`);
         return;
       }
@@ -1339,7 +1339,7 @@ const HomePage = () => {
           }, 3000); // Wait for welcome window to be seen
         }
         // Clear default capsule only, let fetchCapsules load user capsules
-        if (selectedCapsuleId === '6887e02fa01e2f4073d3bb51') {
+        if (selectedCapsuleId === '68cdc3cf77fc9e53736d117e') {
           console.log(`[HomePage] Clearing demo capsule for authenticated user`);
           setSelectedCapsuleId(null);
           setHighlightsData([]);
