@@ -2061,7 +2061,7 @@ const HomePage = () => {
               <HeaderMessageWindow
                 id="header-message-window"
                 onBringToFront={handleBringToFront}
-                initialZIndex={nextZIndex + 400} // Higher than welcome window
+                initialZIndex={cardZIndexes['header-message-window'] || nextZIndex + 400} // Higher than welcome window
                 initialPosition={{ x: 60, y: 60 }} // Slightly offset from welcome window
                 onClose={() => {
                   console.log('[HomePage] Header message window closed');

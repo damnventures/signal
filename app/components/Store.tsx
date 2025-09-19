@@ -103,7 +103,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
       
       // 2. Shrinked capsules user can access
       const shrinkedCapsuleMap: Record<string, string> = {
-        '6887e02fa01e2f4073d3bb51': 'shrink-1', // YC Reducto AI
+        '68cdc3cf77fc9e53736d117e': 'shrink-1', // Cooking Preview
         '68c32cf3735fb4ac0ef3ccbf': 'shrink-2', // LastWeekTonight Preview
         '6887e02fa01e2f4073d3bb52': 'shrink-3', // AI Research Papers
         '6887e02fa01e2f4073d3bb53': 'shrink-4', // Startup Insights
@@ -357,7 +357,7 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
 
   // Shrinked shared capsules (available to add/use)
   const shrinkedCapsules: SourceItem[] = [
-    { id: 'shrink-1', name: 'YC Reducto AI', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb51' },
+    { id: 'shrink-1', name: 'Cooking Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68cdc3cf77fc9e53736d117e' },
     { id: 'shrink-2', name: 'LastWeekTonight Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68c32cf3735fb4ac0ef3ccbf' },
     { id: 'shrink-3', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
     { id: 'shrink-4', name: 'Startup Insights', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb53' },
