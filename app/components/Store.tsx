@@ -340,14 +340,8 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   // User's capsules (real data when authenticated, fallback when not)
   const getUserCapsules = () => {
     if (user && userCapsules.length > 0) {
-      // Filter out capsules that are already defined as Shrinked system capsules to avoid duplicates
-      const shrinkedCapsuleIds = shrinkedCapsules.map(c => c.capsuleId);
-      const filteredUserCapsules = userCapsules.filter(capsule =>
-        !shrinkedCapsuleIds.includes(capsule._id)
-      );
-
-      // Use real user capsule data (excluding Shrinked system capsules)
-      return filteredUserCapsules.map(capsule => ({
+      // Use real user capsule data
+      return userCapsules.map(capsule => ({
         id: capsule._id,
         name: capsule.name || 'Untitled Capsule',
         author: user.email?.split('@')[0] || user.username || 'You',
@@ -403,9 +397,15 @@ const Store: React.FC<StoreProps> = ({ isOpen, onClose, userCapsules = [], user,
   // Add new capsule - only for authenticated users, positioned at the end (bottom right)
   const addNewCapsule: SourceItem = { id: 'add-new', name: 'Add New Capsule', author: '', type: 'add-new', capsuleId: null };
 
-  const allSources = user 
-    ? [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems, addNewCapsule]
-    : [...userCapsulesData, ...shrinkedCapsules, ...comingSoonItems];
+  // Filter out user capsules that are already defined as Shrinked system capsules to avoid duplicates
+  const shrinkedCapsuleIds = shrinkedCapsules.map(c => c.capsuleId);
+  const filteredUserCapsules = userCapsulesData.filter(capsule =>
+    !shrinkedCapsuleIds.includes(capsule.capsuleId)
+  );
+
+  const allSources = user
+    ? [...filteredUserCapsules, ...shrinkedCapsules, ...comingSoonItems, addNewCapsule]
+    : [...filteredUserCapsules, ...shrinkedCapsules, ...comingSoonItems];
 
   if (!isOpen) return null;
 
