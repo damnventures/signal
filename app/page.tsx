@@ -1104,7 +1104,7 @@ const HomePage = () => {
     }
   }, [authFetch]); // Simplified dependencies to prevent loops
 
-  const fetchCapsules = useCallback(async (key?: string | null) => {
+  const fetchCapsules = useCallback(async (key?: string | null, options?: { selectNew?: boolean }) => {
     console.log('[HomePage] Fetching capsules...');
     setIsFetchingCapsules(true);
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
@@ -1216,10 +1216,10 @@ const HomePage = () => {
         const oldCapsuleIds = new Set(capsules.map(c => c._id));
         const newCapsules = allCapsules.filter((c: any) => !oldCapsuleIds.has(c._id));
 
-        setCapsules([...allCapsules]); // Explicitly create a new array
+        setCapsules(allCapsules);
 
         if (allCapsules.length > 0) {
-          if (newCapsules.length > 0) {
+          if (options?.selectNew && newCapsules.length > 0) {
             setSelectedCapsuleId(newCapsules[0]._id);
             console.log('[HomePage] New capsule detected, auto-selecting it:', newCapsules[0]._id);
           } else if (!selectedCapsuleId) {
@@ -1885,8 +1885,8 @@ const HomePage = () => {
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
                   onRefreshCapsule={() => {
-                    console.log('[HomePage] Refreshing capsules list after job completion');
-                    fetchCapsules(apiKey);
+                    console.log('[HomePage] Refreshing capsules list and selecting new after job completion');
+                    fetchCapsules(apiKey, { selectNew: true });
                   }}
                   onRefreshWrap={() => {
                     console.log('[HomePage] Triggering wrap refresh after job completion');
