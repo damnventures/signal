@@ -1424,6 +1424,17 @@ const HomePage = () => {
     }
   }, [showDemo, highlightsData, handleHeaderLoadingComplete]);
 
+  useEffect(() => {
+    if (showDemoWelcomeWindow) {
+      setCardZIndexes(prev => ({
+        ...prev,
+        'demo-welcome': nextZIndex,
+        'demo-welcome-overflow': nextZIndex - 1,
+      }));
+      setNextZIndex(prev => prev + 2);
+    }
+  }, [showDemoWelcomeWindow]);
+
   const handleBringToFront = useCallback((id: string) => {
     setCardZIndexes(prevZIndexes => ({
       ...prevZIndexes,
@@ -2061,21 +2072,14 @@ const HomePage = () => {
 
             {showDemoWelcomeWindow && (
               <DemoWelcomeWindow
-                id="demo-welcome-window"
+                id="demo-welcome"
                 onBringToFront={handleBringToFront}
-                initialZIndex={nextZIndex + 300}
-                initialPosition={{ x: 50, y: 50 }} // Adjust position as needed
-                onClose={() => {
-                  setShowDemoWelcomeWindow(false);
-                  // Clear demo message when closing to prevent interference
-                  if (demoMessage) {
-                    console.log('[HomePage] Clearing demo message on window close');
-                    setDemoMessage(null);
-                  }
-                }}
-                wrapSummary={user ? lastWrapSummary : null}
+                initialPosition={{ x: 80, y: 180 }}
+                onClose={() => setShowDemoWelcomeWindow(false)}
+                wrapSummary={lastWrapSummary}
                 userEmail={user?.email}
                 demoMessage={demoMessage}
+                cardZIndexes={cardZIndexes}
               />
             )}
 

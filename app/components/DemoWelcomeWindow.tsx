@@ -7,12 +7,12 @@ import { createMessageVariants, MessageDiff, ANIMATION_CONFIG } from './MessageA
 interface DemoWelcomeWindowProps {
   id: string;
   onBringToFront: (id: string) => void;
-  initialZIndex: number;
   initialPosition: { x: number; y: number };
   onClose: () => void;
   wrapSummary?: string | null;
   userEmail?: string;
   demoMessage?: string | null; // For demo users
+  cardZIndexes: Record<string, number>;
 }
 
 const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
@@ -174,7 +174,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         <DraggableWindow
           id={`${id}-overflow`}
           onBringToFront={onBringToFront}
-          initialZIndex={initialZIndex - 1}
+          initialZIndex={props.cardZIndexes[`${id}-overflow`] || 99}
           initialPosition={{
             x: initialPosition.x + 40,
             y: initialPosition.y + 20
@@ -206,7 +206,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       <DraggableWindow
         id={id}
         onBringToFront={onBringToFront}
-        initialZIndex={initialZIndex}
+        initialZIndex={props.cardZIndexes[id] || 100}
         initialPosition={initialPosition}
         className="animated-header-window"
       >
