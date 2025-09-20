@@ -31,19 +31,15 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [secondCardVariantIndex, setSecondCardVariantIndex] = useState(0);
   const [secondCardShowDiff, setSecondCardShowDiff] = useState(false);
 
-  const createWrapVariants = useCallback((summary: string): string[] => {
-    return createMessageVariants(summary);
-  }, []);
-
-  const getMessageVariants = useCallback(() => {
+  const variants = useMemo(() => {
     if (userEmail) {
       if (!wrapSummary || wrapSummary.trim() === '') {
         return ["Analyzing your capsules..."];
       }
-      return createWrapVariants(wrapSummary);
+      return createMessageVariants(wrapSummary);
     } else {
       if (demoMessage) {
-        return createWrapVariants(demoMessage);
+        return createMessageVariants(demoMessage);
       } else {
         return [
           "Good morning, Vanya! Checking your signals...",
@@ -53,11 +49,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         ];
       }
     }
-  }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
-
-  const variants = useMemo(() => {
-    return getMessageVariants();
-  }, [demoMessage, userEmail, wrapSummary, createWrapVariants]);
+  }, [demoMessage, userEmail, wrapSummary]);
 
   // Determine if we need a second card and where to split
   const { frontCardVariants, secondCardVariants, needsSecondCard } = useMemo(() => {
