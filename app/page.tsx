@@ -1897,7 +1897,7 @@ const HomePage = () => {
                 <ToolCore
                   capsuleId={selectedCapsuleId || ''}
                   capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
-                  onArgueRequest={(question: string) => {
+                  onArgueRequest={useCallback((question: string) => {
                     console.log('[HomePage] Argue request started - setting argue tracking');
                     console.log('[HomePage] Current state - showDemoWelcomeWindow:', showDemoWelcomeWindow, 'question:', question);
                     argueInProgressRef.current = true;
@@ -1906,7 +1906,7 @@ const HomePage = () => {
                     setShowArguePopup(true);
                     console.log('[HomePage] DEBUG: ArguePopup should open with question:', question);
                     // Keep welcome window open - new argue response will spawn as separate header window
-                  }}
+                  }, [showDemoWelcomeWindow])}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
                   onRefreshCapsule={() => {
