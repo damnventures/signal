@@ -18,12 +18,12 @@ interface DemoWelcomeWindowProps {
 const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   id,
   onBringToFront,
-  initialZIndex,
   initialPosition,
   onClose,
   wrapSummary,
   userEmail,
   demoMessage,
+  cardZIndexes,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
