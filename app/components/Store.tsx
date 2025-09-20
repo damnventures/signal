@@ -444,11 +444,15 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
             {allSources.filter((source: SourceItem) => {
               // Always show user capsules and add-new button
               if (source.type === 'user' || source.type === 'add-new') return true;
+              // Always show accessible shrinked capsules (even when loading)
+              if (source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId)) return true;
               // Only show other items if they're visible
               return visibleItems.has(source.id);
             }).map((source: SourceItem) => {
               const isClickable = source.type !== 'coming';
               const isVisible = source.type === 'user' || source.type === 'add-new' || visibleItems.has(source.id);
+              // For accessible shrinked capsules, they should still go through the loading animation
+              const isAccessibleShrinked = source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId);
               const isLoaded = source.type === 'user' || source.type === 'add-new' || loadedCapsules.has(source.id);
               const isCurrentlyLoading = loadingCapsules.has(source.id);
               const getIcon = () => {

@@ -736,7 +736,6 @@ const HomePage = () => {
 
     let foundOldFormat = false;
     highlightBlocks.forEach((block, index) => {
-      console.log(`[parseHighlights] Processing block ${index}:`, block);
       const subTitleMatch = block.match(/\*\*Title:\s*([\s\S]*?)\s*\*\*Setup:/);
       const setupMatch = block.match(/\*\*Setup:\s*([\s\S]*?)(?=\s*\*\*Quote:|$)/);
       const quoteMatch = block.match(/\*\*Quote:\s*([\s\S]*?)(?=\s*\*\*Why it matters:|$)/);
@@ -752,9 +751,8 @@ const HomePage = () => {
         };
         highlights.push(newHighlight);
         console.log(`[parseHighlights] Successfully parsed highlight ${index}:`, newHighlight);
-      } else {
-        console.warn(`[parseHighlights] Failed to parse block ${index} in old format.`);
       }
+      // Remove the verbose error logging that was causing spam
     });
 
     // If old format didn't work, try parsing as markdown sections
