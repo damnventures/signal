@@ -1166,6 +1166,7 @@ const HomePage = () => {
               const sharedData = await sharedResponse.json();
               console.log('[HomePage] Fetched shared capsules:', sharedData);
               console.log('[HomePage] Shared capsules count:', Array.isArray(sharedData) ? sharedData.length : 'not array');
+              console.log('[HomePage] Shared capsule IDs:', Array.isArray(sharedData) ? sharedData.map((c: any) => c._id) : 'not array');
               
               // Merge shared capsules with owned capsules, avoiding duplicates
               if (Array.isArray(sharedData)) {
@@ -1218,22 +1219,34 @@ const HomePage = () => {
         
         // Store access check - cross-reference user's capsules with Shrinked capsules in store
         const userCapsuleIds = allCapsules.map((c: any) => c._id);
-        const ownedShrinked = storeShrinkedCapsules.filter(storeCapsule => 
+        const ownedShrinked = storeShrinkedCapsules.filter(storeCapsule =>
           userCapsuleIds.includes(storeCapsule.id)
         );
-        const accessibleShrinked = allCapsules.filter((c: any) => 
-          storeShrinkedCapsules.some(storeCapsule => storeCapsule.id === c._id) && 
+        const accessibleShrinked = allCapsules.filter((c: any) =>
+          storeShrinkedCapsules.some(storeCapsule => storeCapsule.id === c._id) &&
           (c.shared || c.isShared)
         );
-        
-        // Combine owned and accessible capsule IDs
+
+        // Also check if user has access via ACL (for recently shared capsules that might not be in shared API yet)
+        const potentiallyAccessibleViaACL = storeShrinkedCapsules.filter(storeCapsule => {
+          const capsule = allCapsules.find((c: any) => c._id === storeCapsule.id);
+          if (!capsule) return false;
+
+          // Check if user is in the ACL
+          const userInACL = capsule.acl && capsule.acl.some((entry: any) => entry.userId === user?._id);
+          return userInACL && !userCapsuleIds.includes(storeCapsule.id);
+        });
+
+        // Combine owned, accessible, and ACL-accessible capsule IDs
         const totalAccessible = [...new Set([
           ...ownedShrinked.map(c => c.id),
-          ...accessibleShrinked.map((c: any) => c._id)
+          ...accessibleShrinked.map((c: any) => c._id),
+          ...potentiallyAccessibleViaACL.map(c => c.id)
         ])];
         
         console.log('[HomePage] Store check - User owns Shrinked capsules:', ownedShrinked.map(c => c.name));
         console.log('[HomePage] Store check - User has shared access to Shrinked capsules:', accessibleShrinked.map((c: any) => c.name));
+        console.log('[HomePage] Store check - ACL-accessible capsules:', potentiallyAccessibleViaACL.map(c => c.name));
         console.log('[HomePage] Store check - Total Shrinked capsules accessible:', totalAccessible);
         
         // Update state to pass to Store component
@@ -1262,17 +1275,23 @@ const HomePage = () => {
         console.log(`[HomePage] Non-auth user - waiting for capsules fetch to complete before fetching capsule content`);
         return;
       }
-      
+
       // Prevent fetching demo capsule with user API key (race condition fix)
       if (apiKey && selectedCapsuleId === '68cdc3cf77fc9e53736d117e') {
         console.log(`[HomePage] Skipping demo capsule fetch with user API key - will be cleared by auth useEffect`);
         return;
       }
-      
+
+      // Don't refetch if we already have content for this capsule and it matches what's expected
+      if (lastFetchedCapsuleId === selectedCapsuleId && highlightsData && highlightsData.length > 0) {
+        console.log(`[HomePage] Content already loaded for capsuleId: ${selectedCapsuleId}, skipping fetch`);
+        return;
+      }
+
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}, user: ${user ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [selectedCapsuleId, isFetchingCapsules, apiKey, accessToken, isLoading, authInProgress, showDemo, user]);
+  }, [selectedCapsuleId, apiKey, user]); // Simplified dependencies to prevent unnecessary re-fetching
 
   // Handle capsule selection based on auth state
   useEffect(() => {

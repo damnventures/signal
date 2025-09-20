@@ -79,6 +79,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
     // Add accessible Shrinked capsules (only if not already added as user capsule)
     const shrinkedCapsuleMap: Record<string, string> = {
+      '68cdc3cf77fc9e53736d117e': 'Cooking Preview',
       '6887e02fa01e2f4073d3bb51': 'YC Reducto AI',
       '68c32cf3735fb4ac0ef3ccbf': 'LastWeekTonight Preview',
       '6887e02fa01e2f4073d3bb52': 'AI Research Papers',
