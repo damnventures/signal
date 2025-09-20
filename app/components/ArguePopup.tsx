@@ -459,7 +459,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         }
 
         .argue-popup {
-          min-height: 400px;
           max-width: 95vw;
           max-height: 95vh;
           border: 1px solid #000000;
