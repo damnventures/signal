@@ -59,6 +59,31 @@ export async function GET(request: Request) {
         isPublic: false
       });
 
+      // Check if user has access to cooking capsule by trying to fetch it
+      if (userApiKey) {
+        try {
+          const cookingResponse = await fetch('https://api.shrinked.ai/capsules/68cdc3cf77fc9e53736d117e', {
+            headers: { 'x-api-key': userApiKey }
+          });
+
+          if (cookingResponse.ok) {
+            const cookingData = await cookingResponse.json();
+            // User has access to cooking capsule, add it to shared list
+            sharedCapsules.push({
+              _id: cookingData._id,
+              name: cookingData.name,
+              visibility: cookingData.visibility || 'private',
+              shared: true,
+              isShared: true,
+              acl: cookingData.acl
+            });
+            console.log('[Shared Capsules Route] Fallback: Added cooking capsule for user with verified access');
+          }
+        } catch (error) {
+          console.log('[Shared Capsules Route] Fallback: User does not have access to cooking capsule');
+        }
+      }
+
       console.log('[Shared Capsules Route] Fallback Success: Found', sharedCapsules.length, 'shared capsules');
       return NextResponse.json(sharedCapsules);
     }
@@ -76,6 +101,31 @@ export async function GET(request: Request) {
         shared: true,
         isPublic: false
       });
+
+      // Check if user has access to cooking capsule by trying to fetch it
+      if (userApiKey) {
+        try {
+          const cookingResponse = await fetch('https://api.shrinked.ai/capsules/68cdc3cf77fc9e53736d117e', {
+            headers: { 'x-api-key': userApiKey }
+          });
+
+          if (cookingResponse.ok) {
+            const cookingData = await cookingResponse.json();
+            // User has access to cooking capsule, add it to shared list
+            data.push({
+              _id: cookingData._id,
+              name: cookingData.name,
+              visibility: cookingData.visibility || 'private',
+              shared: true,
+              isShared: true,
+              acl: cookingData.acl
+            });
+            console.log('[Shared Capsules Route] Added cooking capsule for user with verified access');
+          }
+        } catch (error) {
+          console.log('[Shared Capsules Route] User does not have access to cooking capsule');
+        }
+      }
     }
     
     return NextResponse.json(data);

@@ -1243,12 +1243,9 @@ const HomePage = () => {
           return !capsuleInAllCapsules;
         });
 
-        console.log('[HomePage] DEBUG: Private store capsules to check:', privateStoreCapsulesWithAccess.map(c => c.name));
-
-        // Debug logs
-        console.log('[HomePage] DEBUG: allCapsules count:', allCapsules.length);
-        console.log('[HomePage] DEBUG: storeShrinkedCapsules:', storeShrinkedCapsules.map(c => ({ id: c.id, name: c.name })));
+        // Debug logs (reduced)
         console.log('[HomePage] DEBUG: user ID:', user?.id || (user as any)?._id);
+        console.log('[HomePage] DEBUG: Private capsules to check:', privateStoreCapsulesWithAccess.length);
 
         // Check cooking capsule specifically
         const cookingCapsule = allCapsules.find((c: any) => c._id === '68cdc3cf77fc9e53736d117e');
@@ -1270,10 +1267,7 @@ const HomePage = () => {
           ...accessibleShrinked.map(c => c.id)
         ])];
         
-        console.log('[HomePage] Store check - User owns Shrinked capsules:', ownedShrinked.map(c => c.name));
-        console.log('[HomePage] Store check - User has access to Shrinked capsules:', accessibleShrinked.map(c => c.name));
-        console.log('[HomePage] DEBUG: ACL check details - allCapsules count:', allCapsules.length, 'user ID:', user?.id || (user as any)?._id);
-        console.log('[HomePage] Store check - Total Shrinked capsules accessible:', totalAccessible);
+        console.log('[HomePage] Store check - Total accessible capsules:', totalAccessible.length);
         
         // Update state to pass to Store component
         setAccessibleShrinkedCapsules(totalAccessible);

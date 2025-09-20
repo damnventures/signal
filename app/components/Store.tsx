@@ -138,26 +138,23 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         
         loadingOrder.forEach((id, index) => {
           setTimeout(() => {
-            console.log(`[Store] Starting load for item ${id} (${index + 1}/${loadingOrder.length})`);
             // First make the item visible (but not loaded)
             setVisibleItems(prev => new Set([...prev, id]));
 
             // Then immediately show loading animation
             setTimeout(() => {
-              console.log(`[Store] Showing loading animation for ${id}`);
               setLoadingCapsules(prev => new Set([...prev, id]));
 
               // Then complete loading after animation
               setTimeout(() => {
-                console.log(`[Store] Completing load for ${id}`);
                 setLoadingCapsules(prev => {
                   const newSet = new Set(prev);
                   newSet.delete(id);
                   return newSet;
                 });
                 setLoadedCapsules(prev => new Set([...prev, id]));
-              }, 300); // 300ms loading animation per item
-            }, 50); // Small delay to see the unloaded state first
+              }, 800); // Longer loading animation per item
+            }, 100); // Longer delay to see the unloaded state first
           }, index * 600); // 600ms between each item load start
         });
       }, 3000);
@@ -173,7 +170,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           // Only mark as checked after status is hidden to avoid interfering with animations
           setStoreChecked(true);
         }, 2000);
-      }, 3000 + (loadingOrder.length * 600) + 350); // After all items fully loaded (including their 350ms animation)
+      }, 3000 + (loadingOrder.length * 600) + 900); // After all items fully loaded (including their 900ms animation)
     }
   }, [isOpen, storeChecked]);
 
