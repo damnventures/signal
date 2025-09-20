@@ -174,7 +174,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
         <DraggableWindow
           id={`${id}-overflow`}
           onBringToFront={onBringToFront}
-          initialZIndex={props.cardZIndexes[`${id}-overflow`] || 99}
+          initialZIndex={cardZIndexes[`${id}-overflow`] || 99}
           initialPosition={{
             x: initialPosition.x + 40,
             y: initialPosition.y + 20
@@ -206,7 +206,7 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       <DraggableWindow
         id={id}
         onBringToFront={onBringToFront}
-        initialZIndex={props.cardZIndexes[id] || 100}
+        initialZIndex={cardZIndexes[id] || 100}
         initialPosition={initialPosition}
         className="animated-header-window"
       >
