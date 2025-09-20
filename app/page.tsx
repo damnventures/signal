@@ -1080,7 +1080,7 @@ const HomePage = () => {
   }, [authFetch]); // Simplified dependencies to prevent loops
 
   const fetchCapsules = useCallback(async (key?: string | null, options?: { selectNew?: boolean }) => {
-    console.log('[HomePage] Fetching capsules...');
+    console.log('[HomePage] === FETCHCAPSULES CALLED ===', { key: key ? '...' + key.slice(-4) : 'null', options });
     setIsFetchingCapsules(true);
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
     
@@ -1222,31 +1222,48 @@ const HomePage = () => {
         const ownedShrinked = storeShrinkedCapsules.filter(storeCapsule =>
           userCapsuleIds.includes(storeCapsule.id)
         );
-        const accessibleShrinked = allCapsules.filter((c: any) =>
-          storeShrinkedCapsules.some(storeCapsule => storeCapsule.id === c._id) &&
-          (c.shared || c.isShared)
-        );
-
-        // Also check if user has access via ACL (for recently shared capsules that might not be in shared API yet)
-        const potentiallyAccessibleViaACL = storeShrinkedCapsules.filter(storeCapsule => {
+        // Find capsules user has access to via sharing or ACL
+        const accessibleShrinked = storeShrinkedCapsules.filter(storeCapsule => {
           const capsule = allCapsules.find((c: any) => c._id === storeCapsule.id);
           if (!capsule) return false;
 
-          // Check if user is in the ACL
-          const userInACL = capsule.acl && capsule.acl.some((entry: any) => entry.userId === user?._id);
-          return userInACL && !userCapsuleIds.includes(storeCapsule.id);
+          // User has access if:
+          // 1. It's a shared capsule (from shared API), OR
+          // 2. User is in the ACL
+          const isSharedCapsule = capsule.shared || capsule.isShared;
+          const userInACL = capsule.acl && capsule.acl.some((entry: any) => entry.userId === user?.id);
+
+          return isSharedCapsule || userInACL;
         });
 
-        // Combine owned, accessible, and ACL-accessible capsule IDs
+        // Debug logs
+        console.log('[HomePage] DEBUG: allCapsules count:', allCapsules.length);
+        console.log('[HomePage] DEBUG: storeShrinkedCapsules:', storeShrinkedCapsules.map(c => ({ id: c.id, name: c.name })));
+        console.log('[HomePage] DEBUG: user ID:', user?.id);
+
+        // Check cooking capsule specifically
+        const cookingCapsule = allCapsules.find((c: any) => c._id === '68cdc3cf77fc9e53736d117e');
+        if (cookingCapsule) {
+          console.log('[HomePage] DEBUG: Found cooking capsule in allCapsules:', {
+            id: cookingCapsule._id,
+            shared: cookingCapsule.shared,
+            isShared: cookingCapsule.isShared,
+            acl: cookingCapsule.acl,
+            userInACL: cookingCapsule.acl && cookingCapsule.acl.some((entry: any) => entry.userId === user?.id)
+          });
+        } else {
+          console.log('[HomePage] DEBUG: Cooking capsule NOT found in allCapsules');
+        }
+
+        // Combine owned and accessible capsule IDs
         const totalAccessible = [...new Set([
           ...ownedShrinked.map(c => c.id),
-          ...accessibleShrinked.map((c: any) => c._id),
-          ...potentiallyAccessibleViaACL.map(c => c.id)
+          ...accessibleShrinked.map(c => c.id)
         ])];
         
         console.log('[HomePage] Store check - User owns Shrinked capsules:', ownedShrinked.map(c => c.name));
-        console.log('[HomePage] Store check - User has shared access to Shrinked capsules:', accessibleShrinked.map((c: any) => c.name));
-        console.log('[HomePage] Store check - ACL-accessible capsules:', potentiallyAccessibleViaACL.map(c => c.name));
+        console.log('[HomePage] Store check - User has access to Shrinked capsules:', accessibleShrinked.map(c => c.name));
+        console.log('[HomePage] DEBUG: ACL check details - allCapsules count:', allCapsules.length, 'user ID:', user?.id);
         console.log('[HomePage] Store check - Total Shrinked capsules accessible:', totalAccessible);
         
         // Update state to pass to Store component
