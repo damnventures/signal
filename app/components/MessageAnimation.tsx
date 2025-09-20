@@ -8,72 +8,7 @@ export function createMessageVariants(message: string): string[] {
     return ["Loading..."];
   }
 
-  // Check if this looks like a wrap summary with multiple topics
-  const hasMultipleTopics = message.includes('\n\n') ||
-    (message.includes('Alright, love') && message.split(/[A-Z][a-z]+.*?(?=\s+[A-Z][a-z]+|\s*$)/g).length > 2);
-
-  if (hasMultipleTopics) {
-    // For wrap summaries, split into distinct topical cards rather than progressive
-    const variants: string[] = [];
-
-    // Try splitting by double newlines first
-    const paragraphs = message.split('\n\n').filter(line => line.trim());
-
-    if (paragraphs.length >= 3) {
-      // Extract intro/header
-      const intro = paragraphs[0];
-
-      // Create separate cards for each main topic (skip intro and conclusion)
-      for (let i = 1; i < paragraphs.length - 1; i++) {
-        const paragraph = paragraphs[i];
-        if (paragraph.trim().length > 30) { // Filter out short paragraphs
-          if (i === 1) {
-            // First card includes intro
-            variants.push(`${intro}\n\n${paragraph}`);
-          } else {
-            // Subsequent cards are standalone topics
-            variants.push(paragraph);
-          }
-        }
-      }
-
-      // Add conclusion as final card if it exists
-      const lastParagraph = paragraphs[paragraphs.length - 1];
-      if (lastParagraph && lastParagraph.toLowerCase().includes('so there')) {
-        variants.push(lastParagraph);
-      }
-    } else {
-      // Fallback: split by major topic sentences
-      const sentences = message.split(/(?<=\.)\s+(?=[A-Z][a-z]+\s+(?:are|is|isn't|was|were|can|will|might))/g);
-
-      if (sentences.length > 2) {
-        // Group sentences into logical topics (2-3 sentences per card)
-        const cardsContent: string[] = [];
-        let currentCard = '';
-
-        sentences.forEach((sentence, index) => {
-          if (index === 0) {
-            currentCard = sentence;
-          } else if (currentCard.length < 200 && index < sentences.length - 1) {
-            currentCard += ' ' + sentence;
-          } else {
-            cardsContent.push(currentCard);
-            currentCard = sentence;
-          }
-        });
-
-        if (currentCard) {
-          cardsContent.push(currentCard);
-        }
-
-        return cardsContent.slice(0, 3); // Max 3 cards
-      }
-    }
-
-    return variants.length > 0 ? variants : [message];
-  }
-
-  // Original progressive approach for other messages
+  // Simple approach: split on sentences, then commas if sentences are too long
   let sentences = message.split(/\. (?=[A-Z])/);
 
   // If sentences are too long (>80 chars), try splitting on commas
