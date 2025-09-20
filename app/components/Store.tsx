@@ -518,7 +518,8 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                 return '💿';
               };
 
-              const handleClick = () => {
+              const handleClick = (e: React.MouseEvent) => {
+                e.stopPropagation();
                 if (!isClickable || !isLoaded) return;
                 
                 if (source.type === 'add-new') {

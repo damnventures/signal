@@ -1632,6 +1632,18 @@ const HomePage = () => {
       }
     }
   };
+
+  const handleArgueRequest = useCallback((question: string) => {
+    console.log('[HomePage] Argue request started - setting argue tracking');
+    console.log('[HomePage] Current state - showDemoWelcomeWindow:', showDemoWelcomeWindow, 'question:', question);
+    argueInProgressRef.current = true;
+    lastArgueTimeRef.current = Date.now();
+    setArgueQuestion(question);
+    setShowArguePopup(true);
+    console.log('[HomePage] DEBUG: ArguePopup should open with question:', question);
+    // Keep welcome window open - new argue response will spawn as separate header window
+  }, [showDemoWelcomeWindow]);
+
   const arguePopupPosition = useMemo(() => calculateInitialPosition(highlightsData.length + 1), [highlightsData.length, calculateInitialPosition]);
 
   return (
@@ -1687,7 +1699,7 @@ const HomePage = () => {
                 id={`highlight-${index}`}
                 onBringToFront={handleBringToFront}
                 initialZIndex={cardZIndexes[`highlight-${index}`] || (highlightsData.length - index + 1)}
-                initialPosition={useMemo(() => calculateInitialPosition(highlightsData.length + 1), [highlightsData.length, calculateInitialPosition])}
+                initialPosition={calculateInitialPosition(index)}
                 style={{
                   animation: `fadeInCard 0.3s ease-out ${index * 0.1}s forwards`,
                   opacity: 0,
@@ -1924,16 +1936,7 @@ const HomePage = () => {
                 <ToolCore
                   capsuleId={selectedCapsuleId || ''}
                   capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
-                  onArgueRequest={useCallback((question: string) => {
-                    console.log('[HomePage] Argue request started - setting argue tracking');
-                    console.log('[HomePage] Current state - showDemoWelcomeWindow:', showDemoWelcomeWindow, 'question:', question);
-                    argueInProgressRef.current = true;
-                    lastArgueTimeRef.current = Date.now();
-                    setArgueQuestion(question);
-                    setShowArguePopup(true);
-                    console.log('[HomePage] DEBUG: ArguePopup should open with question:', question);
-                    // Keep welcome window open - new argue response will spawn as separate header window
-                  }, [showDemoWelcomeWindow])}
+                  onArgueRequest={handleArgueRequest}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
                   onRefreshCapsule={() => {

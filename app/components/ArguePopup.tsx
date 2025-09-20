@@ -144,6 +144,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
 
     if (!question.trim()) {
       setError('Please enter a question');
@@ -403,7 +404,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   {reasoningResponse && (
                     <div className="analysis">
                       <button
-                        onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsReasoningExpanded(!isReasoningExpanded);
+                        }}
                         type="button"
                       >
                         {isReasoningExpanded ? 'Hide Analysis' : 'Show Analysis'}
