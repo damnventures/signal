@@ -1606,6 +1606,7 @@ const HomePage = () => {
       }
     }
   };
+  const arguePopupPosition = useMemo(() => calculateInitialPosition(highlightsData.length + 1), [highlightsData.length, calculateInitialPosition]);
 
   return (
     <>
@@ -2063,7 +2064,7 @@ const HomePage = () => {
               capsuleId={selectedCapsuleId || ''}
               onBringToFront={handleBringToFront}
               initialZIndex={cardZIndexes['argue-popup'] || nextZIndex + 100}
-              initialPosition={{ x: 100, y: 100 }}
+                initialPosition={arguePopupPosition}
               id="argue-popup"
               initialQuestion={argueQuestion}
               userCapsules={capsules}
