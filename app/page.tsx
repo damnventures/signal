@@ -1445,8 +1445,14 @@ const HomePage = () => {
 
   const calculateInitialPosition = useCallback((index: number) => {
     const offset = index * 15;
-    const isDesktop = window.innerWidth >= 768;
     const headerHeight = 100;
+
+    // Default position for SSR
+    if (typeof window === 'undefined') {
+      return { x: 100 + offset, y: 170 + headerHeight + offset };
+    }
+
+    const isDesktop = window.innerWidth >= 768;
 
     if (isDesktop) {
       return { x: 100 + offset, y: 170 + headerHeight + offset }; // Moved down 70px to avoid welcome window overlap
@@ -1458,8 +1464,13 @@ const HomePage = () => {
   }, []);
 
   const calculateVideoPosition = useCallback(() => {
+    // Default position for SSR
+    if (typeof window === 'undefined') {
+      return { x: 100, y: 150 };
+    }
+
     const isDesktop = window.innerWidth >= 768;
-    
+
     if (isDesktop) {
       const leftAreaWidth = window.innerWidth * 0.62;
       return { x: leftAreaWidth, y: 150 }; // Moved down from 100 to 150
@@ -1472,8 +1483,13 @@ const HomePage = () => {
   }, [highlightsData.length]);
 
   const calculateCapsulesWindowPosition = useCallback(() => {
+    // Default position for SSR
+    if (typeof window === 'undefined') {
+      return { x: 320, y: 300 };
+    }
+
     const isDesktop = window.innerWidth >= 768;
-    
+
     if (isDesktop) {
       // Position capsules window right above the bottom-right menu buttons
       // Menu buttons: bottom: 20px, right: 20px, height: 30px, total width: ~110px
@@ -1483,10 +1499,10 @@ const HomePage = () => {
       const capsuleWindowWidth = 320; // Approximate capsules window width
       const capsuleWindowHeight = 200; // Approximate capsules window height
       const gap = 10; // Gap above the menu buttons
-      
-      return { 
+
+      return {
         x: window.innerWidth - 20 - Math.max(menuButtonsWidth, capsuleWindowWidth), // Align right edge with buttons
-        y: window.innerHeight - menuBottomMargin - menuButtonsHeight - gap - capsuleWindowHeight 
+        y: window.innerHeight - menuBottomMargin - menuButtonsHeight - gap - capsuleWindowHeight
       };
     } else {
       // On mobile, place it at the bottom center, above the buttons
@@ -1496,15 +1512,20 @@ const HomePage = () => {
       const menuBottomMargin = 20;
       const gap = 10;
       const centerX = (window.innerWidth - capsuleWindowWidth) / 2;
-      
-      return { 
-        x: centerX, 
+
+      return {
+        x: centerX,
         y: window.innerHeight - menuBottomMargin - menuButtonsHeight - gap - capsuleWindowHeight
       };
     }
   }, []);
 
   const calculateHeaderPosition = useCallback(() => {
+    // Default position for SSR
+    if (typeof window === 'undefined') {
+      return { x: 16, y: 16 };
+    }
+
     const isDesktop = window.innerWidth >= 768;
 
     if (isDesktop) {
@@ -1517,6 +1538,11 @@ const HomePage = () => {
   }, []);
 
   const calculateStatusWindowPosition = useCallback(() => {
+    // Default position for SSR
+    if (typeof window === 'undefined') {
+      return { x: 200, y: 500 };
+    }
+
     // Position it right next to the buttons (left of them) with proper spacing
     // Buttons are at right: 20px, so we need to account for button width + gap
     // 2 buttons * 30px width + 2 * 2px borders each + 10px gap between buttons = 74px total button width
