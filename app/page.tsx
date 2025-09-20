@@ -721,18 +721,15 @@ const HomePage = () => {
   }, [fetchedOriginalLinks.length === 1, initializePlayers]);
 
   const parseHighlights = (text: string): Highlight[] => {
-    console.log('[parseHighlights] Raw text to parse:', text);
     const highlights: Highlight[] = [];
-    
+
     // Safety check for empty or invalid text
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      console.warn('[parseHighlights] Empty or invalid text provided');
       return highlights;
     }
-    
+
     // First try the old highlight format with Title/Setup/Quote/Why it matters
     const highlightBlocks = text.split('---').filter(block => block.trim() !== '');
-    console.log('[parseHighlights] Number of highlight blocks found:', highlightBlocks.length);
 
     let foundOldFormat = false;
     highlightBlocks.forEach((block, index) => {
@@ -750,62 +747,51 @@ const HomePage = () => {
           whyItMatters: whyItMattersMatch[1].trim().replace(/\*\*/g, ''),
         };
         highlights.push(newHighlight);
-        console.log(`[parseHighlights] Successfully parsed highlight ${index}:`, newHighlight);
       }
-      // Remove the verbose error logging that was causing spam
     });
 
     // If old format didn't work, try parsing as markdown sections
     if (!foundOldFormat && (text.includes('##') || text.includes('**'))) {
-      console.log('[parseHighlights] Trying markdown section format...');
-      
       let sections: string[] = [];
-      
+
       // Try ## headers first
       if (text.includes('##')) {
         sections = text.split(/(?=^##?\s)/m).filter(section => section.trim() !== '');
-        console.log(`[parseHighlights] Found ${sections.length} ## markdown sections`);
       }
       // Try ** bold headers if no ## headers found
       else if (text.includes('**')) {
         sections = text.split(/(?=^\*\*[^*]+\*\*)/m).filter(section => section.trim() !== '');
-        console.log(`[parseHighlights] Found ${sections.length} ** bold header sections`);
       }
-      
+
       // Safety limit to prevent infinite loops
       const maxSections = Math.min(sections.length, 20);
-      console.log(`[parseHighlights] Processing ${maxSections} sections (limited from ${sections.length})`);
       
       for (let index = 0; index < maxSections; index++) {
         const section = sections[index];
-        console.log(`[parseHighlights] Processing section ${index}/${maxSections}:`, section.substring(0, 100) + '...');
-        
+
         let title = '';
         let content = '';
-        
+
         // Try ## header format first
         const hashHeaderMatch = section.match(/^##?\s*(.+?)(?:\n|$)/);
         if (hashHeaderMatch) {
           title = hashHeaderMatch[1].trim();
           content = section.replace(/^##?\s*.+?\n/, '').trim();
-          console.log(`[parseHighlights] Parsed ## header - title: "${title}", content length: ${content.length}`);
         }
         // Try ** bold header format
         else {
           const boldHeaderMatch = section.match(/^\*\*([^*]+)\*\*/);
           if (boldHeaderMatch) {
             title = boldHeaderMatch[1].trim();
-            console.log(`[parseHighlights] Found bold header title: "${title}"`);
-            
+
             // Check if this is a section header that needs special handling
             if (title.match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
-              console.log(`[parseHighlights] Detected section header: "${title}", looking for nested content`);
               
               // Look for nested ** headers within this section
               const lines = section.split('\n');
               let actualTitle = '';
               let contentStartIndex = -1;
-              
+
               // Limit search to prevent infinite loops
               const maxLines = Math.min(lines.length, 50);
               for (let i = 1; i < maxLines; i++) {
@@ -817,21 +803,18 @@ const HomePage = () => {
                   if (!nestedTitle.match(/^(Section \d+:|Opening Hook:|Conclusion:|Synthesis)/)) {
                     actualTitle = nestedTitle;
                     contentStartIndex = i + 1;
-                    console.log(`[parseHighlights] Found nested title: "${actualTitle}" at line ${i}`);
                     break;
                   }
                 }
               }
-              
+
               if (actualTitle && contentStartIndex > 0 && contentStartIndex < lines.length) {
                 title = actualTitle;
                 content = lines.slice(contentStartIndex, contentStartIndex + 30).join('\n').trim(); // Limit content length
-                console.log(`[parseHighlights] Used nested title: "${title}", content length: ${content.length}`);
               } else {
                 // If no nested title found, use content after section header
                 const contentLines = section.split('\n').slice(1, 31); // Limit to 30 lines
                 content = contentLines.join('\n').trim();
-                console.log(`[parseHighlights] No nested title found, using section content, length: ${content.length}`);
               }
             } else {
               // Regular bold header - extract content after it
@@ -839,10 +822,8 @@ const HomePage = () => {
               if (content.length > 1000) {
                 content = content.substring(0, 1000) + '...'; // Limit content length
               }
-              console.log(`[parseHighlights] Regular bold header processed, content length: ${content.length}`);
             }
           } else {
-            console.warn(`[parseHighlights] No header match found for section ${index}`);
             continue;
           }
         }
@@ -857,14 +838,10 @@ const HomePage = () => {
             isCapsuleSummary: true // Mark as summary to use different display
           };
           highlights.push(newHighlight);
-          console.log(`[parseHighlights] Successfully created highlight ${highlights.length}: "${title}"`);
-        } else {
-          console.warn(`[parseHighlights] Skipping section ${index} - title: "${title}" (length: ${title.length}), content length: ${content.length}`);
         }
       }
     }
 
-    console.log('[parseHighlights] Final parsed highlights count:', highlights.length);
     return highlights;
   };
 
