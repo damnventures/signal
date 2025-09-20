@@ -1906,7 +1906,7 @@ const HomePage = () => {
                     setShowArguePopup(true);
                     console.log('[HomePage] DEBUG: ArguePopup should open with question:', question);
                     // Keep welcome window open - new argue response will spawn as separate header window
-                  }, [showDemoWelcomeWindow])}
+                  }, [])}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
                   onRefreshCapsule={() => {
