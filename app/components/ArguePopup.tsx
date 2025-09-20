@@ -864,4 +864,4 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   );
 };
 
-export default ArguePopup;
+export default React.memo(ArguePopup);
