@@ -1229,17 +1229,26 @@ const HomePage = () => {
 
           // User has access if:
           // 1. It's a shared capsule (from shared API), OR
-          // 2. User is in the ACL
+          // 2. User is in the ACL (for private capsules)
           const isSharedCapsule = capsule.shared || capsule.isShared;
-          const userInACL = capsule.acl && capsule.acl.some((entry: any) => entry.userId === user?.id);
+          const userInACL = capsule.acl && capsule.acl.some((entry: any) => entry.userId === (user?.id || (user as any)?._id));
 
           return isSharedCapsule || userInACL;
         });
 
+        // Check for private store capsules that might have ACL access
+        const privateStoreCapsulesWithAccess = storeShrinkedCapsules.filter(storeCapsule => {
+          // Only check capsules not already in allCapsules (private ones)
+          const capsuleInAllCapsules = allCapsules.find((c: any) => c._id === storeCapsule.id);
+          return !capsuleInAllCapsules;
+        });
+
+        console.log('[HomePage] DEBUG: Private store capsules to check:', privateStoreCapsulesWithAccess.map(c => c.name));
+
         // Debug logs
         console.log('[HomePage] DEBUG: allCapsules count:', allCapsules.length);
         console.log('[HomePage] DEBUG: storeShrinkedCapsules:', storeShrinkedCapsules.map(c => ({ id: c.id, name: c.name })));
-        console.log('[HomePage] DEBUG: user ID:', user?.id);
+        console.log('[HomePage] DEBUG: user ID:', user?.id || (user as any)?._id);
 
         // Check cooking capsule specifically
         const cookingCapsule = allCapsules.find((c: any) => c._id === '68cdc3cf77fc9e53736d117e');
@@ -1249,7 +1258,7 @@ const HomePage = () => {
             shared: cookingCapsule.shared,
             isShared: cookingCapsule.isShared,
             acl: cookingCapsule.acl,
-            userInACL: cookingCapsule.acl && cookingCapsule.acl.some((entry: any) => entry.userId === user?.id)
+            userInACL: cookingCapsule.acl && cookingCapsule.acl.some((entry: any) => entry.userId === (user?.id || (user as any)?._id))
           });
         } else {
           console.log('[HomePage] DEBUG: Cooking capsule NOT found in allCapsules');
@@ -1263,7 +1272,7 @@ const HomePage = () => {
         
         console.log('[HomePage] Store check - User owns Shrinked capsules:', ownedShrinked.map(c => c.name));
         console.log('[HomePage] Store check - User has access to Shrinked capsules:', accessibleShrinked.map(c => c.name));
-        console.log('[HomePage] DEBUG: ACL check details - allCapsules count:', allCapsules.length, 'user ID:', user?.id);
+        console.log('[HomePage] DEBUG: ACL check details - allCapsules count:', allCapsules.length, 'user ID:', user?.id || (user as any)?._id);
         console.log('[HomePage] Store check - Total Shrinked capsules accessible:', totalAccessible);
         
         // Update state to pass to Store component

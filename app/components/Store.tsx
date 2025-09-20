@@ -138,15 +138,18 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         
         loadingOrder.forEach((id, index) => {
           setTimeout(() => {
+            console.log(`[Store] Starting load for item ${id} (${index + 1}/${loadingOrder.length})`);
             // First make the item visible (but not loaded)
             setVisibleItems(prev => new Set([...prev, id]));
-            
+
             // Then immediately show loading animation
             setTimeout(() => {
+              console.log(`[Store] Showing loading animation for ${id}`);
               setLoadingCapsules(prev => new Set([...prev, id]));
-              
+
               // Then complete loading after animation
               setTimeout(() => {
+                console.log(`[Store] Completing load for ${id}`);
                 setLoadingCapsules(prev => {
                   const newSet = new Set(prev);
                   newSet.delete(id);
@@ -163,13 +166,14 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         // Phase 4: Complete - after all items loaded
         setStatusMessage('Store ready.');
         setIsCheckingStore(false);
-        setStoreChecked(true);
-        
+
         // Hide status after a moment
         setTimeout(() => {
           setStatusVisible(false);
+          // Only mark as checked after status is hidden to avoid interfering with animations
+          setStoreChecked(true);
         }, 2000);
-      }, 3000 + (loadingOrder.length * 600) + 500); // After all items loaded + buffer
+      }, 3000 + (loadingOrder.length * 600) + 350); // After all items fully loaded (including their 350ms animation)
     }
   }, [isOpen, storeChecked]);
 
@@ -235,21 +239,64 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           
           console.log(`[Store] Accept invite response status: ${acceptResponse.status}`);
           if (acceptResponse.ok) {
-            console.log(`[Store] Accept invite successful, refreshing capsules`);
-            // Refresh capsules to show the newly shared capsule
-            if (onRefreshCapsules) {
-              // Add a delay to ensure the sharing is processed on the backend
-              setTimeout(() => {
-                onRefreshCapsules();
-              }, 1000);
-            } else {
-              console.warn(`[Store] No onRefreshCapsules callback provided`);
+            console.log(`[Store] Accept invite successful, verifying access...`);
+
+            // Verify the user actually has access by checking the capsule
+            try {
+              const verifyResponse = await fetch(`/api/capsule-signal?capsuleId=${capsuleId}`, {
+                headers: { 'x-api-key': apiKey || '' }
+              });
+
+              if (verifyResponse.ok) {
+                console.log(`[Store] Access verified! Refreshing capsules`);
+                setStatusMessage('Access granted! You can now explore this content.');
+                // Refresh capsules to show the newly shared capsule
+                if (onRefreshCapsules) {
+                  setTimeout(() => {
+                    onRefreshCapsules();
+                  }, 1000);
+                } else {
+                  console.warn(`[Store] No onRefreshCapsules callback provided`);
+                }
+              } else {
+                console.error(`[Store] Access verification failed`);
+                setStatusMessage('Hmm, looks like you still need permission. Try asking nicely? 🤷‍♀️');
+                // Remove from shared capsules since access was denied
+                setSharedCapsules(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(capsuleId);
+                  return newSet;
+                });
+                setTimeout(() => setStatusVisible(false), 3000);
+              }
+            } catch (error) {
+              console.error(`[Store] Access verification error:`, error);
+              setStatusMessage('Something went wrong. The digital gremlins are at it again.');
+              setTimeout(() => setStatusVisible(false), 3000);
             }
           } else {
             console.error(`[Store] Accept invite failed:`, await acceptResponse.text());
           }
         } else {
-          console.error(`[Store] Share failed:`, await shareResponse.text());
+          const errorText = await shareResponse.text();
+          console.error(`[Store] Share failed:`, errorText);
+
+          // Show sassy error message based on status
+          if (shareResponse.status === 401 || shareResponse.status === 403) {
+            setStatusMessage('Access denied. This content is exclusive. Very exclusive. 💅');
+          } else if (shareResponse.status === 404) {
+            setStatusMessage('Content not found. It\'s probably hiding in another dimension.');
+          } else {
+            setStatusMessage('Sharing failed. The internet is having trust issues today.');
+          }
+
+          // Remove from shared capsules since sharing failed
+          setSharedCapsules(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(capsuleId);
+            return newSet;
+          });
+          setTimeout(() => setStatusVisible(false), 3000);
         }
       } catch (error) {
         console.error('[Store] Sharing error:', error);

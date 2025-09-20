@@ -58,7 +58,7 @@ export async function GET(request: Request) {
         shared: true,
         isPublic: false
       });
-      
+
       console.log('[Shared Capsules Route] Fallback Success: Found', sharedCapsules.length, 'shared capsules');
       return NextResponse.json(sharedCapsules);
     }
