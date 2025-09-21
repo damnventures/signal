@@ -171,6 +171,9 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
         width: windowDimensions.width,
         height: windowDimensions.height,
         transition: isAnimatingSize ? 'width 0.4s cubic-bezier(0.4, 0.0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
+        border: '2px solid #000000',
+        boxShadow: '2px 2px 0px #808080, 4px 4px 0px #404040',
+        background: '#ffffff',
       }}
       className="animated-header-window" // Use the same class as DemoWelcomeWindow
     >

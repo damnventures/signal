@@ -375,24 +375,30 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 <div className="response-section">
                   <div className="response-label">Craig's Argument:</div>
                   <div className="response-box">
-                    {chatResponse
-                      .split(/\n\n|(?<=[.?!])\s+(?=[A-Z])/g)
-                      .map((p, i) => (
-                        <p key={i}>
-                          {p.split(/(\[\[\d+\]\])/).map((part, j) =>
-                            /\[\[\d+\]\]/.test(part) ? (
-                              <span key={j} className="ref">
-                                {part}
-                              </span>
-                            ) : (
-                              part
-                            )
-                          )}
-                        </p>
-                      ))}
+                    {isLoading && !isStreamingComplete ? (
+                      <div className="response-thinking">
+                        Craig is thinking...
+                      </div>
+                    ) : (
+                      chatResponse
+                        .split(/\n\n|(?<=[.?!])\s+(?=[A-Z])/g)
+                        .map((p, i) => (
+                          <p key={i}>
+                            {p.split(/(\[\[\d+\]\])/).map((part, j) =>
+                              /\[\[\d+\]\]/.test(part) ? (
+                                <span key={j} className="ref">
+                                  {part}
+                                </span>
+                              ) : (
+                                part
+                              )
+                            )}
+                          </p>
+                        ))
+                    )}
 
                     {/* Show streaming indicator if still loading */}
-                    {isLoading && !isStreamingComplete && (
+                    {isLoading && !isStreamingComplete && chatResponse && (
                       <div className="streaming-indicator" style={{
                         fontSize: '12px',
                         color: '#666',
@@ -441,7 +447,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                     className="question-input"
                   />
                   <div className="button-group">
-                    <button type="submit" disabled={isLoading || !question.trim()} className="generate-btn">
+                    <button
+                    type="submit"
+                    disabled={isLoading || !question.trim()}
+                    className="generate-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
                       {isLoading ? 'Generating…' : 'Generate'}
                     </button>
                   </div>
@@ -693,6 +706,16 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           font-size: 15px;
           box-shadow: inset 1px 1px 0px #808080;
+          min-height: 180px;
+        }
+
+        .response-thinking {
+          color: #666666;
+          font-style: italic;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          text-align: center;
+          margin: 20px 0;
+          line-height: 1.4;
         }
 
         .response-box p {
