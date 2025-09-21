@@ -280,7 +280,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
   useEffect(() => {
     if (isAutoSubmitting && question) {
-      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      handleSubmit({
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      } as React.FormEvent);
       setIsAutoSubmitting(false); // Reset the trigger
     }
   }, [isAutoSubmitting, question, handleSubmit]);

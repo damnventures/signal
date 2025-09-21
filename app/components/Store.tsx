@@ -161,18 +161,23 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       
       setTimeout(() => {
         // Phase 4: Complete - after all items loaded
-        setStatusMessage('Store ready.');
         setIsCheckingStore(false);
+        setStoreChecked(true);
 
-        // Hide status after a moment
-        setTimeout(() => {
-          setStatusVisible(false);
-          // Only mark as checked after status is hidden to avoid interfering with animations
-          setStoreChecked(true);
-        }, 2000);
+        if (user && user.email) {
+          // Authenticated user - show "Store ready" and hide after 2 seconds
+          setStatusMessage('Store ready.');
+          setTimeout(() => {
+            setStatusVisible(false);
+          }, 2000);
+        } else {
+          // Non-authenticated user - show persistent "demo" message
+          setStatusMessage('demo');
+          // Keep statusVisible true - don't hide the demo message
+        }
       }, 3000 + (loadingOrder.length * 600) + 900); // After all items fully loaded (including their 900ms animation)
     }
-  }, [isOpen, storeChecked]);
+  }, [isOpen, storeChecked, user]);
 
 
 
@@ -493,7 +498,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               // Only show other items if they're visible
               return visibleItems.has(source.id);
             }).map((source: SourceItem) => {
-              const isClickable = source.type !== 'coming';
+              const isClickable = source.type !== 'coming' && user && user.email;
               const isVisible = source.type === 'user' || source.type === 'add-new' || visibleItems.has(source.id);
               // For accessible shrinked capsules, they should still go through the loading animation
               const isAccessibleShrinked = source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId);

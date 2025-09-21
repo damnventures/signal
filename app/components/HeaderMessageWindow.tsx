@@ -78,6 +78,16 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 
     document.body.removeChild(tempDiv);
 
+    console.log('[HeaderMessageWindow] Sizing calculation:', {
+      content: cleanText.substring(0, 50) + (cleanText.length > 50 ? '...' : ''),
+      fullLength: cleanText.length,
+      isShortMessage,
+      naturalWidth,
+      naturalHeight,
+      calculatedWidth: width,
+      calculatedHeight: height
+    });
+
     setIsAnimatingSize(true);
     setWindowDimensions({
       width: `${width}px`,
@@ -104,6 +114,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
       // Step 2: Resize window for new content and start animation
       setTimeout(() => {
         const currentVariants = getMessageVariants();
+        // Start with the first variant
         const contentToMeasure = currentVariants[0] || message;
         measureContentAndResize(contentToMeasure);
 
@@ -123,7 +134,15 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     const timer = setTimeout(() => {
       if (variantIndex < variants.length - 1) {
         setShowDiff(true);
-        setVariantIndex(prev => prev + 1);
+        const nextIndex = variantIndex + 1;
+        setVariantIndex(nextIndex);
+
+        // Resize window for the new content
+        setTimeout(() => {
+          const newContent = variants[nextIndex] || '';
+          measureContentAndResize(newContent);
+        }, config.diffDuration / 2); // Resize halfway through diff animation
+
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
         console.log('[HeaderMessageWindow] Animation complete');
@@ -131,7 +150,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, animationReady, isClearing]);
+  }, [variantIndex, variants.length, onClose, animationReady, isClearing, variants, measureContentAndResize]);
 
   if (!message) {
     return null;
