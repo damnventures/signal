@@ -651,6 +651,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
         .thinking-chat {
           flex: 1;
+          min-height: 180px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -759,7 +760,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           color: #000000;
           background: #ffffff;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
-          font-size: 10px;
+          font-size: 13px;
+          line-height: 15px;
           box-shadow: inset 1px 1px 0px #808080;
         }
 

@@ -63,18 +63,18 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     const cleanText = content.replace(/<[^>]+>/g, '').trim();
     const isShortMessage = cleanText.length < 20; // "thinking" = 8 chars
 
-    let width, maxWidth;
+    let width, maxWidth, height;
     if (isShortMessage) {
-      // For short messages like "thinking", use minimal width
+      // For short messages like "thinking", use minimal dimensions
       maxWidth = 200;
       width = Math.max(120, Math.min(maxWidth, naturalWidth + 60)); // Account for 30px padding each side
+      height = Math.max(60, naturalHeight + 40); // Smaller height for short messages
     } else {
       // For longer messages, use more generous sizing like welcome window
       maxWidth = 500;
       width = Math.max(180, Math.min(maxWidth, naturalWidth + 60)); // Account for 30px padding each side
+      height = Math.max(80, naturalHeight + 60); // Account for 30px padding top/bottom
     }
-
-    const height = Math.max(80, naturalHeight + 60); // Account for 30px padding top/bottom
 
     document.body.removeChild(tempDiv);
 
@@ -114,9 +114,18 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
       // Step 2: Resize window for new content and start animation
       setTimeout(() => {
         const currentVariants = getMessageVariants();
-        // Start with the first variant
-        const contentToMeasure = currentVariants[0] || message;
-        measureContentAndResize(contentToMeasure);
+
+        // For short single messages, size to the message itself
+        if (currentVariants.length === 1 && currentVariants[0].length < 50) {
+          measureContentAndResize(currentVariants[0]);
+        } else {
+          // For longer messages with variants, size to accommodate the longest variant
+          const longestVariant = currentVariants.reduce((longest, current) =>
+            current.length > longest.length ? current : longest,
+            currentVariants[0] || message
+          );
+          measureContentAndResize(longestVariant);
+        }
 
         setIsClearing(false);
         setAnimationReady(true);
@@ -137,11 +146,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
         const nextIndex = variantIndex + 1;
         setVariantIndex(nextIndex);
 
-        // Resize window for the new content
-        setTimeout(() => {
-          const newContent = variants[nextIndex] || '';
-          measureContentAndResize(newContent);
-        }, config.diffDuration / 2); // Resize halfway through diff animation
+        // No need to resize during animation since we pre-sized for the longest variant
 
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
@@ -150,7 +155,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, animationReady, isClearing, variants, measureContentAndResize]);
+  }, [variantIndex, variants.length, onClose, animationReady, isClearing]);
 
   if (!message) {
     return null;
