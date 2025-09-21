@@ -869,21 +869,7 @@ const HomePage = () => {
       console.log(`[HomePage] Already fetching capsule content, skipping...`);
       return;
     }
-    if (lastFetchedCapsuleId === capsuleId) {
-      console.log(`[HomePage] Already fetched content for capsuleId: ${capsuleId}, skipping duplicate fetch...`);
-      return;
-    }
-    
-    // Additional safeguard: prevent rapid successive calls for the same capsule
-    const now = Date.now();
-    const lastFetchKey = `fetch_${capsuleId}`;
-    const lastFetchTime = (window as any)[lastFetchKey] || 0;
-    if (now - lastFetchTime < 1000) { // 1 second cooldown
-      console.log(`[HomePage] Recent fetch for capsuleId: ${capsuleId}, skipping to prevent rapid successive calls...`);
-      return;
-    }
-    (window as any)[lastFetchKey] = now;
-    
+
     // Check if this is a known shared system capsule
     const shrinkedCapsuleIds = [
       '68cdc3cf77fc9e53736d117e', // Cooking Preview
@@ -893,9 +879,9 @@ const HomePage = () => {
       '6887e02fa01e2f4073d3bb54'  // Tech Podcasts
     ];
     const isSharedSystemCapsule = shrinkedCapsuleIds.includes(capsuleId);
-    
+
     setIsFetchingCapsuleContent(true);
-    setLastFetchedCapsuleId(capsuleId);
+    // Clear UI state immediately for the selected capsule to give instant feedback
     setHighlightsData([]);
     setFetchedOriginalLinks([]);
     setCurrentVideoIndex(0);
@@ -1067,6 +1053,8 @@ const HomePage = () => {
       }
 
       console.log(`[HomePage] Successfully fetched capsule content.`);
+      // Only set lastFetchedCapsuleId after successful completion
+      setLastFetchedCapsuleId(capsuleId);
     } catch (error: any) {
       console.error(`[HomePage] Error fetching capsule content:`, error.message);
       let errorMessage = 'Unable to load capsule content. Please try again later.';
@@ -1319,8 +1307,8 @@ const HomePage = () => {
         return;
       }
 
-      // Don't refetch if we already have content for this capsule and it matches what's expected
-      if (lastFetchedCapsuleId === selectedCapsuleId && highlightsData && highlightsData.length > 0) {
+      // Don't refetch if we already have content for this capsule
+      if (lastFetchedCapsuleId === selectedCapsuleId) {
         console.log(`[HomePage] Content already loaded for capsuleId: ${selectedCapsuleId}, skipping fetch`);
         return;
       }
@@ -1829,6 +1817,13 @@ const HomePage = () => {
                 onSelectCapsule={async (capsuleId) => {
                   console.log(`[HomePage] User selected capsule: ${capsuleId}`);
                   console.log(`[HomePage] Current capsules in window:`, capsules.map((c: any) => ({id: c._id, name: c.name})));
+
+                  // If switching to a different capsule, reset lastFetchedCapsuleId to allow fresh fetch
+                  if (selectedCapsuleId !== capsuleId) {
+                    console.log(`[HomePage] Switching from ${selectedCapsuleId} to ${capsuleId}, resetting lastFetchedCapsuleId`);
+                    setLastFetchedCapsuleId(null);
+                  }
+
                   setSelectedCapsuleId(capsuleId);
                   
                   // Auto-share LastWeekTonight Preview capsule when authenticated user selects it
