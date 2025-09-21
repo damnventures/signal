@@ -36,7 +36,9 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       if (!wrapSummary || wrapSummary.trim() === '') {
         return ["Analyzing your capsules..."];
       }
-      return createMessageVariants(wrapSummary);
+      // Ensure we never return empty variants
+      const messageVariants = createMessageVariants(wrapSummary);
+      return messageVariants.length > 0 ? messageVariants : ["Analyzing your capsules..."];
     } else {
       if (demoMessage) {
         return createMessageVariants(demoMessage);

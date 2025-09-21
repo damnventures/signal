@@ -140,6 +140,17 @@ const HomePage = () => {
       }
     } catch (error) {
       console.error('[HomePage] Error fetching wrap summary:', error);
+      // Check if it's an SSL certificate error and return a sassy message
+      if (error instanceof Error && (
+        error.message.includes('certificate') ||
+        error.message.includes('SSL') ||
+        error.message.includes('CERT') ||
+        error.message.includes('fetch failed')
+      )) {
+        return "Oops! Our servers are having a spa day 💅 We're updating our certificates and will be back shortly. Very exclusive maintenance, you understand.";
+      }
+      // For other errors, return a fallback message instead of undefined
+      return `Welcome ${userProfile.email || userProfile.username}! Unable to fetch latest updates right now, but we're working on it.`;
     } finally {
       setIsWrapFetching(false);
       globalWrapRequestRef.current = false;
@@ -151,6 +162,12 @@ const HomePage = () => {
 
   // Animate status message with typewriter effect (like Argue tool)
   const animateStatusMessage = useCallback((fullMessage: string) => {
+    // Safety check - ensure we have a valid message
+    if (!fullMessage || typeof fullMessage !== 'string') {
+      console.warn('[HomePage] animateStatusMessage called with invalid message:', fullMessage);
+      return;
+    }
+
     // Clear any existing intervals
     if (statusIntervalRef.current) {
       clearInterval(statusIntervalRef.current);
