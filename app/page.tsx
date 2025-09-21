@@ -1330,8 +1330,8 @@ const HomePage = () => {
           setLoadingPhase('signal');
           updateStatusMessage('signal');
           
-          // Show wrap welcome window immediately (only if not triggered by demo intent)
-          if (user && !demoMessage) {
+          // Show wrap welcome window immediately (only if not triggered by demo intent and not already shown)
+          if (user && !demoMessage && !showDemoWelcomeWindow && !hasHeaderCompleted) {
             console.log(`[HomePage] Showing wrap welcome window for authenticated user`);
             setShowDemoWelcomeWindow(true);
 
@@ -1339,6 +1339,13 @@ const HomePage = () => {
             console.log('[HomePage] Wrap summary already handled by auth flow');
           } else if (demoMessage) {
             console.log(`[HomePage] Skipping auto welcome window - demo message already set:`, demoMessage);
+          } else {
+            console.log(`[HomePage] Skipping welcome window - already shown or completed:`, {
+              showDemoWelcomeWindow,
+              hasHeaderCompleted,
+              user: !!user,
+              demoMessage: !!demoMessage
+            });
           }
           
           // Phase 2: After 3 seconds, move to insights phase + show capsules + fetch data
@@ -2104,7 +2111,7 @@ const HomePage = () => {
               <DemoWelcomeWindow
                 id="demo-welcome"
                 onBringToFront={handleBringToFront}
-                initialPosition={{ x: 80, y: 180 }}
+                initialPosition={{ x: 30, y: 30 }}
                 onClose={() => setShowDemoWelcomeWindow(false)}
                 wrapSummary={lastWrapSummary}
                 userEmail={user?.email}
