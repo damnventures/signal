@@ -56,7 +56,10 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [selectedCapsuleIds, setSelectedCapsuleIds] = useState<string[]>([capsuleId]);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+
+
   const { apiKey, user } = useAuth();
+
 
   // Get available capsules for dropdown
   const getAvailableCapsules = () => {
@@ -322,6 +325,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             <div className="argue-title-text">Argue with Craig</div>
             <button
               className="argue-close-btn"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
               onClick={onClose}
               aria-label="Close argue popup"
             >
@@ -347,6 +353,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   onChange={(e) => {
                     const values = Array.from(e.target.selectedOptions, option => option.value);
                     setSelectedCapsuleIds(values.length > 0 ? values : [capsuleId]);
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
                   }}
                   className="capsule-dropdown"
                   disabled={isLoading}
@@ -413,6 +422,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   {reasoningResponse && (
                     <div className="analysis">
                       <button
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsReasoningExpanded(!isReasoningExpanded);
@@ -442,6 +454,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   <textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                    }}
                     placeholder="e.g., 'Remote work is more productive'..."
                     disabled={isLoading}
                     className="question-input"
@@ -451,6 +466,9 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                     type="submit"
                     disabled={isLoading || !question.trim()}
                     className="generate-btn"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                     }}

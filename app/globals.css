@@ -171,7 +171,6 @@ body {
 
 .animated-header-window .window-content {
     box-sizing: border-box;
-    height: 100%;
     overflow: hidden;
 }
 
