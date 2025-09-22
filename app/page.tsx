@@ -1682,7 +1682,7 @@ const HomePage = () => {
                 initialPosition={calculateHeaderPosition()}
                 onLoadingComplete={handleHeaderLoadingComplete}
                 className="animated-header-window"
-                responseMessage={headerResponseMessage}
+                responseMessage={showHeaderMessageWindow ? '' : headerResponseMessage}
                 onResponseComplete={() => {
                   // Don't auto-clear responses - let them persist until next action
                   console.log('[HomePage] Response animation completed, keeping message visible');
