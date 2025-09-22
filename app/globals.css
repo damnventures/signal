@@ -166,7 +166,13 @@ body {
 }
 
 .animated-header-window {
-    overflow: visible;
+    overflow: hidden;
+}
+
+.animated-header-window .window-content {
+    box-sizing: border-box;
+    height: 100%;
+    overflow: hidden;
 }
 
 .tv-player-window {
