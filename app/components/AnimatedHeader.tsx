@@ -49,7 +49,9 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       ];
 
   useEffect(() => {
-    if (responseMessage && loadingComplete && !showingResponse) {
+    // Only allow responseMessage changes for non-authenticated users
+    // Authenticated users should use HeaderMessageWindow for responses instead
+    if (responseMessage && loadingComplete && !showingResponse && !isAuthenticated) {
       setShowingResponse(true);
       setStreamingResponse(true);
       const variants = createMessageVariants(responseMessage);
@@ -58,7 +60,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
       setShowDiff(true);
       setTimeout(() => setShowDiff(false), ANIMATION_CONFIG.header.diffDuration);
     }
-  }, [responseMessage, loadingComplete, showingResponse]);
+  }, [responseMessage, loadingComplete, showingResponse, isAuthenticated]);
 
   useEffect(() => {
     if (!streamingResponse || responseVariants.length === 0) return;
