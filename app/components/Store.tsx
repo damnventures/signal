@@ -18,6 +18,7 @@ interface SourceItem {
 }
 
 interface User {
+  id: string;
   email?: string;
   username?: string;
 }
@@ -79,6 +80,14 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
+
+  // Sync sharedCapsules state with accessibleShrinkedCapsules prop
+  useEffect(() => {
+    if (accessibleShrinkedCapsules.length > 0) {
+      console.log('[Store] Syncing shared capsules state with accessible capsules:', accessibleShrinkedCapsules);
+      setSharedCapsules(new Set(accessibleShrinkedCapsules));
+    }
+  }, [accessibleShrinkedCapsules]);
 
   // Simulate checking store contents when opened
   useEffect(() => {
@@ -190,7 +199,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
     setIsSharing(true);
     setStatusVisible(true);
     
-    const isCurrentlyShared = sharedCapsules.has(capsuleId);
+    const isCurrentlyShared = accessibleShrinkedCapsules.includes(capsuleId);
     
     if (!isCurrentlyShared) {
       // Share the capsule
@@ -323,11 +332,29 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
 
       // Actual API call
       try {
-        await fetch(`/api/capsules/${capsuleId}/access/user`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email }),
+        const apiKey = localStorage.getItem('auth_api_key');
+        const response = await fetch(`/api/capsules/${capsuleId}/access/${user.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey || ''
+          },
         });
+
+        if (!response.ok) {
+          console.error(`[Store] Unshare failed:`, response.status);
+          setStatusMessage('Failed to remove access. Try again?');
+          // Restore the capsule to shared state since removal failed
+          setSharedCapsules(prev => {
+            const newSet = new Set(prev);
+            newSet.add(capsuleId);
+            return newSet;
+          });
+          setTimeout(() => setStatusVisible(false), 3000);
+          return;
+        }
+
+        console.log(`[Store] Unshare successful for capsule ${capsuleId}`);
 
         // Refresh capsules to remove the unshared capsule from the list
         if (onRefreshCapsules) {

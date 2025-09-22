@@ -77,6 +77,7 @@ const HomePage = () => {
   const [accessibleShrinkedCapsules, setAccessibleShrinkedCapsules] = useState<string[]>([]);
   const [wrapSummaryShown, setWrapSummaryShown] = useState(false);
   const wrapToolRef = useRef<WrapToolRef>(null);
+  const wrapStateHashRef = useRef<string>('');
   const [recent3040Error, setRecent3040Error] = useState<boolean>(false);
 
   const startDemo = useCallback(() => {
@@ -243,7 +244,7 @@ const HomePage = () => {
     // Set up periodic state check
     const checkForStateChanges = async () => {
       // Access current values without dependencies
-      const currentWrapStateHash = wrapStateHash;
+      const currentWrapStateHash = wrapStateHashRef.current;
       const currentIsWrapFetching = isWrapFetching;
       
       // Skip if already fetching wrap summary (local or global)
@@ -352,6 +353,11 @@ const HomePage = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Keep wrapStateHashRef in sync with wrapStateHash state
+  useEffect(() => {
+    wrapStateHashRef.current = wrapStateHash;
+  }, [wrapStateHash]);
 
   // Hide header for authenticated users (they get DemoWelcomeWindow instead)
   useEffect(() => {
@@ -1301,9 +1307,9 @@ const HomePage = () => {
         return;
       }
 
-      // Prevent fetching demo capsule with user API key (race condition fix)
-      if (apiKey && selectedCapsuleId === '68cdc3cf77fc9e53736d117e') {
-        console.log(`[HomePage] Skipping demo capsule fetch with user API key - will be cleared by auth useEffect`);
+      // Prevent fetching cooking capsule with user API key unless user has access to it
+      if (apiKey && selectedCapsuleId === '68cdc3cf77fc9e53736d117e' && !accessibleShrinkedCapsules.includes('68cdc3cf77fc9e53736d117e')) {
+        console.log(`[HomePage] Skipping cooking capsule fetch - user doesn't have access and will be cleared by auth useEffect`);
         return;
       }
 
@@ -1316,7 +1322,7 @@ const HomePage = () => {
       console.log(`[HomePage] useEffect triggered - Fetching capsule content for capsuleId: ${selectedCapsuleId}, apiKey: ${apiKey ? 'present' : 'null'}, user: ${user ? 'present' : 'null'}`);
       fetchCapsuleContent(apiKey, selectedCapsuleId);
     }
-  }, [selectedCapsuleId, apiKey, user]); // Simplified dependencies to prevent unnecessary re-fetching
+  }, [selectedCapsuleId, apiKey, user, accessibleShrinkedCapsules]); // Added accessibleShrinkedCapsules since we use it in the condition
 
   // Handle capsule selection based on auth state
   useEffect(() => {

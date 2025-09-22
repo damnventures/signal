@@ -111,6 +111,15 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
     };
   }, [variants]);
 
+  // Reset animation states when content changes
+  useEffect(() => {
+    setShowSecondCard(false);
+    setSecondCardVariantIndex(0);
+    setSecondCardShowDiff(false);
+    setVariantIndex(0);
+    setShowDiff(false);
+  }, [wrapSummary, demoMessage]);
+
   // Reset second card state when needsSecondCard changes
   useEffect(() => {
     if (!needsSecondCard) {
