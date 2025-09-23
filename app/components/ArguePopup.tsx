@@ -45,7 +45,6 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   userCapsules = [],
   accessibleShrinkedCapsules = [],
 }) => {
-  console.log('[ArguePopup] Component rendered - isOpen:', isOpen, 'initialQuestion:', initialQuestion);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [chatResponse, setChatResponse] = useState('');
@@ -62,7 +61,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
 
   // Get available capsules for dropdown
-  const getAvailableCapsules = () => {
+  const getAvailableCapsules = useCallback(() => {
     const capsules: Array<{ id: string; name: string; type: 'user' | 'shrinked' }> = [];
     const addedIds = new Set<string>();
 
@@ -125,25 +124,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     }
 
     return capsules;
-  };
-
-  // Memoize availableCapsules to prevent render loops
-  const availableCapsules = useMemo(() => {
-    return getAvailableCapsules();
   }, [user, userCapsules, accessibleShrinkedCapsules, capsuleId]);
 
+  // Get available capsules (already memoized)
+  const availableCapsules = getAvailableCapsules();
+
   useEffect(() => {
-    console.log('[ArguePopup] Setting selected capsule to:', capsuleId);
-    console.log('[ArguePopup] Available capsules:', availableCapsules.map(c => `${c.id}: ${c.name}`));
-
-    // Validate that the capsule exists in available list
-    const capsuleExists = availableCapsules.some(c => c.id === capsuleId);
-    if (!capsuleExists && capsuleId) {
-      console.warn('[ArguePopup] Current capsule not found in available list!', capsuleId);
-    }
-
     setSelectedCapsuleIds([capsuleId]);
-  }, [capsuleId, availableCapsules]);
+  }, [capsuleId]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -384,11 +372,11 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                 <div className="response-section">
                   <div className="response-label">Craig's Argument:</div>
                   <div className="response-box">
-                    {isLoading && !isStreamingComplete ? (
+                    {!chatResponse && isLoading ? (
                       <div className="response-thinking">
                         Craig is thinking...
                       </div>
-                    ) : (
+                    ) : chatResponse ? (
                       chatResponse
                         .split(/\n\n|(?<=[.?!])\s+(?=[A-Z])/g)
                         .map((p, i) => (
@@ -404,7 +392,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                             )}
                           </p>
                         ))
-                    )}
+                    ) : null}
 
                     {/* Show streaming indicator if still loading */}
                     {isLoading && !isStreamingComplete && chatResponse && (
@@ -414,7 +402,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                         fontStyle: 'italic',
                         marginTop: '8px'
                       }}>
-                        <span>...</span>
+                        <span className="loading-dots">▋</span>
                       </div>
                     )}
                   </div>

@@ -208,22 +208,22 @@ const ToolCore: React.FC<ToolCoreProps> = ({
             break;
           }
 
-          // 1. Show demo message in header window (same flow as other intents)
+          // 1. Start the demo FIRST to set capsule ID (tool execution - loads demo content)
+          console.log('[ToolCore] Starting demo');
+          if (onStartDemo) {
+            onStartDemo();
+          }
+
+          // 2. Show demo message in header window (same flow as other intents)
           if (onShowResponse && classification.launchMessage) {
             console.log('[ToolCore] Showing demo launch message in header:', classification.launchMessage);
             onShowResponse(classification.launchMessage);
           }
 
-          // 2. Show demo welcome window with Vanya's context
+          // 3. Show demo welcome window with Vanya's context
           if (onShowDemoWelcomeCard) {
             console.log('[ToolCore] Showing demo welcome window for context');
             onShowDemoWelcomeCard();
-          }
-
-          // 3. Start the demo (tool execution - loads demo content)
-          console.log('[ToolCore] Starting demo');
-          if (onStartDemo) {
-            onStartDemo();
           }
           break;
           
