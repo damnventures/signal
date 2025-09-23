@@ -85,12 +85,8 @@ const HomePage = () => {
     const defaultCapsuleId = '6887e02fa01e2f4073d3bb51'; // Reducto AI demo capsule
     setSelectedCapsuleId(defaultCapsuleId);
     setHasHeaderCompleted(false); // Reset header completed state
-    // Force immediate fetch of demo capsule content to prevent timing issues
     setLastFetchedCapsuleId(null); // Reset to allow fresh fetch
-    setTimeout(() => {
-      fetchCapsuleContent(null, defaultCapsuleId); // Fetch with null API key for demo
-    }, 100); // Small delay to ensure state updates
-  }, [fetchCapsuleContent]);
+  }, []);
 
   const handleDemoRequest = useCallback((message: string) => {
     console.log('[HomePage] Setting demo message:', message);
