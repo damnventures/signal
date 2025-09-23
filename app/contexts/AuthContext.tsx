@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [refreshTokenState, setRefreshTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Prevent multiple refresh attempts
@@ -51,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedUser = localStorage.getItem('auth_user');
         const storedToken = localStorage.getItem('auth_access_token');
         const storedApiKey = localStorage.getItem('auth_api_key');
+        const storedRefreshToken = localStorage.getItem('auth_refresh_token');
 
         if (storedUser && storedToken) {
           console.log('[AuthContext] Loading user from localStorage:', storedUser);
@@ -60,12 +62,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('[AuthContext] Loading apiKey from localStorage:', storedApiKey);
             setApiKey(storedApiKey);
           }
+          if (storedRefreshToken) {
+            console.log('[AuthContext] Loading refreshToken from localStorage');
+            setRefreshTokenState(storedRefreshToken);
+          }
         } else if (storedToken) {
           // We have a token but no user - auth is in progress
           console.log('[AuthContext] Found access token, waiting for user data completion...');
           setAccessToken(storedToken);
           if (storedApiKey) {
             setApiKey(storedApiKey);
+          }
+          if (storedRefreshToken) {
+            setRefreshTokenState(storedRefreshToken);
           }
         } else {
           console.log('[AuthContext] No auth data found in localStorage.');
@@ -108,13 +117,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setAccessToken(null);
     setApiKey(null);
-    
+    setRefreshTokenState(null);
+
     // Clear localStorage
     localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_access_token');
     localStorage.removeItem('auth_api_key');
     localStorage.removeItem('auth_refresh_token');
-    
+
     // Refresh the page to reset the application state
     window.location.reload();
   };
@@ -131,6 +141,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('auth_access_token', token);
     if (key) {
       localStorage.setItem('auth_api_key', key);
+    }
+    // Also load refresh token if available
+    const storedRefreshToken = localStorage.getItem('auth_refresh_token');
+    if (storedRefreshToken) {
+      setRefreshTokenState(storedRefreshToken);
     }
   };
 
@@ -190,6 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Update tokens
       setAccessToken(data.accessToken);
+      setRefreshTokenState(data.refreshToken);
       localStorage.setItem('auth_access_token', data.accessToken);
       localStorage.setItem('auth_refresh_token', data.refreshToken);
 
