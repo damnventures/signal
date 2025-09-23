@@ -1838,20 +1838,21 @@ const HomePage = () => {
                   setSelectedCapsuleId(capsuleId);
                   
                   // Auto-share LastWeekTonight Preview capsule when authenticated user selects it
-                  if (capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && user.email) {
+                  if (capsuleId === '68c32cf3735fb4ac0ef3ccbf' && user && user.email && apiKey) {
                     console.log(`[HomePage] Auto-sharing LastWeekTonight Preview capsule with ${user.email}`);
                     try {
                       const shareResponse = await fetch(`/api/capsules/${capsuleId}/share`, {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
+                          'x-api-key': apiKey
                         },
                         body: JSON.stringify({
                           email: user.email,
                           role: 'viewer'
                         }),
                       });
-                      
+
                       if (shareResponse.ok) {
                         console.log(`[HomePage] Successfully shared capsule with ${user.email}`);
                         // Now accept the invite
@@ -1859,17 +1860,15 @@ const HomePage = () => {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            'x-api-key': apiKey || ''
+                            'x-api-key': apiKey
                           },
                           body: JSON.stringify({
                             email: user.email
                           }),
                         });
-                        
+
                         if (acceptResponse.ok) {
                           console.log(`[HomePage] Successfully accepted invite for ${user.email}`);
-                          // Skip the refresh since auto-sharing only happens for already accessible capsules
-                          // The capsule is already loaded and this prevents the re-render cascade
                           console.log(`[HomePage] Skipping capsule list refresh to prevent duplicate loading`);
                         } else {
                           console.error('[HomePage] Failed to accept invite:', await acceptResponse.text());
