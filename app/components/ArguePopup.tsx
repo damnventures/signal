@@ -454,6 +454,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                   <textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (question.trim() && !isLoading) {
+                          handleSubmit(e);
+                        }
+                      }
+                    }}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                     }}

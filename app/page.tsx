@@ -1110,7 +1110,7 @@ const HomePage = () => {
         console.log('[HomePage] Non-auth user detected, returning hardcoded capsule list');
         const hardcodedCapsules = [
           {
-            _id: '68cdc3cf77fc9e53736d117e',
+            _id: '6887e02fa01e2f4073d3bb51',
             name: 'Demo Capsule',
             isPublic: true
           },

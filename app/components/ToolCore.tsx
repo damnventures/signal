@@ -190,16 +190,30 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           
         case 'demo':
           console.log('[ToolCore] Demo intent detected');
-          
-          // 1. Show special demo window with the demo message
-          if (onDemoRequest && classification.launchMessage) {
-            console.log('[ToolCore] Showing demo window with message:', classification.launchMessage);
-            onDemoRequest(classification.launchMessage);
-          } else if (onShowDemoWelcomeCard) {
-            console.log('[ToolCore] Showing demo welcome window (fallback)');
-            onShowDemoWelcomeCard();
+
+          // Check if user is authenticated - they shouldn't need a demo
+          if (user || apiKey) {
+            console.log('[ToolCore] Authenticated user requesting demo - showing sassy rejection');
+            const sassyMessages = [
+              "Demo? Really? You're already logged in and have access to everything. Maybe try actually using it instead of asking for a preview?",
+              "You want a demo when you literally have the full version? That's like asking for a trailer when you already own the movie.",
+              "Demo mode is for peasants. You have full access - use it like the power user you pretend to be.",
+              "Seriously? You're authenticated and asking for a demo? Just dive in and use your actual capsules instead of playing tourist.",
+              "Demo? Nah. You've got the real deal. Stop window shopping and start actually working with your content."
+            ];
+            const randomMessage = sassyMessages[Math.floor(Math.random() * sassyMessages.length)];
+            if (onShowResponse) {
+              onShowResponse(randomMessage);
+            }
+            break;
           }
-          
+
+          // 1. Show demo message in header window (same flow as other intents)
+          if (onShowResponse && classification.launchMessage) {
+            console.log('[ToolCore] Showing demo launch message in header:', classification.launchMessage);
+            onShowResponse(classification.launchMessage);
+          }
+
           // 2. Start the demo (tool execution - loads demo content)
           console.log('[ToolCore] Starting demo');
           if (onStartDemo) {

@@ -124,7 +124,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           width: auto !important;
           min-width: 120px !important;
           max-width: 200px !important;
-          transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+          margin-right: 20px !important;
+          transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease, margin-right 0.3s ease;
         }
       `}</style>
     </DraggableWindow>
