@@ -1009,22 +1009,18 @@ const HomePage = () => {
               if (jobDetails.originalLink) {
                 console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
 
-                // Only add videos if this fetch is still for the current capsule
-                if (selectedCapsuleId === capsuleId) {
-                  setFetchedOriginalLinks(prevLinks => {
-                    // Check if this link already exists to prevent duplicates
-                    if (prevLinks.includes(jobDetails.originalLink)) {
-                      console.log(`[HomePage] Skipping duplicate video link:`, jobDetails.originalLink);
-                      return prevLinks;
-                    }
-                    const newLinks = [...prevLinks, jobDetails.originalLink];
-                    console.log(`[HomePage] Added unique video link. Total: ${newLinks.length}`);
-                    // Keep current video index at 0 (first video) instead of jumping to last
-                    return newLinks;
-                  });
-                } else {
-                  console.log(`[HomePage] Skipping video from previous capsule: ${fileId} (current: ${selectedCapsuleId}, fetch: ${capsuleId})`);
-                }
+                // Add video link to the list
+                setFetchedOriginalLinks(prevLinks => {
+                  // Check if this link already exists to prevent duplicates
+                  if (prevLinks.includes(jobDetails.originalLink)) {
+                    console.log(`[HomePage] Skipping duplicate video link:`, jobDetails.originalLink);
+                    return prevLinks;
+                  }
+                  const newLinks = [...prevLinks, jobDetails.originalLink];
+                  console.log(`[HomePage] Added unique video link. Total: ${newLinks.length}`);
+                  // Keep current video index at 0 (first video) instead of jumping to last
+                  return newLinks;
+                });
               } else {
                 console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
               }
