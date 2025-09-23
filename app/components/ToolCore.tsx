@@ -214,7 +214,13 @@ const ToolCore: React.FC<ToolCoreProps> = ({
             onShowResponse(classification.launchMessage);
           }
 
-          // 2. Start the demo (tool execution - loads demo content)
+          // 2. Show demo welcome window with Vanya's context
+          if (onShowDemoWelcomeCard) {
+            console.log('[ToolCore] Showing demo welcome window for context');
+            onShowDemoWelcomeCard();
+          }
+
+          // 3. Start the demo (tool execution - loads demo content)
           console.log('[ToolCore] Starting demo');
           if (onStartDemo) {
             onStartDemo();

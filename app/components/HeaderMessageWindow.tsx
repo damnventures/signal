@@ -23,7 +23,6 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
   const [animationReady, setAnimationReady] = useState(false);
 
   const getMessageVariants = () => {
@@ -50,25 +49,23 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 
   useEffect(() => {
     if (message) {
-      console.log('[HeaderMessageWindow] New message received, starting clear animation');
-      // Step 1: Clear current content
-      setIsClearing(true);
+      console.log('[HeaderMessageWindow] New message received, starting smooth transition');
+      // Step 1: Start content transition (no clearing for smooth resize)
       setAnimationReady(false);
       setVariantIndex(0);
       setShowDiff(false);
 
-      // Step 2: Start animation (no manual sizing)
+      // Step 2: Start animation with smooth transition
       setTimeout(() => {
-        setIsClearing(false);
         setAnimationReady(true);
         console.log('[HeaderMessageWindow] Ready to start animation');
-      }, 100); // Brief clear period
+      }, 300); // Longer delay for smooth transition
     }
   }, [message]);
 
   useEffect(() => {
-    // Only start animation when ready and not clearing
-    if (!animationReady || isClearing || variants.length === 0) return;
+    // Only start animation when ready
+    if (!animationReady || variants.length === 0) return;
 
     const config = ANIMATION_CONFIG.header;
     const delay = variantIndex === 0 ? config.firstDelay : config.subsequentDelay;
@@ -85,7 +82,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, animationReady, isClearing]);
+  }, [variantIndex, variants.length, onClose, animationReady]);
 
   if (!message) {
     return null;
@@ -101,15 +98,11 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
     >
       <div className="window-content">
         <p className="main-text">
-          {isClearing ? (
-            '' // Empty during clear
-          ) : (
-            <MessageDiff
-              oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
-              newContent={variants[variantIndex] || ''}
-              showDiff={showDiff}
-            />
-          )}
+          <MessageDiff
+            oldContent={variantIndex === 0 ? '' : variants[variantIndex - 1] || ''}
+            newContent={variants[variantIndex] || ''}
+            showDiff={showDiff}
+          />
         </p>
       </div>
 
@@ -124,8 +117,8 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           width: auto !important;
           min-width: 120px !important;
           max-width: 200px !important;
-          margin-right: 20px !important;
-          transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease, margin-right 0.3s ease;
+          margin-right: 30px !important;
+          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
       `}</style>
     </DraggableWindow>

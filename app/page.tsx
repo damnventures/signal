@@ -82,7 +82,7 @@ const HomePage = () => {
 
   const startDemo = useCallback(() => {
     setShowDemo(true);
-    const defaultCapsuleId = '68cdc3cf77fc9e53736d117e';
+    const defaultCapsuleId = '6887e02fa01e2f4073d3bb51'; // Reducto AI demo capsule
     setSelectedCapsuleId(defaultCapsuleId);
     setHasHeaderCompleted(false); // Reset header completed state
   }, []);
@@ -892,6 +892,9 @@ const HomePage = () => {
     setFetchedOriginalLinks([]);
     setCurrentVideoIndex(0);
     setCapsuleContent("");
+
+    // Track current capsule to prevent cross-capsule video contamination
+    const currentFetchCapsuleId = capsuleId;
     try {
       const apiUrl = `/api/capsule-signal?capsuleId=${capsuleId}`;
       
@@ -1005,17 +1008,23 @@ const HomePage = () => {
               console.log(`[HomePage] Job details response for ${fileId}:`, jobDetails);
               if (jobDetails.originalLink) {
                 console.log(`[HomePage] Original link for fileId ${fileId}:`, jobDetails.originalLink);
-                setFetchedOriginalLinks(prevLinks => {
-                  // Check if this link already exists to prevent duplicates
-                  if (prevLinks.includes(jobDetails.originalLink)) {
-                    console.log(`[HomePage] Skipping duplicate video link:`, jobDetails.originalLink);
-                    return prevLinks;
-                  }
-                  const newLinks = [...prevLinks, jobDetails.originalLink];
-                  console.log(`[HomePage] Added unique video link. Total: ${newLinks.length}`);
-                  // Keep current video index at 0 (first video) instead of jumping to last
-                  return newLinks;
-                });
+
+                // Only add videos if this fetch is still for the current capsule
+                if (selectedCapsuleId === currentFetchCapsuleId) {
+                  setFetchedOriginalLinks(prevLinks => {
+                    // Check if this link already exists to prevent duplicates
+                    if (prevLinks.includes(jobDetails.originalLink)) {
+                      console.log(`[HomePage] Skipping duplicate video link:`, jobDetails.originalLink);
+                      return prevLinks;
+                    }
+                    const newLinks = [...prevLinks, jobDetails.originalLink];
+                    console.log(`[HomePage] Added unique video link. Total: ${newLinks.length}`);
+                    // Keep current video index at 0 (first video) instead of jumping to last
+                    return newLinks;
+                  });
+                } else {
+                  console.log(`[HomePage] Skipping video from previous capsule: ${fileId} (current: ${selectedCapsuleId}, fetch: ${currentFetchCapsuleId})`);
+                }
               } else {
                 console.warn(`[HomePage] No originalLink found for fileId ${fileId}. Response:`, jobDetails);
               }
