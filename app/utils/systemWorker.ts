@@ -114,10 +114,11 @@ function fallbackClassification(input: string): WorkerResponse {
   if (loginWords.some(word => input.toLowerCase().includes(word))) {
     return {
       intent: 'login',
-      action: 'show_login',
+      action: 'initiate_login',
       confidence: 0.8,
       data: { message: input },
-      requiresConfirmation: false
+      requiresConfirmation: false,
+      launchMessage: "Time to get you logged in. Let me check your email and see if you're worthy of Craig access."
     };
   }
   
