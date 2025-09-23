@@ -41,6 +41,9 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 
   const variants = getMessageVariants();
 
+  // Check if current message is short (like "thinking")
+  const isShortMessage = message && message.replace(/<[^>]+>/g, '').trim().length < 20;
+
 
   // Removed redundant useEffect that was causing infinite loop
   // Resizing is now handled in the message change effect below
@@ -94,7 +97,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
       onBringToFront={onBringToFront}
       initialZIndex={initialZIndex}
       initialPosition={initialPosition}
-      className="animated-header-window" // Use the same class as DemoWelcomeWindow
+      className={`animated-header-window ${isShortMessage ? 'short-message' : ''}`}
     >
       <div className="window-content">
         <p className="main-text">
@@ -116,6 +119,12 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
           padding: 2px 4px;
           border-radius: 3px;
           transition: background-color 0.8s ease;
+        }
+        :global(.short-message) {
+          width: auto !important;
+          min-width: 120px !important;
+          max-width: 200px !important;
+          transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
         }
       `}</style>
     </DraggableWindow>

@@ -57,11 +57,28 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const { frontCardVariants, secondCardVariants, needsSecondCard } = useMemo(() => {
     const finalVariant = variants[variants.length - 1] || '';
 
-    // Split based on sentence count instead of character count
+    // Check for section breaks first (like --- dividers)
+    const sections = finalVariant.split(/\n\s*---\s*\n/).filter(s => s.trim());
+
+    // If we have clear section breaks, use those for splitting
+    if (sections.length > 1) {
+      const midPoint = Math.ceil(sections.length / 2);
+      const frontSections = sections.slice(0, midPoint);
+      const backSections = sections.slice(midPoint);
+      const frontContent = frontSections.join('\n\n---\n\n');
+
+      return {
+        frontCardVariants: [frontContent],
+        secondCardVariants: [backSections.join('\n\n---\n\n')],
+        needsSecondCard: true
+      };
+    }
+
+    // Fall back to sentence-based splitting
     const sentences = finalVariant.split(/\.(?=\s+[A-Z])|\.(?=\s*$)/).filter(s => s.trim());
 
-    // If 3 or fewer sentences, keep in one card
-    if (sentences.length <= 3) {
+    // If 2 or fewer sentences, keep in one card (more aggressive splitting)
+    if (sentences.length <= 2) {
       return {
         frontCardVariants: variants,
         secondCardVariants: [],
