@@ -262,12 +262,17 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   }, [question, selectedCapsuleIds, apiKey, availableCapsules]);
 
   useEffect(() => {
-    if (isOpen && initialQuestion && !hasAutoSubmitted) {
+    if (isOpen && initialQuestion) {
+      // Always update question when new initialQuestion comes in
       setQuestion(initialQuestion);
-      setHasAutoSubmitted(true);
-      setIsAutoSubmitting(true); // Trigger submission
+
+      // Auto-submit if this is a new question (different from current)
+      if (!hasAutoSubmitted || initialQuestion !== question) {
+        setHasAutoSubmitted(true);
+        setIsAutoSubmitting(true); // Trigger submission
+      }
     }
-  }, [isOpen, initialQuestion, hasAutoSubmitted]);
+  }, [isOpen, initialQuestion, hasAutoSubmitted, question]);
 
   useEffect(() => {
     if (isAutoSubmitting && question) {

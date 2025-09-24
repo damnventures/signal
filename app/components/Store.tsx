@@ -115,7 +115,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         '68cdc3cf77fc9e53736d117e': 'shrink-1', // Cooking Preview
         '68c32cf3735fb4ac0ef3ccbf': 'shrink-2', // LastWeekTonight Preview
         '6887e02fa01e2f4073d3bb52': 'shrink-3', // AI Research Papers
-        '6887e02fa01e2f4073d3bb53': 'shrink-4', // Startup Insights
+        '68d3125877fc9e53736d7982': 'shrink-4', // Tucker Capsule
         '6887e02fa01e2f4073d3bb54': 'shrink-5', // Tech Podcasts
       };
       
@@ -440,10 +440,10 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
 
   // Shrinked shared capsules (available to add/use)
   const shrinkedCapsules: SourceItem[] = [
-    { id: 'shrink-1', name: 'Cooking Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68cdc3cf77fc9e53736d117e' },
-    { id: 'shrink-2', name: 'LastWeekTonight Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68c32cf3735fb4ac0ef3ccbf' },
+    { id: 'shrink-1', name: 'Cooking Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68cdc3cf77fc9e53736d117e', icon: 'recipe' },
+    { id: 'shrink-2', name: 'LastWeekTonight Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68c32cf3735fb4ac0ef3ccbf', icon: 'tvhost' },
     { id: 'shrink-3', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
-    { id: 'shrink-4', name: 'Startup Insights', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb53' },
+    { id: 'shrink-4', name: 'Tucker Capsule', author: 'Shrinked', type: 'shrinked', capsuleId: '68d3125877fc9e53736d7982' },
     { id: 'shrink-5', name: 'Tech Podcasts', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb54' },
   ];
 
@@ -533,7 +533,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               const isCurrentlyLoading = loadingCapsules.has(source.id);
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
-                if (source.type === 'coming' && source.icon) {
+                if ((source.type === 'coming' || source.type === 'shrinked') && source.icon) {
                   const isWebp = source.icon === 'smartglasses' || source.icon === 'tvhost' || source.icon === 'coin';
                   const extension = isWebp ? 'webp' : 'png';
                   return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
@@ -546,7 +546,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                 if ((source.type === 'shrinked' || source.type === 'coming') && !isLoaded) {
                   return '⏳';
                 }
-                
+
                 return '💿';
               };
 

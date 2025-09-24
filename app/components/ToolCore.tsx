@@ -220,10 +220,13 @@ const ToolCore: React.FC<ToolCoreProps> = ({
             onShowResponse(classification.launchMessage);
           }
 
-          // 3. Show demo welcome window with Vanya's context
+          // 3. Show demo welcome window with Vanya's context (with delay to let launch message render first)
           if (onShowDemoWelcomeCard) {
-            console.log('[ToolCore] Showing demo welcome window for context');
-            onShowDemoWelcomeCard();
+            console.log('[ToolCore] Scheduling demo welcome window to show after launch message');
+            setTimeout(() => {
+              console.log('[ToolCore] Now showing demo welcome window for context');
+              onShowDemoWelcomeCard();
+            }, 1500); // 1.5 second delay to let launch message appear first
           }
           break;
           
