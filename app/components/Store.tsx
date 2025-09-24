@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { SHRINKED_CAPSULES } from '../constants/shrinkedCapsules';
 
 interface Capsule {
   _id: string;
@@ -110,14 +111,11 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       const userCapsuleIds = userCapsulesData.map(c => c.id);
       loadingOrder.push(...userCapsuleIds);
       
-      // 2. Shrinked capsules user can access
-      const shrinkedCapsuleMap: Record<string, string> = {
-        '68cdc3cf77fc9e53736d117e': 'shrink-1', // Cooking Preview
-        '68c32cf3735fb4ac0ef3ccbf': 'shrink-2', // LastWeekTonight Preview
-        '6887e02fa01e2f4073d3bb52': 'shrink-3', // AI Research Papers
-        '68d3125877fc9e53736d7982': 'shrink-4', // Tucker Capsule
-        '6887e02fa01e2f4073d3bb54': 'shrink-5', // Tech Podcasts
-      };
+      // 2. Shrinked capsules user can access (using centralized constants)
+      const shrinkedCapsuleMap: Record<string, string> = {};
+      SHRINKED_CAPSULES.forEach((capsule, index) => {
+        shrinkedCapsuleMap[capsule.id] = `shrink-${index + 1}`;
+      });
       
       const accessibleShrinkedIds = accessibleShrinkedCapsules
         .map(capsuleId => shrinkedCapsuleMap[capsuleId])
@@ -264,6 +262,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                 // Refresh capsules to show the newly shared capsule
                 if (onRefreshCapsules) {
                   setTimeout(() => {
+                    console.log(`[Store] Calling onRefreshCapsules to refresh capsule list after sharing ${capsuleName}`);
                     onRefreshCapsules();
                   }, 1000);
                 } else {
@@ -438,14 +437,15 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
 
   const userCapsulesData = getUserCapsules();
 
-  // Shrinked shared capsules (available to add/use)
-  const shrinkedCapsules: SourceItem[] = [
-    { id: 'shrink-1', name: 'Cooking Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68cdc3cf77fc9e53736d117e', icon: 'recipe' },
-    { id: 'shrink-2', name: 'LastWeekTonight Preview', author: 'Shrinked', type: 'shrinked', capsuleId: '68c32cf3735fb4ac0ef3ccbf', icon: 'tvhost' },
-    { id: 'shrink-3', name: 'AI Research Papers', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb52' },
-    { id: 'shrink-4', name: 'Tucker Capsule', author: 'Shrinked', type: 'shrinked', capsuleId: '68d3125877fc9e53736d7982' },
-    { id: 'shrink-5', name: 'Tech Podcasts', author: 'Shrinked', type: 'shrinked', capsuleId: '6887e02fa01e2f4073d3bb54' },
-  ];
+  // Shrinked shared capsules (dynamically generated from constants)
+  const shrinkedCapsules: SourceItem[] = SHRINKED_CAPSULES.map((capsule, index) => ({
+    id: `shrink-${index + 1}`,
+    name: capsule.name,
+    author: capsule.author,
+    type: 'shrinked' as const,
+    capsuleId: capsule.id,
+    icon: capsule.icon
+  }));
 
   // Coming soon items (passive, not clickable) - organized by category
   const comingSoonItems: SourceItem[] = [
@@ -533,18 +533,21 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               const isCurrentlyLoading = loadingCapsules.has(source.id);
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
+
+                // Show loading spinner when actively loading (prioritize over custom icons)
+                if ((source.type === 'shrinked' || source.type === 'coming') && isCurrentlyLoading) {
+                  return <div className="loading-spinner">⏳</div>;
+                }
+                // Show static loading icon when not loaded (prioritize over custom icons)
+                if ((source.type === 'shrinked' || source.type === 'coming') && !isLoaded) {
+                  return '⏳';
+                }
+
+                // Show custom icon only when loaded
                 if ((source.type === 'coming' || source.type === 'shrinked') && source.icon) {
                   const isWebp = source.icon === 'smartglasses' || source.icon === 'tvhost' || source.icon === 'coin';
                   const extension = isWebp ? 'webp' : 'png';
                   return <img src={`/items/${source.icon}.${extension}`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
-                }
-                // Show loading spinner when actively loading
-                if ((source.type === 'shrinked' || source.type === 'coming') && isCurrentlyLoading) {
-                  return <div className="loading-spinner">⏳</div>;
-                }
-                // Show static loading icon when not loaded
-                if ((source.type === 'shrinked' || source.type === 'coming') && !isLoaded) {
-                  return '⏳';
                 }
 
                 return '💿';

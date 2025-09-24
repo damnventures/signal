@@ -1,5 +1,6 @@
 import React from 'react';
 import DraggableWindow from './DraggableWindow';
+import { SHRINKED_CAPSULE_IDS } from '../constants/shrinkedCapsules';
 
 export interface Capsule {
   _id: string;
@@ -45,15 +46,7 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
     }
     
     // Check if it's a known Shrinked system capsule
-    const shrinkedCapsuleIds = [
-      '6887e02fa01e2f4073d3bb51', // YC Reducto AI  
-      '68c32cf3735fb4ac0ef3ccbf', // LastWeekTonight Preview
-      '6887e02fa01e2f4073d3bb52', // AI Research Papers
-      '6887e02fa01e2f4073d3bb53', // Startup Insights
-      '6887e02fa01e2f4073d3bb54'  // Tech Podcasts
-    ];
-    
-    if (shrinkedCapsuleIds.includes(capsule._id)) {
+    if (SHRINKED_CAPSULE_IDS.includes(capsule._id)) {
       return 'Shrinked';
     }
     

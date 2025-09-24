@@ -10,6 +10,7 @@ import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
+import { SHRINKED_CAPSULES } from './constants/shrinkedCapsules';
 import DemoWelcomeWindow from './components/DemoWelcomeWindow';
 import HeaderMessageWindow from './components/HeaderMessageWindow';
 import WrapTool, { WrapToolRef } from './components/WrapTool';
@@ -1100,14 +1101,8 @@ const HomePage = () => {
     setIsFetchingCapsules(true);
     console.log(`[HomePage] Available auth data - apiKey: ${key ? 'present' : 'null'}, accessToken: ${accessToken ? 'present' : 'null'}`);
     
-    // Store Shrinked capsules data for cross-reference
-    const storeShrinkedCapsules = [
-      { id: '68cdc3cf77fc9e53736d117e', name: 'Cooking Preview' },
-      { id: '68c32cf3735fb4ac0ef3ccbf', name: 'LastWeekTonight Preview' },
-      { id: '6887e02fa01e2f4073d3bb52', name: 'AI Research Papers' },
-      { id: '6887e02fa01e2f4073d3bb53', name: 'Startup Insights' },
-      { id: '6887e02fa01e2f4073d3bb54', name: 'Tech Podcasts' },
-    ];
+    // Store Shrinked capsules data for cross-reference (now using centralized constants)
+    const storeShrinkedCapsules = SHRINKED_CAPSULES.map(c => ({ id: c.id, name: c.name }));
     
     try {
       // For non-auth users, return hardcoded capsule list instead of real API lookup

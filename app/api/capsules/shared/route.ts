@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { SHRINKED_CAPSULE_IDS } from '../../constants/shrinkedCapsules';
 
 export async function GET(request: Request) {
   const userApiKey = request.headers.get('x-api-key');
@@ -50,37 +51,30 @@ export async function GET(request: Request) {
         capsule.visibility === 'shared' && capsule.shared === true
       ) : [];
       
-      // Temporarily add the LastWeekTonight Preview capsule as a shared capsule for testing
-      sharedCapsules.push({
-        _id: '68c32cf3735fb4ac0ef3ccbf',
-        name: 'LastWeekTonight Preview',
-        visibility: 'shared',
-        shared: true,
-        isPublic: false
-      });
-
-      // Check if user has access to cooking capsule by trying to fetch it
+      // Check all known Shrinked capsules for user access
       if (userApiKey) {
-        try {
-          const cookingResponse = await fetch('https://api.shrinked.ai/capsules/68cdc3cf77fc9e53736d117e', {
-            headers: { 'x-api-key': userApiKey }
-          });
-
-          if (cookingResponse.ok) {
-            const cookingData = await cookingResponse.json();
-            // User has access to cooking capsule, add it to shared list
-            sharedCapsules.push({
-              _id: cookingData._id,
-              name: cookingData.name,
-              visibility: cookingData.visibility || 'private',
-              shared: true,
-              isShared: true,
-              acl: cookingData.acl
+        for (const capsuleId of SHRINKED_CAPSULE_IDS) {
+          try {
+            const response = await fetch(`https://api.shrinked.ai/capsules/${capsuleId}`, {
+              headers: { 'x-api-key': userApiKey }
             });
-            console.log('[Shared Capsules Route] Fallback: Added cooking capsule for user with verified access');
+
+            if (response.ok) {
+              const capsuleData = await response.json();
+              // User has access to this capsule, add it to shared list
+              sharedCapsules.push({
+                _id: capsuleData._id,
+                name: capsuleData.name,
+                visibility: capsuleData.visibility || 'private',
+                shared: true,
+                isShared: true,
+                acl: capsuleData.acl
+              });
+              console.log(`[Shared Capsules Route] Fallback: Added ${capsuleData.name} for user with verified access`);
+            }
+          } catch (error) {
+            console.log(`[Shared Capsules Route] Fallback: User does not have access to capsule ${capsuleId}`);
           }
-        } catch (error) {
-          console.log('[Shared Capsules Route] Fallback: User does not have access to cooking capsule');
         }
       }
 
@@ -102,28 +96,30 @@ export async function GET(request: Request) {
         isPublic: false
       });
 
-      // Check if user has access to cooking capsule by trying to fetch it
+      // Check all known Shrinked capsules for user access
       if (userApiKey) {
-        try {
-          const cookingResponse = await fetch('https://api.shrinked.ai/capsules/68cdc3cf77fc9e53736d117e', {
-            headers: { 'x-api-key': userApiKey }
-          });
-
-          if (cookingResponse.ok) {
-            const cookingData = await cookingResponse.json();
-            // User has access to cooking capsule, add it to shared list
-            data.push({
-              _id: cookingData._id,
-              name: cookingData.name,
-              visibility: cookingData.visibility || 'private',
-              shared: true,
-              isShared: true,
-              acl: cookingData.acl
+        for (const capsuleId of SHRINKED_CAPSULE_IDS) {
+          try {
+            const response = await fetch(`https://api.shrinked.ai/capsules/${capsuleId}`, {
+              headers: { 'x-api-key': userApiKey }
             });
-            console.log('[Shared Capsules Route] Added cooking capsule for user with verified access');
+
+            if (response.ok) {
+              const capsuleData = await response.json();
+              // User has access to this capsule, add it to shared list
+              data.push({
+                _id: capsuleData._id,
+                name: capsuleData.name,
+                visibility: capsuleData.visibility || 'private',
+                shared: true,
+                isShared: true,
+                acl: capsuleData.acl
+              });
+              console.log(`[Shared Capsules Route] Added ${capsuleData.name} for user with verified access`);
+            }
+          } catch (error) {
+            console.log(`[Shared Capsules Route] User does not have access to capsule ${capsuleId}`);
           }
-        } catch (error) {
-          console.log('[Shared Capsules Route] User does not have access to cooking capsule');
         }
       }
     }
