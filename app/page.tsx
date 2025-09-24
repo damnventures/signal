@@ -10,7 +10,7 @@ import AuthRedirectHandler from './components/AuthRedirectHandler';
 import { useAuth } from './contexts/AuthContext';
 import CapsulesWindow, { Capsule } from './components/CapsulesWindow';
 import { createAuthFetch } from './utils/authFetch';
-import { SHRINKED_CAPSULES } from './constants/shrinkedCapsules';
+import { SHRINKED_CAPSULES, SHRINKED_CAPSULE_IDS } from './constants/shrinkedCapsules';
 import DemoWelcomeWindow from './components/DemoWelcomeWindow';
 import HeaderMessageWindow from './components/HeaderMessageWindow';
 import WrapTool, { WrapToolRef } from './components/WrapTool';
@@ -878,15 +878,8 @@ const HomePage = () => {
       return;
     }
 
-    // Check if this is a known shared system capsule
-    const shrinkedCapsuleIds = [
-      '68cdc3cf77fc9e53736d117e', // Cooking Preview
-      '68c32cf3735fb4ac0ef3ccbf', // LastWeekTonight Preview
-      '6887e02fa01e2f4073d3bb52', // AI Research Papers
-      '6887e02fa01e2f4073d3bb53', // Startup Insights
-      '6887e02fa01e2f4073d3bb54'  // Tech Podcasts
-    ];
-    const isSharedSystemCapsule = shrinkedCapsuleIds.includes(capsuleId);
+    // Check if this is a known shared system capsule (using centralized constants)
+    const isSharedSystemCapsule = SHRINKED_CAPSULE_IDS.includes(capsuleId);
 
     setIsFetchingCapsuleContent(true);
     // Clear UI state immediately for the selected capsule to give instant feedback
