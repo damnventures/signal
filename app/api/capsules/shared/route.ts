@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SHRINKED_CAPSULE_IDS } from '../../constants/shrinkedCapsules';
+import { SHRINKED_CAPSULE_IDS } from '../../../constants/shrinkedCapsules';
 
 export async function GET(request: Request) {
   const userApiKey = request.headers.get('x-api-key');

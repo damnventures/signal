@@ -34,7 +34,7 @@ export const SHRINKED_CAPSULES = [
   }
 ] as const;
 
-export const SHRINKED_CAPSULE_IDS = SHRINKED_CAPSULES.map(c => c.id);
+export const SHRINKED_CAPSULE_IDS = SHRINKED_CAPSULES.map(c => c.id) as string[];
 
 export const getShrinkedCapsuleById = (id: string) =>
   SHRINKED_CAPSULES.find(c => c.id === id);
