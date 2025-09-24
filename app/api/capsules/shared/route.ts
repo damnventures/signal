@@ -55,6 +55,12 @@ export async function GET(request: Request) {
       if (userApiKey) {
         for (const capsuleId of SHRINKED_CAPSULE_IDS) {
           try {
+            // Skip if already in sharedCapsules to avoid duplicates
+            if (sharedCapsules.some((c: any) => c._id === capsuleId)) {
+              console.log(`[Shared Capsules Route] Fallback: Skipping ${capsuleId} - already in shared list`);
+              continue;
+            }
+
             const response = await fetch(`https://api.shrinked.ai/capsules/${capsuleId}`, {
               headers: { 'x-api-key': userApiKey }
             });
@@ -100,6 +106,12 @@ export async function GET(request: Request) {
       if (userApiKey) {
         for (const capsuleId of SHRINKED_CAPSULE_IDS) {
           try {
+            // Skip if already in data to avoid duplicates
+            if (data.some((c: any) => c._id === capsuleId)) {
+              console.log(`[Shared Capsules Route] Skipping ${capsuleId} - already in shared list`);
+              continue;
+            }
+
             const response = await fetch(`https://api.shrinked.ai/capsules/${capsuleId}`, {
               headers: { 'x-api-key': userApiKey }
             });

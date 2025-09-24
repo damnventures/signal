@@ -329,15 +329,18 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       });
       setIsSharing(false);
 
-      // Actual API call
+      // Actual API call - use PATCH to set visibility to private (correct method)
       try {
         const apiKey = localStorage.getItem('auth_api_key');
-        const response = await fetch(`/api/capsules/${capsuleId}/access/${user.id}`, {
-          method: 'DELETE',
+        const response = await fetch(`https://api.shrinked.ai/capsules/${capsuleId}`, {
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey || ''
           },
+          body: JSON.stringify({
+            visibility: 'private'
+          }),
         });
 
         if (!response.ok) {
