@@ -329,18 +329,15 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       });
       setIsSharing(false);
 
-      // Actual API call - use proxy PATCH route to set visibility to private
+      // Actual API call - remove user from ACL (correct method for unsharing)
       try {
         const apiKey = localStorage.getItem('auth_api_key');
-        const response = await fetch(`/api/capsules/${capsuleId}`, {
-          method: 'PATCH',
+        const response = await fetch(`/api/capsules/${capsuleId}/access/${user.id}`, {
+          method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey || ''
           },
-          body: JSON.stringify({
-            visibility: 'private'
-          }),
         });
 
         if (!response.ok) {
