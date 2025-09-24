@@ -329,24 +329,16 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       });
       setIsSharing(false);
 
-      // Actual API call - remove user from ACL (correct method for unsharing)
+      // Actual API call - remove user access by email (using system key like share does)
       try {
-        const apiKey = localStorage.getItem('auth_api_key');
-        const userId = user.id || (user as any)._id;
+        console.log(`[Store] Unsharing capsule ${capsuleId} for user ${user.email}`);
 
-        if (!userId) {
-          console.error('[Store] No user ID available for unsharing');
-          setStatusMessage('Unable to unshare - user ID not found.');
-          setTimeout(() => setStatusVisible(false), 3000);
-          return;
-        }
-
-        const response = await fetch(`/api/capsules/${capsuleId}/access/${userId}`, {
-          method: 'DELETE',
+        const response = await fetch(`/api/capsules/${capsuleId}/access/remove`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey || ''
           },
+          body: JSON.stringify({ email: user.email }),
         });
 
         if (!response.ok) {
