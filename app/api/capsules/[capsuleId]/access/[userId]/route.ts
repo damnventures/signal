@@ -9,8 +9,8 @@ export async function DELETE(
 
   console.log(`[Remove Access Route] Removing access for user ${userId} from capsule ${capsuleId}`);
 
-  // Use user's API key for removing their own access, or default for removing from demo capsules  
-  const API_KEY = userApiKey || process.env.SHRINKED_API_KEY;
+  // Always use system API key for Shrinked capsules (like share does)
+  const API_KEY = process.env.SHRINKED_API_KEY;
   
   if (!API_KEY) {
     console.error('[Remove Access Route] No API key available.');

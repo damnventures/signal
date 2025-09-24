@@ -329,16 +329,16 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       });
       setIsSharing(false);
 
-      // Actual API call - remove user access by email (using system key like share does)
+      // Actual API call - remove user access using system key (follows Shrinked API spec)
       try {
-        console.log(`[Store] Unsharing capsule ${capsuleId} for user ${user.email}`);
+        const userId = user.id || (user as any)._id;
+        console.log(`[Store] Unsharing capsule ${capsuleId} for user ${userId} (${user.email})`);
 
-        const response = await fetch(`/api/capsules/${capsuleId}/access/remove`, {
-          method: 'POST',
+        const response = await fetch(`/api/capsules/${capsuleId}/access/${userId}`, {
+          method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email: user.email }),
         });
 
         if (!response.ok) {
