@@ -55,6 +55,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
   const [selectedCapsuleIds, setSelectedCapsuleIds] = useState<string[]>([capsuleId]);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
 
   const { apiKey, user } = useAuth();
@@ -376,7 +377,12 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
               ) : chatResponse ? (
                 <div className="response-section">
                   <div className="response-label">Craig's Argument:</div>
-                  <div className="response-box">
+                  <div
+                    className="response-box"
+                    onMouseDown={(e) => {
+                      e.stopPropagation(); // Prevent dragging when selecting text
+                    }}
+                  >
                     {!chatResponse && isLoading ? (
                       <div className="response-thinking">
                         Craig is thinking...
@@ -427,7 +433,14 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
                         {isReasoningExpanded ? 'Hide Analysis' : 'Show Analysis'}
                       </button>
                       {isReasoningExpanded && (
-                        <div className="analysis-box">{reasoningResponse}</div>
+                        <div
+                          className="analysis-box"
+                          onMouseDown={(e) => {
+                            e.stopPropagation(); // Prevent dragging when selecting text
+                          }}
+                        >
+                          {reasoningResponse}
+                        </div>
                       )}
                     </div>
                   )}
@@ -444,24 +457,38 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
             <div className="input-section">
               <form id="argue-form" onSubmit={handleSubmit} className="input-form">
                 <div className="input-row">
-                  <textarea
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (question.trim() && !isLoading) {
-                          handleSubmit(e);
+                  <div className="input-container">
+                    <textarea
+                      value={question}
+                      onChange={(e) => {
+                        setQuestion(e.target.value);
+                        // Auto-resize textarea based on content
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (question.trim() && !isLoading) {
+                            handleSubmit(e);
+                          }
                         }
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                    placeholder="e.g., 'Remote work is more productive'..."
-                    disabled={isLoading}
-                    className="question-input"
-                  />
+                      }}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                      }}
+                      placeholder="e.g., 'Remote work is more productive'..."
+                      disabled={isLoading}
+                      className="question-input"
+                      rows={1}
+                    />
+                    {isInputFocused && (
+                      <span className="input-cursor">|</span>
+                    )}
+                  </div>
                   <div className="button-group">
                     <button
                     type="submit"
@@ -852,9 +879,16 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           width: 100%;
         }
 
-        .question-input {
+        .input-container {
           flex: 1;
-          height: 28px;
+          position: relative;
+          min-width: 0;
+        }
+
+        .question-input {
+          width: 100%;
+          min-height: 28px;
+          max-height: 120px;
           border: 2px solid #000000;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           padding: 4px 6px;
@@ -862,7 +896,24 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           background: #ffffff;
           color: #000000;
           box-shadow: inset 1px 1px 0px #808080;
-          min-width: 0;
+          overflow-y: auto;
+          line-height: 1.2;
+        }
+
+        .input-cursor {
+          position: absolute;
+          right: 8px;
+          bottom: 6px;
+          color: #000000;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          font-weight: bold;
+          animation: blink 1s infinite;
+          pointer-events: none;
+        }
+
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
         }
 
         .question-input:focus {
