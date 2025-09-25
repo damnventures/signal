@@ -32,7 +32,13 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
   const [secondCardShowDiff, setSecondCardShowDiff] = useState(false);
 
   const variants = useMemo(() => {
+    // For authenticated users
     if (userEmail) {
+      // If demo message is provided (from demo intent), use that even for authenticated users
+      if (demoMessage) {
+        return createMessageVariants(demoMessage);
+      }
+      // Otherwise use their wrap summary or fallback
       if (!wrapSummary || wrapSummary.trim() === '') {
         return ["Analyzing your capsules..."];
       }
@@ -40,15 +46,22 @@ const DemoWelcomeWindow: React.FC<DemoWelcomeWindowProps> = ({
       const messageVariants = createMessageVariants(wrapSummary);
       return messageVariants.length > 0 ? messageVariants : ["Analyzing your capsules..."];
     } else {
+      // For non-authenticated users only
       if (demoMessage) {
-        return createMessageVariants(demoMessage);
-      } else {
-        return [
+        // When demo is running, combine demo message with Vanya's context example
+        const demoVariants = createMessageVariants(demoMessage);
+        const vanyaExample = [
           "Good morning, Vanya! Checking your signals...",
           "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing.",
           "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, and <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream.",
           "Good morning, Vanya! YC covered <span class='clickable-tag'>Reducto AI</span>'s memory parsing, <span class='clickable-tag'>Ryan Petersen</span> is on today's TBPN stream, and your July 30 call with <span class='clickable-tag'>The Residency</span> set deliverables."
         ];
+        // Combine both: demo message first, then Vanya's example
+        return [...demoVariants, ...vanyaExample];
+      } else {
+        // No demo triggered - show basic Craig welcome (this should be handled by header/other components)
+        // This fallback shouldn't normally be reached for non-auth users without demo
+        return ["Welcome! Try asking a question to get started."];
       }
     }
   }, [demoMessage, userEmail, wrapSummary]);
