@@ -264,16 +264,18 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
 
   useEffect(() => {
     if (isOpen && initialQuestion) {
-      // Always update question when new initialQuestion comes in
-      setQuestion(initialQuestion);
-
-      // Auto-submit if this is a new question (different from current)
-      if (!hasAutoSubmitted || initialQuestion !== question) {
+      // Only auto-submit if we haven't processed this exact initialQuestion yet
+      // Don't trigger on user's manual text changes
+      if (!hasAutoSubmitted && initialQuestion.trim()) {
+        setQuestion(initialQuestion);
         setHasAutoSubmitted(true);
         setIsAutoSubmitting(true); // Trigger submission
+      } else if (!hasAutoSubmitted) {
+        // Just set the question without auto-submitting if initialQuestion is empty
+        setQuestion(initialQuestion);
       }
     }
-  }, [isOpen, initialQuestion, hasAutoSubmitted, question]);
+  }, [isOpen, initialQuestion, hasAutoSubmitted]); // Removed 'question' from dependencies
 
   useEffect(() => {
     if (isAutoSubmitting && question) {
@@ -285,12 +287,17 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
     }
   }, [isAutoSubmitting, question, handleSubmit]);
 
-  // Reset auto-submit flag when popup closes
+  // Reset auto-submit flag when popup closes or initialQuestion changes
   useEffect(() => {
     if (!isOpen) {
       setHasAutoSubmitted(false);
     }
   }, [isOpen]);
+
+  // Reset auto-submit flag when initialQuestion changes (for new argue requests)
+  useEffect(() => {
+    setHasAutoSubmitted(false);
+  }, [initialQuestion]);
 
   const handleClear = useCallback(() => {
     setQuestion('');
