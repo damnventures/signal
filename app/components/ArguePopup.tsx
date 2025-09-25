@@ -882,7 +882,7 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
         .input-row {
           display: flex;
           gap: 8px;
-          align-items: flex-end;
+          align-items: flex-start;
           width: 100%;
         }
 
@@ -933,7 +933,8 @@ const ArguePopup: React.FC<ArguePopupProps> = ({
           flex-direction: row;
           gap: 4px;
           flex-shrink: 0;
-          align-items: center;
+          align-items: flex-start;
+          padding-top: 1px;
         }
 
         .generate-btn {
