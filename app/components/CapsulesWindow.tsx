@@ -1,6 +1,6 @@
 import React from 'react';
 import DraggableWindow from './DraggableWindow';
-import { SHRINKED_CAPSULES } from '../constants/shrinkedCapsules';
+import { SHRINKED_CAPSULES, isShrinkedCapsule, getShrinkedCapsuleById } from '../constants/shrinkedCapsules';
 
 export interface Capsule {
   _id: string;
@@ -38,21 +38,18 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
   selectedCapsuleId,
   currentUser
 }) => {
-  // Create a map for quick lookup
-  const shrinkedCapsuleMap = new Map(SHRINKED_CAPSULES.map(c => [c.id, c]));
-
   const getAuthorName = (capsule: Capsule): string => {
     if (capsule.owner && (capsule.shared || capsule.isShared)) {
       return capsule.owner.email?.split('@')[0] || capsule.owner.username || 'Shared';
     }
-    if (shrinkedCapsuleMap.has(capsule._id)) {
+    if (isShrinkedCapsule(capsule._id)) {
       return 'Shrinked';
     }
     return currentUser?.email?.split('@')[0] || currentUser?.username || 'You';
   };
 
   const getIcon = (capsule: Capsule) => {
-    const shrinkedCapsule = shrinkedCapsuleMap.get(capsule._id);
+    const shrinkedCapsule = getShrinkedCapsuleById(capsule._id);
     if (shrinkedCapsule && shrinkedCapsule.icon) {
       const isWebp = ['smartglasses', 'tvhost', 'coin'].includes(shrinkedCapsule.icon);
       const extension = isWebp ? 'webp' : 'png';
