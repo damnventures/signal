@@ -1,6 +1,6 @@
 import React from 'react';
 import DraggableWindow from './DraggableWindow';
-import { SHRINKED_CAPSULE_IDS } from '../constants/shrinkedCapsules';
+import { SHRINKED_CAPSULES } from '../constants/shrinkedCapsules';
 
 export interface Capsule {
   _id: string;
@@ -38,21 +38,30 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
   selectedCapsuleId,
   currentUser
 }) => {
-  // Helper function to get the author name for a capsule
+  // Create a map for quick lookup
+  const shrinkedCapsuleMap = new Map(SHRINKED_CAPSULES.map(c => [c.id, c]));
+
   const getAuthorName = (capsule: Capsule): string => {
-    // Check if it's a shared capsule (has owner info)
     if (capsule.owner && (capsule.shared || capsule.isShared)) {
       return capsule.owner.email?.split('@')[0] || capsule.owner.username || 'Shared';
     }
-    
-    // Check if it's a known Shrinked system capsule
-    if (SHRINKED_CAPSULE_IDS.includes(capsule._id)) {
+    if (shrinkedCapsuleMap.has(capsule._id)) {
       return 'Shrinked';
     }
-    
-    // Default to current user or "You"
     return currentUser?.email?.split('@')[0] || currentUser?.username || 'You';
   };
+
+  const getIcon = (capsule: Capsule) => {
+    const shrinkedCapsule = shrinkedCapsuleMap.get(capsule._id);
+    if (shrinkedCapsule && shrinkedCapsule.icon) {
+      const isWebp = ['smartglasses', 'tvhost', 'coin'].includes(shrinkedCapsule.icon);
+      const extension = isWebp ? 'webp' : 'png';
+      return <img src={`/items/${shrinkedCapsule.icon}.${extension}`} alt={capsule.name} className="capsule-list-icon" />;
+    }
+    // Default icon for user-owned or other capsules
+    return <img src="/capsule.png" alt="Capsule" className="capsule-list-icon" />;
+  };
+
   return (
     <DraggableWindow
       id={id}
@@ -74,7 +83,7 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
                   onClick={() => onSelectCapsule(capsule._id)}
                 >
                   <div className="capsule-icon-cell">
-                    <img src="/capsule.png" alt="Capsule" className="capsule-list-icon" />
+                    {getIcon(capsule)}
                   </div>
                   <div className="capsule-info">
                     <div className="capsule-name-cell">
@@ -99,3 +108,4 @@ const CapsulesWindow: React.FC<CapsulesWindowProps> = ({
 };
 
 export default CapsulesWindow;
+

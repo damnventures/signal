@@ -17,19 +17,19 @@ export const SHRINKED_CAPSULES = [
   {
     id: '68d3125877fc9e53736d7982',
     name: 'Tucker Capsule',
-    icon: undefined,
+    icon: 'tvhost',
     author: 'Shrinked'
   },
   {
     id: '6887e02fa01e2f4073d3bb52',
     name: 'AI Research Papers',
-    icon: undefined,
+    icon: 'document-pages',
     author: 'Shrinked'
   },
   {
     id: '6887e02fa01e2f4073d3bb54',
     name: 'Tech Podcasts',
-    icon: undefined,
+    icon: 'voicerecords',
     author: 'Shrinked'
   }
 ] as const;
