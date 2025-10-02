@@ -11,6 +11,7 @@ interface HeaderMessageWindowProps {
   initialPosition: { x: number; y: number };
   onClose: () => void;
   message?: string | null;
+  keepAliveForProgress?: boolean; // New prop to keep window alive during progress updates
 }
 
 const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
@@ -20,6 +21,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
   initialPosition,
   onClose,
   message,
+  keepAliveForProgress = false,
 }) => {
   const [variantIndex, setVariantIndex] = useState(0);
   const [showDiff, setShowDiff] = useState(false);
@@ -78,11 +80,15 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
         console.log('[HeaderMessageWindow] Animation complete');
+        // Don't auto-close if we're keeping alive for progress updates
+        if (!keepAliveForProgress) {
+          // Auto-close logic can be added here if needed
+        }
       }
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [variantIndex, variants.length, onClose, animationReady]);
+  }, [variantIndex, variants.length, onClose, animationReady, keepAliveForProgress]);
 
   if (!message) {
     return null;

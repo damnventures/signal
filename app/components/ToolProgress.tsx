@@ -12,6 +12,8 @@ interface ToolProgressProps {
   onRefreshCapsule?: () => void;
   onRefreshWrap?: () => void;
   capsuleName?: string;
+  onProgressUpdate?: (executionId: string, phase: string, message: string) => void;
+  onProcessingComplete?: (executionId: string, success: boolean, finalMessage: string) => void;
 }
 
 const ToolProgress: React.FC<ToolProgressProps> = ({
@@ -20,7 +22,9 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
   initialZIndex,
   onRefreshCapsule,
   onRefreshWrap,
-  capsuleName
+  capsuleName,
+  onProgressUpdate,
+  onProcessingComplete
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -100,6 +104,11 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
       setStatusMessage('sending to craig for processing');
       setProgress(25);
 
+      // Send progress update to HeaderMessageWindow
+      if (onProgressUpdate) {
+        onProgressUpdate(execution.id, 'craig_processing', '>> dl complete. sending to craig...');
+      }
+
       // Start polling for the new Shrinked job
       const jobName = execution.result?.jobName || execution.input?.jobName;
       if (jobName) {
@@ -158,6 +167,11 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
           setStatusMessage('craig transforming content');
           setProgress(50);
 
+          // Send progress update to HeaderMessageWindow
+          if (onProgressUpdate) {
+            onProgressUpdate(execution.id, 'backend_processing', '>> job found. craig processing...');
+          }
+
           // Start polling this specific job's status
           startJobStatusPolling(matchingJob._id || matchingJob.id);
           return true;
@@ -174,6 +188,12 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
     setCurrentPhase('waiting_backend');
     setStatusMessage('waiting for shrinked backend');
     setProgress(35);
+
+    // Send progress update to HeaderMessageWindow
+    if (onProgressUpdate) {
+      onProgressUpdate(execution.id, 'waiting_backend', '>> waiting for backend job creation...');
+    }
+
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Initial check
@@ -200,7 +220,7 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
         }
       }, 4000);
     }
-  }, [apiKey]);
+  }, [apiKey, onProgressUpdate, execution.id]);
 
   const startJobStatusPolling = useCallback(async (jobId: string) => {
     const pollJobStatus = async () => {
@@ -233,6 +253,12 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
           setStatusMessage(capsuleName ? `adding to ${capsuleName.toLowerCase()} capsule` : 'adding to capsule');
           setProgress(75);
 
+          // Send progress update to HeaderMessageWindow
+          if (onProgressUpdate) {
+            const capsuleMessage = capsuleName ? `adding to ${capsuleName} capsule` : 'adding to capsule';
+            onProgressUpdate(execution.id, 'adding_to_capsule', `>> ${capsuleMessage}...`);
+          }
+
           // Clear polling
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
@@ -252,6 +278,11 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
             setStatusMessage('updating wrap summary');
             setProgress(90);
 
+            // Send progress update to HeaderMessageWindow
+            if (onProgressUpdate) {
+              onProgressUpdate(execution.id, 'refreshing_wrap', '>> updating wrap summary...');
+            }
+
             // Then refresh wrap summary to include the new content
             if (onRefreshWrap) {
               console.log('[ToolProgress] Triggering wrap refresh after job completion');
@@ -261,16 +292,28 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
             // Final completion
             setTimeout(() => {
               setCurrentPhase('completed');
-              setStatusMessage(capsuleName ? `added to ${capsuleName.toLowerCase()}` : 'media added successfully');
+              const finalMessage = capsuleName ? `added to ${capsuleName.toLowerCase()}` : 'media added successfully';
+              setStatusMessage(finalMessage);
               setProgress(100);
+
+              // Send final completion callback to HeaderMessageWindow
+              if (onProcessingComplete) {
+                onProcessingComplete(execution.id, true, `>> success! ${finalMessage}`);
+              }
             }, 2000);
           }, 2000);
           
           return true;
         } else if (jobData.status === 'error' || jobData.status === 'failed') {
-          setStatusMessage(`failed: ${jobData.error || 'unknown error'}`);
+          const errorMessage = `failed: ${jobData.error || 'unknown error'}`;
+          setStatusMessage(errorMessage);
           setCurrentPhase('completed');
           setProgress(100);
+
+          // Send failure callback to HeaderMessageWindow
+          if (onProcessingComplete) {
+            onProcessingComplete(execution.id, false, `>> error: ${jobData.error || 'unknown error'}`);
+          }
 
           // Clear polling
           if (pollingIntervalRef.current) {
@@ -301,7 +344,7 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
     
     // Also do initial check
     await pollJobStatus();
-  }, [apiKey]);
+  }, [apiKey, onProgressUpdate, onProcessingComplete, execution.id, capsuleName, onRefreshCapsule, onRefreshWrap]);
 
 
   return (

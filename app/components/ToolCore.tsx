@@ -24,6 +24,7 @@ interface ToolCoreProps {
   onStartDemo?: () => void;
   onShowDemoWelcomeCard?: () => void;
   onDemoRequest?: (message: string) => void;
+  onUpdateProgressMessage?: (message: string) => void;
 }
 
 const ToolCore: React.FC<ToolCoreProps> = ({
@@ -39,12 +40,14 @@ const ToolCore: React.FC<ToolCoreProps> = ({
   onStopThinking,
   onStartDemo,
   onShowDemoWelcomeCard,
-  onDemoRequest
+  onDemoRequest,
+  onUpdateProgressMessage
 }) => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [bouncerState, setBouncerState] = useState<BouncerState | null>(null);
   const [awaitingEmail, setAwaitingEmail] = useState(false);
+  const [activeMediaProcessing, setActiveMediaProcessing] = useState<string | null>(null); // Track active media job
   const { apiKey, user } = useAuth();
   
   const {
@@ -78,6 +81,23 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     }
     return originalInput;
   }, [capsuleName]);
+
+  // Handle progress updates from ToolProgress
+  const handleMediaProgressUpdate = useCallback((executionId: string, phase: string, message: string) => {
+    if (activeMediaProcessing === executionId && onUpdateProgressMessage) {
+      onUpdateProgressMessage(message);
+    }
+  }, [activeMediaProcessing, onUpdateProgressMessage]);
+
+  // Handle media processing completion
+  const handleMediaProcessingComplete = useCallback((executionId: string, success: boolean, finalMessage: string) => {
+    if (activeMediaProcessing === executionId) {
+      setActiveMediaProcessing(null);
+      if (onUpdateProgressMessage) {
+        onUpdateProgressMessage(finalMessage);
+      }
+    }
+  }, [activeMediaProcessing, onUpdateProgressMessage]);
 
   const handleUserInput = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
@@ -137,14 +157,20 @@ const ToolCore: React.FC<ToolCoreProps> = ({
         case 'tool':
           if (classification.action === 'collect_media') {
             console.log('[ToolCore] Media collection intent detected');
-            
+
             // 1. Show launch message (communication response)
             if (onShowResponse && classification.launchMessage) {
               console.log('[ToolCore] Showing launch message:', classification.launchMessage);
               onShowResponse(classification.launchMessage);
             }
-            
-            // 2. Launch the media collection tool (tool execution)
+
+            // 2. Immediately signal start of media processing to keep window alive
+            if (onUpdateProgressMessage) {
+              const urlCount = classification.data.urls?.length || 0;
+              onUpdateProgressMessage(`>> downloading ${urlCount} file${urlCount === 1 ? '' : 's'}...`);
+            }
+
+            // 3. Launch the media collection tool (tool execution)
             console.log('[ToolCore] Starting media collection tool');
             await handleMediaCollection(classification.data, userInput);
           }
@@ -533,11 +559,11 @@ const ToolCore: React.FC<ToolCoreProps> = ({
 
   const handleMediaCollection = useCallback(async (data: MediaCollectionData, originalInput: string) => {
     console.log('🎬 Media Collection Started:', data);
-    
+
     // Generate a clean job title
     const jobTitle = generateJobTitle(data.urls, originalInput);
     console.log('📝 Generated Job Title:', jobTitle);
-    
+
     // Auto-process with default settings - no confirmation needed
     const executionId = generateToolId();
     const processData = {
@@ -547,7 +573,7 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       outputFormat: 'mp3', // Default to audio
       originalInput
     };
-    
+
     const execution: ToolExecution = {
       id: executionId,
       toolId: 'media-collector',
@@ -555,11 +581,14 @@ const ToolCore: React.FC<ToolCoreProps> = ({
       input: processData,
       createdAt: new Date()
     };
-    
+
+    // Set this as the active media processing job
+    setActiveMediaProcessing(executionId);
+
     console.log('🚀 Starting media processing with data:', processData);
     addExecution(execution);
     await executeMediaCollection(executionId, processData);
-  }, [capsuleId, addExecution, generateJobTitle]);
+  }, [capsuleId, addExecution, generateJobTitle, onUpdateProgressMessage]);
 
   const executeMediaCollection = useCallback(async (executionId: string, data: any) => {
     updateExecution(executionId, { status: 'processing', progress: 0 });
@@ -693,6 +722,8 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           onRefreshCapsule={onRefreshCapsule}
           onRefreshWrap={onRefreshWrap}
           capsuleName={capsuleName}
+          onProgressUpdate={handleMediaProgressUpdate}
+          onProcessingComplete={handleMediaProcessingComplete}
         />
       ))}
     </>

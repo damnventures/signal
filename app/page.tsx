@@ -50,6 +50,7 @@ const HomePage = () => {
   const [showArguePopup, setShowArguePopup] = useState(false);
   const [argueQuestion, setArgueQuestion] = useState('');
   const [headerResponseMessage, setHeaderResponseMessage] = useState<string>('');
+  const [isMediaProcessingActive, setIsMediaProcessingActive] = useState(false);
   const [authProcessed, setAuthProcessed] = useState(false);
   const [authInProgress, setAuthInProgress] = useState(false);
   const [capsules, setCapsules] = useState<Capsule[]>([]);
@@ -1972,12 +1973,36 @@ const HomePage = () => {
                     console.log('[HomePage] Showing response in header window:', message);
                     setHeaderResponseMessage(message);
                     setShowHeaderMessageWindow(true);
+
+                    // Check if this is a media processing launch message
+                    if (message.includes('YouTube') || message.includes('TikTok') || message.includes('link') || message.includes('Processing')) {
+                      console.log('[HomePage] Detected media processing launch, setting active state');
+                      setIsMediaProcessingActive(true);
+                    }
                   }}
                   onStartThinking={startThinking}
                   onStopThinking={stopThinking}
                   onStartDemo={startDemo}
                   onShowDemoWelcomeCard={() => setShowDemoWelcomeWindow(true)}
                   onDemoRequest={handleDemoRequest}
+                  onUpdateProgressMessage={(message: string) => {
+                    console.log('[HomePage] Updating progress message in header window:', message);
+                    setHeaderResponseMessage(message);
+                    setShowHeaderMessageWindow(true);
+
+                    // Check if this is the start of media processing
+                    if (message.includes('>> downloading') || message.includes('>> dl complete')) {
+                      setIsMediaProcessingActive(true);
+                    }
+
+                    // Check if this is the completion message
+                    if (message.includes('>> success!') || message.includes('>> error:')) {
+                      // Keep processing active for a bit longer to show the final message
+                      setTimeout(() => {
+                        setIsMediaProcessingActive(false);
+                      }, 3000); // 3 seconds to show final message
+                    }
+                  }}
                 />
               </div>
 
@@ -2142,6 +2167,7 @@ const HomePage = () => {
                   setHeaderResponseMessage(''); // Clear message when closing
                 }}
                 message={headerResponseMessage}
+                keepAliveForProgress={isMediaProcessingActive}
               />
             )}
 
