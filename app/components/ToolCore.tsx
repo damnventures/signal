@@ -13,6 +13,8 @@ import ToolProgress from './ToolProgress';
 interface ToolCoreProps {
   capsuleId: string;
   capsuleName?: string;
+  selectedCapsule?: { _id: string; name: string; owner?: { email?: string; username?: string; }; shared?: boolean; isShared?: boolean; };
+  currentUserEmail?: string;
   onArgueRequest: (question: string) => void;
   onBringToFront: (id: string) => void;
   initialZIndex: number;
@@ -30,6 +32,8 @@ interface ToolCoreProps {
 const ToolCore: React.FC<ToolCoreProps> = ({
   capsuleId,
   capsuleName,
+  selectedCapsule,
+  currentUserEmail,
   onArgueRequest,
   onBringToFront,
   initialZIndex,
@@ -81,6 +85,28 @@ const ToolCore: React.FC<ToolCoreProps> = ({
     }
     return originalInput;
   }, [capsuleName]);
+
+  // Check if user owns the selected capsule
+  const checkCapsuleOwnership = useCallback(() => {
+    if (!selectedCapsule || !currentUserEmail) {
+      return { canAdd: true, reason: null }; // Allow if we can't determine ownership
+    }
+
+    // Check if it's a shared capsule
+    if (selectedCapsule.shared || selectedCapsule.isShared) {
+      // Check if user is the owner
+      const ownerEmail = selectedCapsule.owner?.email;
+      if (ownerEmail && ownerEmail !== currentUserEmail) {
+        const ownerUsername = selectedCapsule.owner?.username || ownerEmail.split('@')[0];
+        return {
+          canAdd: false,
+          reason: `Nice try, but "${selectedCapsule.name}" belongs to ${ownerUsername}. Can't just dump your media into someone else's capsule. Pick your own or create a new one.`
+        };
+      }
+    }
+
+    return { canAdd: true, reason: null };
+  }, [selectedCapsule, currentUserEmail]);
 
   // Handle progress updates from ToolProgress
   const handleMediaProgressUpdate = useCallback((executionId: string, phase: string, message: string) => {
@@ -158,6 +184,16 @@ const ToolCore: React.FC<ToolCoreProps> = ({
           if (classification.action === 'collect_media') {
             console.log('[ToolCore] Media collection intent detected');
 
+            // Check capsule ownership first
+            const ownershipCheck = checkCapsuleOwnership();
+            if (!ownershipCheck.canAdd) {
+              console.log('[ToolCore] Capsule ownership check failed');
+              if (onShowResponse && ownershipCheck.reason) {
+                onShowResponse(ownershipCheck.reason);
+              }
+              break; // Stop processing
+            }
+
             // 1. Show launch message (communication response)
             if (onShowResponse && classification.launchMessage) {
               console.log('[ToolCore] Showing launch message:', classification.launchMessage);
@@ -167,7 +203,11 @@ const ToolCore: React.FC<ToolCoreProps> = ({
             // 2. Immediately signal start of media processing to keep window alive
             if (onUpdateProgressMessage) {
               const urlCount = classification.data.urls?.length || 0;
-              onUpdateProgressMessage(`>> downloading ${urlCount} file${urlCount === 1 ? '' : 's'}...`);
+              const progressMessage = `>> downloading ${urlCount} file${urlCount === 1 ? '' : 's'}...`;
+              console.log('[ToolCore] Sending initial progress message:', progressMessage);
+              onUpdateProgressMessage(progressMessage);
+            } else {
+              console.log('[ToolCore] onUpdateProgressMessage is not available');
             }
 
             // 3. Launch the media collection tool (tool execution)

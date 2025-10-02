@@ -1954,6 +1954,8 @@ const HomePage = () => {
                 <ToolCore
                   capsuleId={selectedCapsuleId || ''}
                   capsuleName={capsules.find(c => c._id === selectedCapsuleId)?.name}
+                  selectedCapsule={capsules.find(c => c._id === selectedCapsuleId)}
+                  currentUserEmail={user?.email}
                   onArgueRequest={handleArgueRequest}
                   onBringToFront={handleBringToFront}
                   initialZIndex={nextZIndex + 200}
@@ -1992,7 +1994,10 @@ const HomePage = () => {
 
                     // Check if this is the start of media processing
                     if (message.includes('>> downloading') || message.includes('>> dl complete')) {
+                      console.log('[HomePage] Setting media processing active to TRUE');
                       setIsMediaProcessingActive(true);
+                    } else {
+                      console.log('[HomePage] Message does not match downloading pattern:', message);
                     }
 
                     // Check if this is the completion message
