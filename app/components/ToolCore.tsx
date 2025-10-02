@@ -200,14 +200,10 @@ const ToolCore: React.FC<ToolCoreProps> = ({
               onShowResponse(classification.launchMessage);
             }
 
-            // 2. Immediately signal start of media processing to keep window alive
+            // 2. Signal media processing started to keep HeaderMessageWindow alive (no message change)
             if (onUpdateProgressMessage) {
-              const urlCount = classification.data.urls?.length || 0;
-              const progressMessage = `>> downloading ${urlCount} file${urlCount === 1 ? '' : 's'}...`;
-              console.log('[ToolCore] Sending initial progress message:', progressMessage);
-              onUpdateProgressMessage(progressMessage);
-            } else {
-              console.log('[ToolCore] onUpdateProgressMessage is not available');
+              console.log('[ToolCore] Signaling media processing active state (keeping header alive)');
+              onUpdateProgressMessage('__MEDIA_PROCESSING_ACTIVE__'); // Special signal to keep window alive
             }
 
             // 3. Launch the media collection tool (tool execution)

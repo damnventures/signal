@@ -1988,24 +1988,28 @@ const HomePage = () => {
                   onShowDemoWelcomeCard={() => setShowDemoWelcomeWindow(true)}
                   onDemoRequest={handleDemoRequest}
                   onUpdateProgressMessage={(message: string) => {
-                    console.log('[HomePage] Updating progress message in header window:', message);
-                    setHeaderResponseMessage(message);
-                    setShowHeaderMessageWindow(true);
+                    console.log('[HomePage] Progress update received:', message);
 
-                    // Check if this is the start of media processing
-                    if (message.includes('>> downloading') || message.includes('>> dl complete')) {
-                      console.log('[HomePage] Setting media processing active to TRUE');
+                    // Handle special signal to activate media processing mode
+                    if (message === '__MEDIA_PROCESSING_ACTIVE__') {
+                      console.log('[HomePage] Setting media processing active to TRUE (keeping header alive)');
                       setIsMediaProcessingActive(true);
-                    } else {
-                      console.log('[HomePage] Message does not match downloading pattern:', message);
+                      return; // Don't update header message
                     }
 
-                    // Check if this is the completion message
+                    // Handle completion messages that should update header
                     if (message.includes('>> success!') || message.includes('>> error:')) {
+                      console.log('[HomePage] Completion message - updating header and deactivating processing');
+                      setHeaderResponseMessage(message);
+                      setShowHeaderMessageWindow(true);
+
                       // Keep processing active for a bit longer to show the final message
                       setTimeout(() => {
                         setIsMediaProcessingActive(false);
                       }, 3000); // 3 seconds to show final message
+                    } else {
+                      // All other progress messages are for ToolProgress window only
+                      console.log('[HomePage] Progress message for ToolProgress window only:', message);
                     }
                   }}
                 />

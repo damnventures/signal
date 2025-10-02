@@ -97,6 +97,8 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
 
   // Enhanced polling logic for Signal jobs
   useEffect(() => {
+    console.log('[ToolProgress] useEffect triggered - execution status:', execution.status, 'toolId:', execution.toolId, 'currentPhase:', currentPhase);
+
     // Only start enhanced polling if this is a media processing job that completed download phase
     if (execution.toolId === 'media-collector' && execution.status === 'completed' && currentPhase === 'downloading') {
       console.log('[ToolProgress] Download completed, starting enhanced polling for Shrinked job');
@@ -111,10 +113,15 @@ const ToolProgress: React.FC<ToolProgressProps> = ({
 
       // Start polling for the new Shrinked job
       const jobName = execution.result?.jobName || execution.input?.jobName;
+      console.log('[ToolProgress] Job name sources - result:', execution.result?.jobName, 'input:', execution.input?.jobName);
+      console.log('[ToolProgress] Using job name for polling:', jobName);
+
       if (jobName) {
         startShrinkedJobPolling(jobName);
       } else {
         console.warn('[ToolProgress] No job name found for polling');
+        console.warn('[ToolProgress] execution.result:', execution.result);
+        console.warn('[ToolProgress] execution.input:', execution.input);
         setStatusMessage('completed, unable to track');
         setCurrentPhase('completed');
         setProgress(100);

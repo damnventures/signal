@@ -52,6 +52,15 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
   useEffect(() => {
     if (message) {
       console.log('[HeaderMessageWindow] New message received, starting smooth transition');
+
+      // If we're in keep-alive mode, don't restart animation - just update content
+      if (keepAliveForProgress && animationReady) {
+        console.log('[HeaderMessageWindow] Keep-alive mode: updating content without restarting animation');
+        setVariantIndex(0);
+        setShowDiff(false);
+        return;
+      }
+
       // Step 1: Start content transition (no clearing for smooth resize)
       setAnimationReady(false);
       setVariantIndex(0);
@@ -63,7 +72,7 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
         console.log('[HeaderMessageWindow] Ready to start animation');
       }, 300); // Longer delay for smooth transition
     }
-  }, [message]);
+  }, [message, keepAliveForProgress, animationReady]);
 
   useEffect(() => {
     // Only start animation when ready
@@ -79,9 +88,13 @@ const HeaderMessageWindow: React.FC<HeaderMessageWindowProps> = ({
 
         setTimeout(() => setShowDiff(false), config.diffDuration);
       } else {
-        console.log('[HeaderMessageWindow] Animation complete');
-        // Don't auto-close if we're keeping alive for progress updates
-        if (!keepAliveForProgress) {
+        // Animation cycle completed
+        if (keepAliveForProgress) {
+          console.log('[HeaderMessageWindow] Animation cycle complete but staying alive for progress updates');
+          // In keep-alive mode, don't log "complete" repeatedly - just reset and wait for next update
+          return;
+        } else {
+          console.log('[HeaderMessageWindow] Animation complete');
           // Auto-close logic can be added here if needed
         }
       }
