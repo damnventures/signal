@@ -65,20 +65,75 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       setGmailConnectionId(savedConnectionId);
       setIsGmailConnected(true);
     }
-  }, []);
 
-  // Gmail connection handlers
-  const handleGmailAuth = () => {
-    // For now, simulate the auth flow with a prompt
-    const connectionId = prompt('Enter your Gmail Connection ID from Composio:');
-    if (connectionId) {
+    // Handle OAuth callback from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const connectionId = urlParams.get('connectionId');
+    const status = urlParams.get('status');
+
+    if (connectionId && status === 'success') {
+      // OAuth callback successful
       setGmailConnectionId(connectionId);
       setIsGmailConnected(true);
       localStorage.setItem('gmailConnectionId', connectionId);
-      setEmailView('main');
+      localStorage.removeItem('pendingGmailConnectionId');
+
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('connectionId');
+      url.searchParams.delete('status');
+      window.history.replaceState({}, document.title, url.toString());
+
+      // Show success message
       setStatusMessage('Gmail connected successfully!');
       setStatusVisible(true);
       setTimeout(() => setStatusVisible(false), 2000);
+
+      // Enter email mode if coming from auth
+      if (emailMode) {
+        setEmailView('main');
+      }
+    } else if (connectionId && status === 'failed') {
+      // OAuth callback failed
+      localStorage.removeItem('pendingGmailConnectionId');
+      setStatusMessage('Gmail connection failed');
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 3000);
+    }
+  }, [emailMode]);
+
+  // Gmail connection handlers
+  const handleGmailAuth = async () => {
+    try {
+      // Initiate Composio OAuth flow for Gmail
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || 'https://api.shrinked.ai'}/composio/initiate-gmail-connection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entityId: user?.id || 'default',
+          redirectUrl: `${window.location.origin}/composio-callback`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to initiate Gmail connection');
+      }
+
+      const { redirectUrl, connectionId } = await response.json();
+
+      // Store the pending connection ID for callback processing
+      localStorage.setItem('pendingGmailConnectionId', connectionId);
+
+      // Redirect to Composio OAuth flow
+      window.location.href = redirectUrl;
+
+    } catch (error) {
+      console.error('Gmail auth error:', error);
+      setStatusMessage('Failed to initiate Gmail connection');
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 3000);
     }
   };
 
@@ -764,7 +819,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           background: #ffffff;
           border: 2px solid #000000;
           border-radius: 0;
-          z-index: 9999;
+          z-index: 10500;
           display: flex;
           flex-direction: column;
           transform: translateY(100%);
@@ -1247,7 +1302,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         /* Email Inbox Active Styling */
         .source-card.email-inbox-active .source-name {
           color: #000000 !important;
-          font-weight: normal;
+          font-weight: bold;
         }
 
         .source-card.email-inbox-active .source-author {
