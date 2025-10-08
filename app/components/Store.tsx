@@ -105,33 +105,54 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
   // Gmail connection handlers
   const handleGmailAuth = async () => {
     try {
-      // Initiate Composio OAuth flow for Gmail
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || 'https://api.shrinked.ai'}/composio/initiate-gmail-connection`, {
+      // Check if user is authenticated
+      if (!user?.email) {
+        setStatusMessage('Please log in first to connect Gmail');
+        setStatusVisible(true);
+        setTimeout(() => setStatusVisible(false), 3000);
+        return;
+      }
+
+      // Get user access token from localStorage or session
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        setStatusMessage('Please log in again to continue');
+        setStatusVisible(true);
+        setTimeout(() => setStatusVisible(false), 3000);
+        return;
+      }
+
+      // Call our Next.js API endpoint for Composio Gmail integration
+      const response = await fetch('/api/composio/initiate-gmail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          entityId: user?.id || 'default',
-          redirectUrl: `${window.location.origin}/composio-callback`
+          accessToken: accessToken,
+          callbackUrl: `${window.location.origin}?gmail_callback=true`
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to initiate Gmail connection');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to initiate Gmail connection');
       }
 
-      const { redirectUrl, connectionId } = await response.json();
+      const { redirectUrl, connectionRequestId, message } = await response.json();
 
       // Store the pending connection ID for callback processing
-      localStorage.setItem('pendingGmailConnectionId', connectionId);
+      localStorage.setItem('pendingGmailConnectionId', connectionRequestId);
 
-      // Redirect to Composio OAuth flow
+      // Show user the process and redirect
+      console.log('Gmail Integration:', message);
+
+      // Redirect to OAuth flow (Composio or demo)
       window.location.href = redirectUrl;
 
     } catch (error) {
       console.error('Gmail auth error:', error);
-      setStatusMessage('Failed to initiate Gmail connection');
+      setStatusMessage(`Gmail connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setStatusVisible(true);
       setTimeout(() => setStatusVisible(false), 3000);
     }
@@ -1189,6 +1210,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           font-size: 24px;
           margin-bottom: 10px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          color: #000000;
         }
 
         .auth-container p {
