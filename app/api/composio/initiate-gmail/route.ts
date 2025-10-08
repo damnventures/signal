@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const { accessToken, callbackUrl } = await request.json();
+    console.log('[Composio API] Received request with token:', !!accessToken, 'callback:', callbackUrl);
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Access token is required' }, { status: 400 });

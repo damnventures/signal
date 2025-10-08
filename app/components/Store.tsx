@@ -114,8 +114,11 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       }
 
       // Get user access token from localStorage or session
-      const accessToken = localStorage.getItem('accessToken');
+      const accessToken = localStorage.getItem('auth_access_token');
+      console.log('Gmail Auth Debug - User:', user?.email, 'Token exists:', !!accessToken);
+
       if (!accessToken) {
+        console.error('No access token found in localStorage');
         setStatusMessage('Please log in again to continue');
         setStatusVisible(true);
         setTimeout(() => setStatusVisible(false), 3000);
