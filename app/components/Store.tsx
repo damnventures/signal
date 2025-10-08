@@ -501,7 +501,8 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
     { id: 'soon-4', name: 'Apple Notes', author: 'Notes sync', type: 'coming', capsuleId: null, icon: 'notepad' },
     { id: 'soon-5', name: 'Call Recordings', author: 'Meetings, phone calls', type: 'coming', capsuleId: null, icon: 'calls' },
     { id: 'soon-6', name: 'Excel/Numbers', author: 'Spreadsheet analysis', type: 'coming', capsuleId: null, icon: 'excel' },
-    
+    { id: 'soon-fashion', name: 'Style Context', author: 'Brands, trends, fits', type: 'coming', capsuleId: null, icon: 'toolbox-tools' },
+
     // Expansion Packs
     { id: 'soon-7', name: 'Chess (FIDE)', author: 'Game analysis pack', type: 'coming', capsuleId: null, icon: 'chess-pieces' },
     { id: 'soon-8', name: 'Bible Study', author: 'Scripture analysis', type: 'coming', capsuleId: null, icon: 'books' },
@@ -581,6 +582,11 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               const getIcon = () => {
                 if (source.type === 'add-new') return isCreatingCapsule ? '⏳' : '➕';
 
+                // Special handling for Email Inbox
+                if (source.id === 'email-inbox' && source.icon) {
+                  return <img src={`/items/${source.icon}.png`} alt={source.name} style={{ width: '70px', height: '70px', imageRendering: 'pixelated' }} />;
+                }
+
                 // Show loading spinner when actively loading (prioritize over custom icons)
                 if ((source.type === 'shrinked' || source.type === 'coming') && isCurrentlyLoading) {
                   return <div className="loading-spinner">⏳</div>;
@@ -635,9 +641,9 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               // }
               
               return (
-                <div 
-                  key={source.id} 
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''}`}
+                <div
+                  key={source.id}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''} ${source.id === 'email-inbox' ? 'email-inbox-active' : ''}`}
                   onClick={handleClick}
                   style={{ cursor: (isClickable && isLoaded && !isCurrentlyLoading && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
                 >
@@ -1236,6 +1242,26 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
+        /* Email Inbox Active State */
+        .source-card.email-inbox-active {
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          border: 2px solid #0ea5e9;
+          box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.2);
+        }
+
+        .source-card.email-inbox-active:hover {
+          background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
+        }
+
+        .source-card.email-inbox-active .source-name {
+          color: #0c4a6e;
+          font-weight: bold;
+        }
+
+        .source-card.email-inbox-active .source-author {
+          color: #075985;
+        }
 
         /* Loading Animation */
         .loading-spinner {
