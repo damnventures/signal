@@ -41,51 +41,48 @@ export async function POST(request: Request) {
 
     console.log('[Composio Gmail Route] Using userId:', userId, 'from profile:', userProfile.email);
 
-    // TODO: Implement actual Composio integration
-    // For now, return a demo response that matches expected Composio format
-    const demoConnectionId = `demo_gmail_${userId}_${Date.now()}`;
-
-    // In a real implementation, this would:
-    // 1. Initialize Composio SDK with API key
-    // 2. Call composio.connectedAccounts.initiate()
-    // 3. Return the actual redirectUrl from Composio
-
-    // Use our callback endpoint instead of the provided callbackUrl
-    const ourCallbackUrl = `${new URL(request.url).origin}/api/composio/gmail-callback`;
-    const demoRedirectUrl = `https://accounts.google.com/oauth/authorize?client_id=demo&redirect_uri=${encodeURIComponent(ourCallbackUrl)}&scope=https://www.googleapis.com/auth/gmail.readonly&response_type=code&state=${demoConnectionId}`;
-
+    // For now, return instructions for proper Composio setup
     return NextResponse.json({
-      redirectUrl: demoRedirectUrl,
-      connectionRequestId: demoConnectionId,
-      status: 'initiated',
-      message: 'Demo Gmail OAuth flow initiated. In production, this would redirect to Composio-managed OAuth.'
-    });
+      error: 'Composio integration not yet configured',
+      message: 'To complete Gmail integration, you need to:\n\n' +
+               '1. Get Composio API key from https://app.composio.dev\n' +
+               '2. Create Gmail auth config in Composio dashboard\n' +
+               '3. Add COMPOSIO_API_KEY to environment variables\n' +
+               '4. Add COMPOSIO_AUTH_CONFIG_ID to environment variables\n' +
+               '5. Install @composio/core package\n\n' +
+               'Then uncomment the production code in /api/composio/initiate-gmail/route.ts',
+      redirectUrl: null,
+      setupRequired: true
+    }, { status: 501 }); // 501 = Not Implemented
 
     /*
-    // PRODUCTION CODE (uncomment when ready):
+    // PRODUCTION CODE (uncomment when Composio is configured):
 
     import { Composio } from '@composio/core';
 
     const composio = new Composio({
-      apiKey: process.env.COMPOSIO_API_KEY, // Add to .env.local
+      apiKey: process.env.COMPOSIO_API_KEY!, // Add to .env.local
     });
 
-    // Create connection request for Gmail
+    // Create connection request for Gmail using Composio's managed OAuth
     const connectionRequest = await composio.connectedAccounts.initiate(
-      userId,
-      process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID, // Auth config ID from Composio dashboard
+      userId, // User ID from authenticated user
+      process.env.COMPOSIO_AUTH_CONFIG_ID!, // Auth Config ID from Composio dashboard (e.g., ac_-bF3mcMCuOBu)
       {
-        callbackUrl: callbackUrl,
-        data: {
-          scope: ['https://www.googleapis.com/auth/gmail.readonly']
-        }
+        redirectUrl: callbackUrl, // Where to redirect after OAuth completion
+        labels: ['gmail', 'email'], // Optional labels for organization
       }
     );
 
+    // The redirectUrl from Composio will be something like:
+    // https://backend.composio.dev/api/v1/connectedAccounts/[id]/initiate
+    // This redirects to Google OAuth, then back to Composio, then to your callbackUrl
+
     return NextResponse.json({
-      redirectUrl: connectionRequest.redirectUrl,
+      redirectUrl: connectionRequest.redirectUrl, // Composio-managed OAuth URL
       connectionRequestId: connectionRequest.id,
-      status: 'initiated'
+      status: 'initiated',
+      message: 'Redirecting to Composio-managed Gmail OAuth flow'
     });
     */
 

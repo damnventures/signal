@@ -139,6 +139,13 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        // Handle setup required case
+        if (errorData.setupRequired) {
+          alert(`Gmail Integration Setup Required:\n\n${errorData.message}`);
+          return;
+        }
+
         throw new Error(errorData.error || 'Failed to initiate Gmail connection');
       }
 
