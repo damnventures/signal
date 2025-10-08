@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@composio/core": "^0.1.53",
     "mongodb": "^6.19.0",
     "next": "15.4.4",
     "react": "19.1.0",

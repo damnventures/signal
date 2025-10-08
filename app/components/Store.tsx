@@ -133,7 +133,9 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         },
         body: JSON.stringify({
           accessToken: accessToken,
-          callbackUrl: `${window.location.origin}?gmail_callback=true`
+          callbackUrl: `${window.location.origin}?gmail_callback=true`,
+          userId: user.id || user._id,
+          userEmail: user.email
         })
       });
 
