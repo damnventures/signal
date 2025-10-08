@@ -45,12 +45,8 @@ export async function POST(request: Request) {
 
       // Create connection request for Gmail using Composio's managed OAuth
       const connectionRequest = await composio.connectedAccounts.initiate(
-        userId, // User ID from authenticated user
+        userId, // User ID from authenticated user (must be UUID format)
         process.env.COMPOSIO_AUTH_CONFIG_ID!, // Auth Config ID from Composio dashboard (e.g., ac_-bF3mcMCuOBu)
-        {
-          redirectUrl: callbackUrl, // Where to redirect after OAuth completion
-          labels: ['gmail', 'email'], // Optional labels for organization
-        }
       );
 
       // The redirectUrl from Composio will be something like:
@@ -58,9 +54,9 @@ export async function POST(request: Request) {
       // This redirects to Google OAuth, then back to Composio, then to your callbackUrl
 
       return NextResponse.json({
-        redirectUrl: connectionRequest.redirectUrl, // Composio-managed OAuth URL
+        redirectUrl: connectionRequest.redirect_url, // Composio-managed OAuth URL
         connectionRequestId: connectionRequest.id,
-        status: 'initiated',
+        status: connectionRequest.status || 'initiated',
         message: 'Redirecting to Composio-managed Gmail OAuth flow'
       });
 
