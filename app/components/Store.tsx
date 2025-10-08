@@ -495,24 +495,24 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
   // Coming soon items (passive, not clickable) - organized by category
   const comingSoonItems: SourceItem[] = [
     // Data Sources
-    { id: 'email-inbox', name: 'Email Inbox', author: 'Gmail, Outlook, etc', type: 'user', capsuleId: null, icon: 'mailbox' },
+    { id: 'email-inbox', name: 'Email Inbox', author: 'Gmail, Outlook, etc', type: 'coming', capsuleId: null, icon: 'mailbox' },
     { id: 'soon-2', name: 'Voice Records', author: 'Audio transcription', type: 'coming', capsuleId: null, icon: 'voicerecords' },
     { id: 'soon-3', name: 'Smart Glasses POV', author: 'Meta, Apple Vision', type: 'coming', capsuleId: null, icon: 'smartglasses' },
     { id: 'soon-4', name: 'Apple Notes', author: 'Notes sync', type: 'coming', capsuleId: null, icon: 'notepad' },
     { id: 'soon-5', name: 'Call Recordings', author: 'Meetings, phone calls', type: 'coming', capsuleId: null, icon: 'calls' },
     { id: 'soon-6', name: 'Excel/Numbers', author: 'Spreadsheet analysis', type: 'coming', capsuleId: null, icon: 'excel' },
-    { id: 'soon-fashion', name: 'Style Context', author: 'Brands, trends, fits', type: 'coming', capsuleId: null, icon: 'toolbox-tools' },
 
     // Expansion Packs
     { id: 'soon-7', name: 'Chess (FIDE)', author: 'Game analysis pack', type: 'coming', capsuleId: null, icon: 'chess-pieces' },
     { id: 'soon-8', name: 'Bible Study', author: 'Scripture analysis', type: 'coming', capsuleId: null, icon: 'books' },
     { id: 'soon-9', name: 'Harry Potter', author: 'Book series pack', type: 'coming', capsuleId: null, icon: 'books' },
-    
+
     // Creator Integrations
     { id: 'soon-10', name: 'John Oliver', author: 'YouTube creator', type: 'coming', capsuleId: null, icon: 'tvhost' },
     { id: 'soon-11', name: 'Gordon Ramsay', author: 'Cooking recipes', type: 'coming', capsuleId: null, icon: 'recipe' },
-    
+
     // Future Tools
+    { id: 'soon-fashion', name: 'Style Context', author: 'Brands, trends, fits', type: 'coming', capsuleId: null, icon: 'toolbox-tools' },
     { id: 'soon-12', name: 'Crypto Wallet', author: 'DeFi integration', type: 'coming', capsuleId: null, icon: 'coin' },
   ];
 
@@ -573,7 +573,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                 // Only show other items if they're visible
                 return visibleItems.has(source.id);
               }).map((source: SourceItem) => {
-              const isClickable = source.type !== 'coming' && user && user.email;
+              const isClickable = (source.type !== 'coming' || source.id === 'email-inbox') && user && user.email;
               const isVisible = source.type === 'user' || source.type === 'add-new' || visibleItems.has(source.id);
               // For accessible shrinked capsules, they should still go through the loading animation
               const isAccessibleShrinked = source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId);
@@ -643,7 +643,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               return (
                 <div
                   key={source.id}
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''} ${source.id === 'email-inbox' ? 'email-inbox-active' : ''}`}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''}`}
                   onClick={handleClick}
                   style={{ cursor: (isClickable && isLoaded && !isCurrentlyLoading && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
                 >
@@ -1242,26 +1242,6 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
-        /* Email Inbox Active State */
-        .source-card.email-inbox-active {
-          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-          border: 2px solid #0ea5e9;
-          box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.2);
-        }
-
-        .source-card.email-inbox-active:hover {
-          background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
-        }
-
-        .source-card.email-inbox-active .source-name {
-          color: #0c4a6e;
-          font-weight: bold;
-        }
-
-        .source-card.email-inbox-active .source-author {
-          color: #075985;
-        }
 
         /* Loading Animation */
         .loading-spinner {
