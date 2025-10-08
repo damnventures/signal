@@ -166,7 +166,7 @@ function getDateString(daysAgo: number): string {
 
 // Generate Gmail search query for business emails
 export function generateBusinessEmailQuery(timeframe = "last_30_days", userDomains: string[] = []): string {
-  const dateFilter = BUSINESS_EMAIL_CONFIG.timeframes[timeframe];
+  const dateFilter = BUSINESS_EMAIL_CONFIG.timeframes[timeframe as keyof typeof BUSINESS_EMAIL_CONFIG.timeframes];
   const keywordFilter = BUSINESS_EMAIL_CONFIG.businessKeywords
     .map(keyword => `"${keyword}"`)
     .join(" OR ");
@@ -197,7 +197,7 @@ export function generateBusinessEmailQuery(timeframe = "last_30_days", userDomai
 
 // Generate Gmail search query for investing/fundraising emails
 export function generateInvestingEmailQuery(timeframe = "last_30_days", userDomains: string[] = []): string {
-  const dateFilter = BUSINESS_EMAIL_CONFIG.timeframes[timeframe];
+  const dateFilter = BUSINESS_EMAIL_CONFIG.timeframes[timeframe as keyof typeof BUSINESS_EMAIL_CONFIG.timeframes];
   const keywordFilter = BUSINESS_EMAIL_CONFIG.investingKeywords
     .map(keyword => `"${keyword}"`)
     .join(" OR ");

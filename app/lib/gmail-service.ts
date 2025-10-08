@@ -96,7 +96,7 @@ export class GmailService {
       return await response.json();
     } catch (error) {
       console.error('Gmail connection test error:', error);
-      throw new Error(`Failed to test Gmail connection: ${error.message}`);
+      throw new Error(`Failed to test Gmail connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -131,7 +131,7 @@ export class GmailService {
       return await response.json();
     } catch (error) {
       console.error('Gmail email fetch error:', error);
-      throw new Error(`Failed to fetch emails: ${error.message}`);
+      throw new Error(`Failed to fetch emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -166,7 +166,7 @@ export class GmailService {
       return await response.json();
     } catch (error) {
       console.error('Gmail thread fetch error:', error);
-      throw new Error(`Failed to fetch threads: ${error.message}`);
+      throw new Error(`Failed to fetch threads: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -195,7 +195,7 @@ export class GmailService {
       return await response.json();
     } catch (error) {
       console.error('Gmail thread messages fetch error:', error);
-      throw new Error(`Failed to fetch thread messages: ${error.message}`);
+      throw new Error(`Failed to fetch thread messages: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -227,7 +227,7 @@ export class GmailService {
       return await response.json();
     } catch (error) {
       console.error('Gmail search error:', error);
-      throw new Error(`Failed to search emails: ${error.message}`);
+      throw new Error(`Failed to search emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -262,7 +262,7 @@ export class GmailService {
       return await response.json();
     } catch (error) {
       console.error('Worker status check failed:', error);
-      throw new Error(`Failed to check worker status: ${error.message}`);
+      throw new Error(`Failed to check worker status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

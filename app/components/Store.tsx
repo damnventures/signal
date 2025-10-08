@@ -495,7 +495,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
   // Coming soon items (passive, not clickable) - organized by category
   const comingSoonItems: SourceItem[] = [
     // Data Sources
-    { id: 'soon-1', name: 'Email Inbox', author: 'Gmail, Outlook, etc', type: 'coming', capsuleId: null, icon: 'mailbox' },
+    { id: 'email-inbox', name: 'Email Inbox', author: 'Gmail, Outlook, etc', type: 'user', capsuleId: null, icon: 'mailbox' },
     { id: 'soon-2', name: 'Voice Records', author: 'Audio transcription', type: 'coming', capsuleId: null, icon: 'voicerecords' },
     { id: 'soon-3', name: 'Smart Glasses POV', author: 'Meta, Apple Vision', type: 'coming', capsuleId: null, icon: 'smartglasses' },
     { id: 'soon-4', name: 'Apple Notes', author: 'Notes sync', type: 'coming', capsuleId: null, icon: 'notepad' },
@@ -564,19 +564,6 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           {!emailMode ? (
             // Standard Store Grid
             <div className="store-grid">
-              {/* Email Icon */}
-              <div
-                className="source-card email-icon"
-                onClick={handleEmailIconClick}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="source-icon">📧</div>
-                <div className="source-info">
-                  <div className="source-name">Email</div>
-                  <div className="source-author">Investing</div>
-                </div>
-              </div>
-
               {allSources.filter((source: SourceItem) => {
                 // Always show user capsules and add-new button
                 if (source.type === 'user' || source.type === 'add-new') return true;
@@ -616,9 +603,12 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               const handleClick = (e: React.MouseEvent) => {
                 e.stopPropagation();
                 if (!isClickable || !isLoaded) return;
-                
+
                 if (source.type === 'add-new') {
                   handleCreateCapsule();
+                } else if (source.id === 'email-inbox') {
+                  // Handle Email Inbox click - enter email mode
+                  handleEmailIconClick();
                 } else if (source.type === 'shrinked' && source.capsuleId && user && user.email && isLoaded) {
                   // Shrinked capsule - handle sharing (AUTH USERS ONLY)
                   handleShareToggle(source.capsuleId, source.name);
@@ -1246,22 +1236,6 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
-        /* Email Icon in Store Grid */
-        .source-card.email-icon {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: #ffffff;
-        }
-
-        .source-card.email-icon .source-name {
-          background: transparent;
-          color: #ffffff;
-          font-weight: bold;
-        }
-
-        .source-card.email-icon .source-author {
-          color: #ffffff;
-          opacity: 0.9;
-        }
 
         /* Loading Animation */
         .loading-spinner {

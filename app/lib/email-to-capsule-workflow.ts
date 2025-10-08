@@ -100,7 +100,7 @@ export class EmailToCapsuleWorkflow {
 
     } catch (error) {
       console.error('Email-to-capsule workflow failed:', error);
-      result.errors.push(error.message);
+      result.errors.push(error instanceof Error ? error.message : 'Unknown error');
       result.processingTime = Date.now() - startTime;
       return result;
     }
@@ -144,7 +144,7 @@ export class EmailToCapsuleWorkflow {
 
       } catch (error) {
         console.error(`Failed to process thread ${thread.id}:`, error);
-        result.errors.push(`Thread ${thread.id}: ${error.message}`);
+        result.errors.push(`Thread ${thread.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }
@@ -179,7 +179,7 @@ export class EmailToCapsuleWorkflow {
           await this.createCapsuleFromEmail(emailResult.email, config);
           result.capsulesCreated++;
         } catch (error) {
-          result.errors.push(`Create email ${emailResult.email.id}: ${error.message}`);
+          result.errors.push(`Create email ${emailResult.email.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
     }
@@ -190,7 +190,7 @@ export class EmailToCapsuleWorkflow {
           await this.updateCapsuleWithEmail(emailResult, config);
           result.capsulesUpdated++;
         } catch (error) {
-          result.errors.push(`Update email ${emailResult.email.id}: ${error.message}`);
+          result.errors.push(`Update email ${emailResult.email.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
     }

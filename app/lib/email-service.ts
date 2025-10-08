@@ -49,7 +49,7 @@ export class EmailService {
       return await response.json();
     } catch (error) {
       console.error('Email filtering error:', error);
-      throw new Error(`Failed to filter emails: ${error.message}`);
+      throw new Error(`Failed to filter emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -81,7 +81,7 @@ export class EmailService {
       return await response.json();
     } catch (error) {
       console.error('Thread processing error:', error);
-      throw new Error(`Failed to process email thread: ${error.message}`);
+      throw new Error(`Failed to process email thread: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -113,7 +113,7 @@ export class EmailService {
       return await response.json();
     } catch (error) {
       console.error('Document update error:', error);
-      throw new Error(`Failed to update capsule document: ${error.message}`);
+      throw new Error(`Failed to update capsule document: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -146,7 +146,7 @@ export class EmailService {
       return await response.json();
     } catch (error) {
       console.error('Business email processing error:', error);
-      throw new Error(`Failed to process business emails: ${error.message}`);
+      throw new Error(`Failed to process business emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -162,7 +162,7 @@ export class EmailService {
       return await response.json();
     } catch (error) {
       console.error('Worker status check failed:', error);
-      throw new Error(`Failed to check worker status: ${error.message}`);
+      throw new Error(`Failed to check worker status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
@@ -195,10 +195,10 @@ export class EmailWorkflow {
     );
 
     const results = {
-      newCapsules: [],
-      updatedCapsules: [],
-      archivedEmails: [],
-      ignoredEmails: []
+      newCapsules: [] as any[],
+      updatedCapsules: [] as any[],
+      archivedEmails: [] as any[],
+      ignoredEmails: [] as any[]
     };
 
     // Step 2: Process filtered results
