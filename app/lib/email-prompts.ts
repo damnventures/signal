@@ -137,6 +137,14 @@ export const BUSINESS_EMAIL_CONFIG = {
     "vendor", "partner", "negotiation", "agreement", "timeline", "deliverable"
   ],
 
+  investingKeywords: [
+    "funding", "investment", "round", "valuation", "term sheet", "due diligence",
+    "investor", "VC", "venture capital", "angel", "LP", "GP", "portfolio", "board",
+    "pitch", "deck", "cap table", "equity", "shares", "dilution", "liquidation",
+    "exit", "IPO", "acquisition", "merger", "memo", "research", "analysis",
+    "performance", "returns", "IRR", "multiple", "NAV", "distribution", "carry"
+  ],
+
   excludeKeywords: [
     "unsubscribe", "newsletter", "promotion", "marketing", "sale", "offer",
     "social", "notification", "alert", "reminder", "automated", "no-reply"
@@ -187,6 +195,46 @@ export function generateBusinessEmailQuery(timeframe = "last_30_days", userDomai
   return queryParts.filter(Boolean).join(" ");
 }
 
+// Generate Gmail search query for investing/fundraising emails
+export function generateInvestingEmailQuery(timeframe = "last_30_days", userDomains: string[] = []): string {
+  const dateFilter = BUSINESS_EMAIL_CONFIG.timeframes[timeframe];
+  const keywordFilter = BUSINESS_EMAIL_CONFIG.investingKeywords
+    .map(keyword => `"${keyword}"`)
+    .join(" OR ");
+
+  const excludeFilter = BUSINESS_EMAIL_CONFIG.excludeKeywords
+    .map(keyword => `-"${keyword}"`)
+    .join(" ");
+
+  // Build query components
+  const queryParts = [
+    dateFilter,
+    `(${keywordFilter})`,
+    excludeFilter,
+    "-in:spam",
+    "-in:trash"
+  ];
+
+  // Add VC/investor domain patterns
+  const investorDomains = [
+    "from:*vc.com OR to:*vc.com",
+    "from:*ventures.com OR to:*ventures.com",
+    "from:*capital.com OR to:*capital.com",
+    "from:*partners.com OR to:*partners.com"
+  ];
+  queryParts.push(`(${investorDomains.join(" OR ")})`);
+
+  // Add user-specific domain filters if provided
+  if (userDomains.length > 0) {
+    const domainFilter = userDomains
+      .map(domain => `from:${domain} OR to:${domain}`)
+      .join(" OR ");
+    queryParts.push(`(${domainFilter})`);
+  }
+
+  return queryParts.filter(Boolean).join(" ");
+}
+
 // Prompt configuration types
 export interface EmailPromptConfig {
   filterPrompt: string;
@@ -221,6 +269,104 @@ export const EXAMPLE_CONFIGURATIONS: Record<string, EmailPromptConfig> = {
     filterPrompt: DEFAULT_FILTER_PROMPT + "\n\nPRIORITIZE: Only process emails involving external clients, customers, or prospects. Internal team discussions should be archived unless they involve client decisions.",
     processingPrompt: DEFAULT_PROCESSING_PROMPT + "\n\nFOCUS: Pay special attention to client requests, commitments made to clients, and client feedback.",
     updatePrompt: DEFAULT_UPDATE_PROMPT,
+    batchSize: 30,
+    minThreadSize: 2
+  },
+
+  // Investing & Startup Fundraising Focus
+  investing_fundraising: {
+    filterPrompt: `You are an intelligent email classifier specialized in INVESTING and STARTUP FUNDRAISING. Analyze each email to identify investment-related communications.
+
+CLASSIFICATION CRITERIA:
+
+**business_thread** (High Priority - Investment Conversations):
+- Investor communications and pitch discussions
+- Due diligence processes and data room access
+- Term sheet negotiations and funding discussions
+- Board communications and investor updates
+- LP/GP communications and fund updates
+- Deal flow and investment opportunity sharing
+- Portfolio company updates and communications
+- Keywords: funding, investment, round, valuation, term sheet, due diligence, investor, VC, angel, LP, GP, portfolio, board, pitch, deck, cap table, equity, shares, dilution, liquidation, exit, IPO, acquisition, merger
+
+**important_single** (Medium Priority - Individual Investment Items):
+- Investment memos and research reports
+- Market analysis and industry insights
+- Legal documents and compliance notifications
+- Fund performance reports and statements
+- Tax documents and K-1 statements
+- Investment committee decisions
+- Keywords: memo, research, analysis, performance, returns, IRR, multiple, NAV, distribution, carry, management fee
+
+**bulk_archive** (Low Priority - Industry Information):
+- Industry newsletters and market updates
+- Conference invitations and event announcements
+- Regulatory updates and compliance news
+- Research reports from banks/analysts
+- Educational content about investing
+
+**spam_filter** (Ignore):
+- Generic financial services marketing
+- Crypto/trading platform promotions
+- Get-rich-quick schemes
+- Automated investment app notifications
+- Social trading platforms
+
+FUNDRAISING-SPECIFIC MATCHING:
+- Match emails by fund name, company name, or deal name
+- Group by investor relationships and ongoing processes
+- Connect follow-up emails to original pitch/intro emails
+- Link due diligence requests to specific opportunities
+- Associate board emails with portfolio companies
+
+DECISION PRIORITY FOR FUNDRAISING:
+1. If part of active fundraising process → update_existing
+2. If new investor introduction or opportunity → create_new
+3. If industry insight but not actionable → archive
+4. If promotional/spam → ignore`,
+
+    processingPrompt: `You are an expert at structuring INVESTMENT and FUNDRAISING email conversations. Create comprehensive structured documents focused on investment activities.
+
+INVESTMENT DOCUMENT STRUCTURE:
+
+**Investment Metadata:**
+- Identify all participants (investors, founders, intermediaries, advisors)
+- Determine investment stage (pre-seed, seed, Series A/B/C, growth, etc.)
+- Extract company/fund names and sectors
+- Note investment amounts, valuations, and key terms
+- Track timeline of fundraising/investment process
+
+**Deal Flow Organization:**
+- Group discussions by specific investment opportunities
+- Track progression from initial interest to term sheet to closing
+- Identify key concerns, questions, and resolution status
+- Extract due diligence requirements and completion status
+- Note any competitive dynamics or time pressures
+
+**Investment Analysis:**
+- Break down key investment thesis points
+- Identify risk factors and mitigation strategies
+- Extract financial projections and assumptions
+- Note market size and competitive positioning
+- Track changes in valuation or terms over time
+
+**Action Items & Next Steps:**
+- Extract specific due diligence tasks and deadlines
+- Note document requests and data room access
+- Identify required signatures or approvals
+- Track follow-up meetings and presentations
+- Note regulatory or legal requirements
+
+**Financial Terms Tracking:**
+- Capture valuations (pre/post money)
+- Note liquidation preferences and participation rights
+- Track board composition and governance terms
+- Extract anti-dilution and voting provisions
+- Note any special rights or preferences
+
+Focus on creating a document that captures the complete investment story, current deal status, outstanding issues, and what needs to happen to move forward.`,
+
+    updatePrompt: DEFAULT_UPDATE_PROMPT + "\n\nINVESTMENT FOCUS: Pay special attention to changes in deal terms, new due diligence findings, shifts in investor sentiment, or updates to timeline/process.",
     batchSize: 30,
     minThreadSize: 2
   }

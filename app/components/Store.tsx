@@ -36,13 +36,19 @@ interface StoreProps {
 const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules = [], user, onRefreshCapsules, accessibleShrinkedCapsules = [] }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isCreatingCapsule, setIsCreatingCapsule] = useState(false);
-  
+
+  // Email interface state
+  const [emailMode, setEmailMode] = useState(false);
+  const [gmailConnectionId, setGmailConnectionId] = useState<string>('');
+  const [isGmailConnected, setIsGmailConnected] = useState(false);
+  const [emailView, setEmailView] = useState<'main' | 'auth' | 'investing'>('main');
+
   // Sharing status state
   const [statusVisible, setStatusVisible] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [sharedCapsules, setSharedCapsules] = useState<Set<string>>(new Set());
-  
+
   // Loading state for initial store check
   const [isCheckingStore, setIsCheckingStore] = useState(false);
   const [storeChecked, setStoreChecked] = useState(false);
@@ -51,6 +57,44 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
   
   // Track which items should be shown (vs completely hidden during initial phases)
   const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
+
+  // Check for saved Gmail connection on component mount
+  useEffect(() => {
+    const savedConnectionId = localStorage.getItem('gmailConnectionId');
+    if (savedConnectionId) {
+      setGmailConnectionId(savedConnectionId);
+      setIsGmailConnected(true);
+    }
+  }, []);
+
+  // Gmail connection handlers
+  const handleGmailAuth = () => {
+    // For now, simulate the auth flow with a prompt
+    const connectionId = prompt('Enter your Gmail Connection ID from Composio:');
+    if (connectionId) {
+      setGmailConnectionId(connectionId);
+      setIsGmailConnected(true);
+      localStorage.setItem('gmailConnectionId', connectionId);
+      setEmailView('main');
+      setStatusMessage('Gmail connected successfully!');
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 2000);
+    }
+  };
+
+  const handleEmailIconClick = () => {
+    setEmailMode(true);
+    if (!isGmailConnected) {
+      setEmailView('auth');
+    } else {
+      setEmailView('main');
+    }
+  };
+
+  const handleBackToStore = () => {
+    setEmailMode(false);
+    setEmailView('main');
+  };
 
   // Handle ESC key to close
   useEffect(() => {
@@ -517,15 +561,30 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
 
         {/* Content */}
         <div className="store-content">
-          <div className="store-grid">
-            {allSources.filter((source: SourceItem) => {
-              // Always show user capsules and add-new button
-              if (source.type === 'user' || source.type === 'add-new') return true;
-              // Always show accessible shrinked capsules (even when loading)
-              if (source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId)) return true;
-              // Only show other items if they're visible
-              return visibleItems.has(source.id);
-            }).map((source: SourceItem) => {
+          {!emailMode ? (
+            // Standard Store Grid
+            <div className="store-grid">
+              {/* Email Icon */}
+              <div
+                className="source-card email-icon"
+                onClick={handleEmailIconClick}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="source-icon">📧</div>
+                <div className="source-info">
+                  <div className="source-name">Email</div>
+                  <div className="source-author">Investing</div>
+                </div>
+              </div>
+
+              {allSources.filter((source: SourceItem) => {
+                // Always show user capsules and add-new button
+                if (source.type === 'user' || source.type === 'add-new') return true;
+                // Always show accessible shrinked capsules (even when loading)
+                if (source.type === 'shrinked' && source.capsuleId && accessibleShrinkedCapsules.includes(source.capsuleId)) return true;
+                // Only show other items if they're visible
+                return visibleItems.has(source.id);
+              }).map((source: SourceItem) => {
               const isClickable = source.type !== 'coming' && user && user.email;
               const isVisible = source.type === 'user' || source.type === 'add-new' || visibleItems.has(source.id);
               // For accessible shrinked capsules, they should still go through the loading animation
@@ -609,6 +668,73 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               );
             })}
           </div>
+        ) : (
+          // Email Interface
+          <div className="email-interface">
+            {emailView === 'auth' ? (
+              // Auth View
+              <div className="email-auth-view">
+                <div className="back-arrow" onClick={handleBackToStore}>← Back</div>
+                <div className="auth-container">
+                  <div className="auth-icon">🔑</div>
+                  <h3>Connect Gmail</h3>
+                  <p>Connect your Gmail account via Composio to access your investing emails.</p>
+                  <button className="auth-button" onClick={handleGmailAuth}>
+                    Connect Gmail Account
+                  </button>
+                  {gmailConnectionId && (
+                    <div className="connection-status">
+                      Connection ID: {gmailConnectionId.slice(0, 8)}...
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // Main Email View
+              <div className="email-main-view">
+                <div className="back-arrow" onClick={handleBackToStore}>← Back</div>
+                <div className="email-sections">
+                  {/* Auth Status */}
+                  <div
+                    className={`email-section auth-section ${isGmailConnected ? 'connected' : 'disconnected'}`}
+                    onClick={!isGmailConnected ? () => setEmailView('auth') : undefined}
+                    style={{ cursor: !isGmailConnected ? 'pointer' : 'default' }}
+                  >
+                    <div className="section-icon">
+                      {isGmailConnected ? '✅' : '🔐'}
+                    </div>
+                    <div className="section-info">
+                      <div className="section-name">
+                        {isGmailConnected ? 'Gmail Connected' : 'Connect Gmail'}
+                      </div>
+                      <div className="section-description">
+                        {isGmailConnected ? 'Ready to fetch emails' : 'Authorize Gmail access'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Investing Emails */}
+                  <div
+                    className={`email-section investing-section ${isGmailConnected ? 'active' : 'inactive'}`}
+                    onClick={isGmailConnected ? () => setEmailView('investing') : undefined}
+                    style={{ cursor: isGmailConnected ? 'pointer' : 'default' }}
+                  >
+                    <div className="section-icon">💰</div>
+                    <div className="section-info">
+                      <div className="section-name">Investing Emails</div>
+                      <div className="section-description">
+                        Process fundraising & investment communications
+                      </div>
+                    </div>
+                    {isGmailConnected && (
+                      <div className="section-badge">Default Active</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         </div>
         
         {/* Status Message */}
@@ -965,6 +1091,176 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           line-height: 1.3;
           color: #000000;
           white-space: nowrap;
+        }
+
+        /* Email Interface Styles */
+        .email-interface {
+          width: 100%;
+          height: 100%;
+          padding: 20px;
+        }
+
+        .back-arrow {
+          font-size: 16px;
+          font-weight: bold;
+          cursor: pointer;
+          margin-bottom: 20px;
+          color: #000000;
+          transition: color 0.2s ease;
+        }
+
+        .back-arrow:hover {
+          color: #666666;
+        }
+
+        /* Auth View */
+        .email-auth-view {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+
+        .auth-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
+          text-align: center;
+        }
+
+        .auth-icon {
+          font-size: 48px;
+          margin-bottom: 20px;
+        }
+
+        .auth-container h3 {
+          font-size: 24px;
+          margin-bottom: 10px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        .auth-container p {
+          font-size: 14px;
+          color: #666666;
+          margin-bottom: 30px;
+          max-width: 400px;
+        }
+
+        .auth-button {
+          background: #000000;
+          color: #ffffff;
+          border: none;
+          padding: 12px 24px;
+          font-size: 16px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .auth-button:hover {
+          background: #333333;
+        }
+
+        .connection-status {
+          margin-top: 20px;
+          font-size: 12px;
+          color: #666666;
+        }
+
+        /* Main Email View */
+        .email-main-view {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+
+        .email-sections {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .email-section {
+          display: flex;
+          align-items: center;
+          padding: 20px;
+          border: 2px solid #000000;
+          background: #ffffff;
+          transition: all 0.2s ease;
+        }
+
+        .email-section:hover {
+          background: #f5f5f5;
+        }
+
+        .email-section.active {
+          background: #e6f7ff;
+          border-color: #0066cc;
+        }
+
+        .email-section.inactive {
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        .email-section.connected {
+          background: #e6ffe6;
+          border-color: #00cc00;
+        }
+
+        .email-section.disconnected {
+          background: #ffe6e6;
+          border-color: #cc0000;
+        }
+
+        .section-icon {
+          font-size: 32px;
+          margin-right: 20px;
+          min-width: 50px;
+        }
+
+        .section-info {
+          flex: 1;
+        }
+
+        .section-name {
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 5px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        .section-description {
+          font-size: 14px;
+          color: #666666;
+        }
+
+        .section-badge {
+          background: #000000;
+          color: #ffffff;
+          padding: 4px 8px;
+          font-size: 10px;
+          border-radius: 2px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        /* Email Icon in Store Grid */
+        .source-card.email-icon {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #ffffff;
+        }
+
+        .source-card.email-icon .source-name {
+          background: transparent;
+          color: #ffffff;
+          font-weight: bold;
+        }
+
+        .source-card.email-icon .source-author {
+          color: #ffffff;
+          opacity: 0.9;
         }
 
         /* Loading Animation */

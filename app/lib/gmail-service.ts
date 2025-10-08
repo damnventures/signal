@@ -243,6 +243,18 @@ export class GmailService {
     return await this.searchEmails(businessQuery);
   }
 
+  // Fetch investing/fundraising emails
+  async fetchInvestingEmails(timeframe = 'last_30_days'): Promise<any> {
+    const investingQuery = {
+      searchQuery: '(funding OR investment OR round OR valuation OR "term sheet" OR "due diligence" OR investor OR VC OR "venture capital" OR angel OR LP OR GP OR portfolio OR board OR pitch OR deck OR "cap table" OR equity OR shares OR dilution OR liquidation OR exit OR IPO OR acquisition OR merger) -in:spam -in:trash',
+      timeframe: timeframe as any,
+      includeThreads: true,
+      maxResults: 200
+    };
+
+    return await this.searchEmails(investingQuery);
+  }
+
   // Get worker status
   async getWorkerStatus(): Promise<any> {
     try {
