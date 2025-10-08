@@ -643,7 +643,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
               return (
                 <div
                   key={source.id}
-                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''}`}
+                  className={`source-card ${selectedSource === source.id ? 'selected' : ''} ${isSharedWithUser ? 'user' : source.type} ${isCreatingCapsule && source.type === 'add-new' ? 'creating' : ''} ${(!isLoaded && source.type === 'shrinked') || isCurrentlyLoading ? 'loading' : ''} ${source.id === 'email-inbox' ? 'email-inbox-active' : ''}`}
                   onClick={handleClick}
                   style={{ cursor: (isClickable && isLoaded && !isCurrentlyLoading && !(isCreatingCapsule && source.type === 'add-new')) ? 'pointer' : 'default' }}
                 >
@@ -674,9 +674,9 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                 <div className="auth-container">
                   <div className="auth-icon">🔑</div>
                   <h3>Connect Gmail</h3>
-                  <p>Connect your Gmail account via Composio to access your investing emails.</p>
+                  <p>Give Craig access to your Gmail so he can filter and organize your investing emails.</p>
                   <button className="auth-button" onClick={handleGmailAuth}>
-                    Connect Gmail Account
+                    Grant Access Permissions
                   </button>
                   {gmailConnectionId && (
                     <div className="connection-status">
@@ -1144,18 +1144,20 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         }
 
         .auth-button {
-          background: #000000;
-          color: #ffffff;
-          border: none;
+          background: #ffffff;
+          color: #000000;
+          border: 2px solid #000000;
+          border-radius: 0;
           padding: 12px 24px;
-          font-size: 16px;
+          font-size: 12px;
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
           cursor: pointer;
           transition: all 0.2s ease;
+          font-weight: normal;
         }
 
         .auth-button:hover {
-          background: #333333;
+          background: #f0f0f0;
         }
 
         .connection-status {
@@ -1242,6 +1244,15 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           font-family: 'Chicago', 'Lucida Grande', sans-serif;
         }
 
+        /* Email Inbox Active Styling */
+        .source-card.email-inbox-active .source-name {
+          color: #000000 !important;
+          font-weight: normal;
+        }
+
+        .source-card.email-inbox-active .source-author {
+          color: #666666 !important;
+        }
 
         /* Loading Animation */
         .loading-spinner {
