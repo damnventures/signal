@@ -180,7 +180,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       loadingOrder.push(...inaccessibleShrinkedIds);
       
       // 4. Coming soon items (load more for demo)
-      const comingSoonIds = ['soon-1', 'soon-2', 'soon-3', 'soon-4', 'soon-5', 'soon-6', 'soon-7', 'soon-8', 'soon-9', 'soon-10', 'soon-11', 'soon-12'];
+      const comingSoonIds = ['email-inbox', 'soon-2', 'soon-3', 'soon-4', 'soon-5', 'soon-6', 'soon-7', 'soon-8', 'soon-9', 'soon-10', 'soon-11', 'soon-fashion', 'soon-12'];
       loadingOrder.push(...comingSoonIds);
       
       setTimeout(() => {
