@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       // This redirects to Google OAuth, then back to Composio, then to your callbackUrl
 
       return NextResponse.json({
-        redirectUrl: connectionRequest.redirect_url, // Composio-managed OAuth URL
+        redirectUrl: connectionRequest.redirectUrl, // Composio-managed OAuth URL
         connectionRequestId: connectionRequest.id,
         status: connectionRequest.status || 'initiated',
         message: 'Redirecting to Composio-managed Gmail OAuth flow'
