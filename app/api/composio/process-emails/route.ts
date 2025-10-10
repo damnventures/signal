@@ -70,24 +70,34 @@ export async function POST(request: Request) {
       try {
         console.log('[Email Processing] Using Composio Gmail API directly');
 
-        // Use Composio Gmail actions to fetch emails
-        const response = await composio.tools.execute({
-          action: 'gmail_search_emails',
-          connectedAccountId: connectionId,
-          input: {
+        // Use Composio Gmail integration to fetch emails
+        const gmail = composio.connectedAccounts.get(connectionId);
+
+        // Try to execute Gmail search through the connected account
+        const response = await fetch(`https://composio.dev/api/v1/connectedAccounts/${connectionId}/tools/gmail_search_emails`, {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.COMPOSIO_API_KEY!,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
             query: gmailQuery,
             maxResults: 50
-          }
+          })
         });
 
-        console.log('[Email Processing] Composio Gmail response:', response);
+        console.log('[Email Processing] Composio Gmail API response status:', response.status);
 
-        if (response.error) {
-          throw new Error(`Composio Gmail error: ${response.error}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Composio Gmail API failed: ${response.status} - ${errorText}`);
         }
 
+        const responseData = await response.json();
+        console.log('[Email Processing] Composio Gmail response:', responseData);
+
         // Transform Composio response to our expected format
-        const emails = response.data?.messages || [];
+        const emails = responseData.data?.messages || responseData.messages || [];
         const transformedEmails = emails.map((email: any) => {
           // Extract headers for subject, from, to
           const headers = email.payload?.headers || [];
