@@ -47,6 +47,9 @@ export async function POST(request: Request) {
       const connectionRequest = await composio.connectedAccounts.initiate(
         userId, // User ID from authenticated user (must be UUID format)
         process.env.COMPOSIO_AUTH_CONFIG_ID!, // Auth Config ID from Composio dashboard (e.g., ac_-bF3mcMCuOBu)
+        {
+          callbackUrl: callbackUrl // This will redirect back to your app after OAuth completion
+        }
       );
 
       // The redirectUrl from Composio will be something like:

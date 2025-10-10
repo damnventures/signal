@@ -42,7 +42,8 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
   const [emailMode, setEmailMode] = useState(false);
   const [gmailConnectionId, setGmailConnectionId] = useState<string>('');
   const [isGmailConnected, setIsGmailConnected] = useState(false);
-  const [emailView, setEmailView] = useState<'main' | 'auth' | 'investing'>('main');
+  const [emailView, setEmailView] = useState<'main' | 'auth' | 'investing' | 'manage'>('main');
+  const [isAuthWindowOpen, setIsAuthWindowOpen] = useState(false);
 
   // Sharing status state
   const [statusVisible, setStatusVisible] = useState(false);
@@ -65,6 +66,9 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
     if (savedConnectionId) {
       setGmailConnectionId(savedConnectionId);
       setIsGmailConnected(true);
+    } else if (user?.email && isOpen) {
+      // Automatically check for existing Gmail connections when store opens
+      checkGmailConnection();
     }
 
     // Handle OAuth callback from URL params
@@ -101,7 +105,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       setStatusVisible(true);
       setTimeout(() => setStatusVisible(false), 3000);
     }
-  }, [emailMode]);
+  }, [emailMode, user, isOpen]);
 
   // Gmail connection handlers
   const handleGmailAuth = async () => {
@@ -160,12 +164,142 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       // Show user the process and redirect
       console.log('Gmail Integration:', message);
 
-      // Redirect to OAuth flow (Composio or demo)
-      window.location.href = redirectUrl;
+      // Open OAuth flow in new tab (better UX - user stays in main app)
+      const authWindow = window.open(redirectUrl, 'gmail-auth', 'width=600,height=700,scrollbars=yes,resizable=yes');
+      setIsAuthWindowOpen(true);
+
+      // Poll for connection completion
+      if (authWindow) {
+        const pollForConnection = async () => {
+          try {
+            // Check if user has completed OAuth by polling for active connections
+            // This is a simple approach - you could also use postMessage from popup
+            const checkInterval = setInterval(async () => {
+              // Check if popup was closed (user completed or cancelled)
+              if (authWindow.closed) {
+                clearInterval(checkInterval);
+                setIsAuthWindowOpen(false);
+
+                // Wait a moment for backend to process, then check for connections
+                setTimeout(async () => {
+                  try {
+                    // Check if we now have a Gmail connection
+                    const checkResponse = await fetch('/api/composio/check-connections', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        accessToken: accessToken,
+                        userId: user.id || user._id,
+                        userEmail: user.email
+                      })
+                    });
+
+                    if (checkResponse.ok) {
+                      const connectionData = await checkResponse.json();
+                      if (connectionData.connected) {
+                        // Success! Set up Gmail connection
+                        setGmailConnectionId(connectionData.connectionId);
+                        setIsGmailConnected(true);
+                        localStorage.setItem('gmailConnectionId', connectionData.connectionId);
+
+                        setStatusMessage('Gmail connected successfully!');
+                        setStatusVisible(true);
+                        setTimeout(() => setStatusVisible(false), 2000);
+
+                        // Switch to main email view
+                        if (emailMode) {
+                          setEmailView('main');
+                        }
+                      } else {
+                        setStatusMessage('Gmail connection not detected. You may need to try again.');
+                        setStatusVisible(true);
+                        setTimeout(() => setStatusVisible(false), 5000);
+                      }
+                    } else {
+                      setStatusMessage('Unable to verify Gmail connection. Please try refreshing.');
+                      setStatusVisible(true);
+                      setTimeout(() => setStatusVisible(false), 5000);
+                    }
+                  } catch (error) {
+                    console.error('Error checking connection status:', error);
+                    setStatusMessage('Error checking connection. Please refresh the page.');
+                    setStatusVisible(true);
+                    setTimeout(() => setStatusVisible(false), 5000);
+                  }
+                }, 2000);
+              }
+            }, 1000);
+          } catch (error) {
+            console.error('Error polling for connection:', error);
+          }
+        };
+
+        pollForConnection();
+      }
 
     } catch (error) {
       console.error('Gmail auth error:', error);
       setStatusMessage(`Gmail connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 3000);
+    }
+  };
+
+  const checkGmailConnection = async () => {
+    if (!user?.email) return;
+
+    try {
+      const accessToken = localStorage.getItem('auth_access_token');
+      if (!accessToken) return;
+
+      const checkResponse = await fetch('/api/composio/check-connections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: accessToken,
+          userId: user.id || user._id,
+          userEmail: user.email
+        })
+      });
+
+      if (checkResponse.ok) {
+        const connectionData = await checkResponse.json();
+        if (connectionData.connected) {
+          setGmailConnectionId(connectionData.connectionId);
+          setIsGmailConnected(true);
+          localStorage.setItem('gmailConnectionId', connectionData.connectionId);
+          setStatusMessage('Gmail connection detected!');
+          setStatusVisible(true);
+          setTimeout(() => setStatusVisible(false), 2000);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking Gmail connection:', error);
+    }
+    return false;
+  };
+
+  const disconnectGmail = async () => {
+    try {
+      // Clear local storage
+      localStorage.removeItem('gmailConnectionId');
+      setGmailConnectionId('');
+      setIsGmailConnected(false);
+
+      setStatusMessage('Gmail disconnected successfully');
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 2000);
+
+      // Optionally, you could also call Composio API to revoke the connection
+      // For now, just clearing local state is sufficient
+    } catch (error) {
+      console.error('Error disconnecting Gmail:', error);
+      setStatusMessage('Error disconnecting Gmail');
       setStatusVisible(true);
       setTimeout(() => setStatusVisible(false), 3000);
     }
@@ -176,7 +310,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
     if (!isGmailConnected) {
       setEmailView('auth');
     } else {
-      setEmailView('main');
+      setEmailView('manage'); // Show management options when connected
     }
   };
 
@@ -764,14 +898,81 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                   <div className="auth-icon">🔑</div>
                   <h3>Connect Gmail</h3>
                   <p>Give Craig access to your Gmail so he can filter and organize your investing emails.</p>
-                  <button className="auth-button" onClick={handleGmailAuth}>
-                    Grant Access Permissions
-                  </button>
+
+                  {isAuthWindowOpen ? (
+                    <div className="auth-status">
+                      <div className="auth-icon">🔄</div>
+                      <p>Authentication window is open...</p>
+                      <p style={{ fontSize: '12px', color: '#666' }}>
+                        Complete the OAuth process in the popup window, then return here.
+                      </p>
+                      <button className="auth-button secondary" onClick={checkGmailConnection}>
+                        Check Connection
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button className="auth-button" onClick={handleGmailAuth}>
+                        Grant Access Permissions
+                      </button>
+                      <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+                        This will open a new tab for Gmail authentication
+                      </p>
+                    </>
+                  )}
+
                   {gmailConnectionId && (
                     <div className="connection-status">
                       Connection ID: {gmailConnectionId.slice(0, 8)}...
                     </div>
                   )}
+
+                  {!isAuthWindowOpen && (
+                    <button className="auth-button secondary" onClick={checkGmailConnection} style={{ marginTop: '10px' }}>
+                      Check Existing Connection
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : emailView === 'manage' ? (
+              // Gmail Management View
+              <div className="email-manage-view">
+                <div className="back-arrow" onClick={handleBackToStore}>← Back</div>
+                <div className="manage-container">
+                  <div className="manage-icon">📧</div>
+                  <h3>Gmail Integration</h3>
+                  <p>Your Gmail is connected and ready for email processing.</p>
+
+                  <div className="connection-info">
+                    <div className="info-item">
+                      <span className="info-label">Connection Status:</span>
+                      <span className="info-value connected">✅ Active</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Connection ID:</span>
+                      <span className="info-value">{gmailConnectionId.slice(0, 8)}...</span>
+                    </div>
+                  </div>
+
+                  <div className="manage-actions">
+                    <button className="manage-button primary" onClick={() => setEmailView('investing')}>
+                      🚀 Process Investing Emails
+                    </button>
+
+                    <button className="manage-button secondary" onClick={() => setEmailView('main')}>
+                      📊 View All Email Options
+                    </button>
+
+                    <button className="manage-button danger" onClick={disconnectGmail}>
+                      🔌 Disconnect Gmail
+                    </button>
+                  </div>
+
+                  <div className="manage-info">
+                    <p style={{ fontSize: '12px', color: '#666', textAlign: 'center' }}>
+                      You can disconnect Gmail anytime. Your data remains secure and private.
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1250,6 +1451,31 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
           background: #f0f0f0;
         }
 
+        .auth-button.secondary {
+          background: #f5f5f5;
+          color: #666666;
+          border: 2px solid #cccccc;
+        }
+
+        .auth-button.secondary:hover {
+          background: #eeeeee;
+          border-color: #999999;
+        }
+
+        .auth-status {
+          text-align: center;
+          padding: 20px;
+        }
+
+        .auth-status .auth-icon {
+          font-size: 32px;
+          margin-bottom: 15px;
+        }
+
+        .auth-status p {
+          margin-bottom: 15px;
+        }
+
         .connection-status {
           margin-top: 20px;
           font-size: 12px;
@@ -1352,6 +1578,141 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+
+        /* Gmail Management View */
+        .email-manage-view {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+
+        .manage-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
+          text-align: center;
+          padding: 20px;
+        }
+
+        .manage-icon {
+          font-size: 48px;
+          margin-bottom: 20px;
+        }
+
+        .manage-container h3 {
+          font-size: 24px;
+          margin-bottom: 10px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          color: #000000;
+        }
+
+        .manage-container p {
+          font-size: 14px;
+          color: #666666;
+          margin-bottom: 30px;
+          max-width: 400px;
+        }
+
+        .connection-info {
+          background: #f5f5f5;
+          border: 2px solid #ddd;
+          padding: 20px;
+          margin-bottom: 30px;
+          width: 100%;
+          max-width: 400px;
+        }
+
+        .info-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+          font-size: 12px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+        }
+
+        .info-item:last-child {
+          margin-bottom: 0;
+        }
+
+        .info-label {
+          color: #666666;
+          font-weight: bold;
+        }
+
+        .info-value {
+          color: #000000;
+        }
+
+        .info-value.connected {
+          color: #00aa00;
+        }
+
+        .manage-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          width: 100%;
+          max-width: 400px;
+          margin-bottom: 20px;
+        }
+
+        .manage-button {
+          background: #ffffff;
+          color: #000000;
+          border: 2px solid #000000;
+          border-radius: 0;
+          padding: 12px 24px;
+          font-size: 12px;
+          font-family: 'Chicago', 'Lucida Grande', sans-serif;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: normal;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .manage-button:hover {
+          background: #f0f0f0;
+        }
+
+        .manage-button.primary {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        .manage-button.primary:hover {
+          background: #333333;
+        }
+
+        .manage-button.secondary {
+          background: #f5f5f5;
+          color: #666666;
+          border: 2px solid #cccccc;
+        }
+
+        .manage-button.secondary:hover {
+          background: #eeeeee;
+          border-color: #999999;
+        }
+
+        .manage-button.danger {
+          background: #ffffff;
+          color: #cc0000;
+          border: 2px solid #cc0000;
+        }
+
+        .manage-button.danger:hover {
+          background: #ffe6e6;
+        }
+
+        .manage-info {
+          max-width: 400px;
         }
 
       `}</style>
