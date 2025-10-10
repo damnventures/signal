@@ -78,16 +78,20 @@ export async function POST(request: Request) {
           throw new Error(`Gmail connection not active. Status: ${connectedAccount.status}`);
         }
 
-        // Use a more direct approach - try to call Gmail API through Composio's REST API
-        const response = await fetch(`https://backend.composio.dev/api/v1/connectedAccounts/${connectionId}/tools/execute`, {
+        // Try using the SDK method properly with the connected account ID
+        console.log('[Email Processing] Attempting to use Composio SDK tools.execute method');
+
+        // Try alternative v3 REST endpoint directly since SDK has signature issues
+        const response = await fetch(`https://backend.composio.dev/api/v3/connectedAccounts/${connectionId}/execute`, {
           method: 'POST',
           headers: {
             'X-API-KEY': process.env.COMPOSIO_API_KEY!,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            tool: 'GMAIL_FETCH_EMAILS',
-            parameters: {
+            appName: 'gmail',
+            actionName: 'GMAIL_FETCH_EMAILS',
+            params: {
               query: gmailQuery,
               max_results: 50,
               include_payload: true
@@ -95,15 +99,16 @@ export async function POST(request: Request) {
           })
         });
 
-        console.log('[Email Processing] Composio REST API response status:', response.status);
+        console.log('[Email Processing] Composio v3 REST API response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('[Email Processing] Composio REST API error:', errorText);
-          throw new Error(`Composio REST API failed: ${response.status} - ${errorText}`);
+          console.error('[Email Processing] Composio v3 REST API error:', errorText);
+          throw new Error(`Composio v3 REST API failed: ${response.status} - ${errorText}`);
         }
 
         const emailsResponse = await response.json();
+
         console.log('[Email Processing] Composio Gmail emails response:', emailsResponse);
 
         // Transform Composio response to our expected format
