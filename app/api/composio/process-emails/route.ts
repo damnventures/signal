@@ -132,8 +132,15 @@ export async function POST(request: Request) {
 
       // Step 2: Send emails to filter worker for processing
       console.log('[Email Processing] Sending emails to filter worker...');
+      console.log('[Email Processing] Filter worker URL: https://chars-email.shrinked.workers.dev/');
+      console.log('[Email Processing] Request payload:', {
+        emailCount: processedEmails.length,
+        emailType: emailType,
+        userId: userId,
+        userApiKey: userApiKey ? `...${userApiKey.slice(-4)}` : 'none'
+      });
 
-      const filterResponse = await fetch('https://chars-email.shrinked.workers.dev/filter-emails', {
+      const filterResponse = await fetch('https://chars-email.shrinked.workers.dev/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,26 +155,74 @@ export async function POST(request: Request) {
         })
       });
 
+      console.log('[Email Processing] Filter worker response status:', filterResponse.status);
+      console.log('[Email Processing] Filter worker response headers:', Object.fromEntries(filterResponse.headers.entries()));
+
       if (!filterResponse.ok) {
         const errorText = await filterResponse.text();
-        console.error('[Email Processing] Filter worker error:', errorText);
+        console.error('[Email Processing] Filter worker error response:', errorText);
         return NextResponse.json({
           error: 'Email filtering failed',
-          details: errorText
+          details: errorText,
+          filterStatus: filterResponse.status
         }, { status: 500 });
       }
 
       const filterResult = await filterResponse.json();
-      console.log('[Email Processing] Filter worker response:', filterResult);
+      console.log('[Email Processing] Filter worker full response:', JSON.stringify(filterResult, null, 2));
 
       // Step 3: Create processing jobs for filtered emails
       const jobsCreated = [];
-      const processableEmails = filterResult.results?.create_new || [];
+      console.log('[Email Processing] Filter result structure:', {
+        hasResults: !!filterResult.results,
+        resultsKeys: filterResult.results ? Object.keys(filterResult.results) : [],
+        createNewExists: !!filterResult.results?.create_new,
+        createNewLength: filterResult.results?.create_new?.length || 0
+      });
 
-      console.log(`[Email Processing] Creating jobs for ${processableEmails.length} processable emails`);
+      // Try different possible response formats
+      let processableEmails = filterResult.results?.create_new ||
+                             filterResult.create_new ||
+                             filterResult.processable ||
+                             filterResult.filtered ||
+                             [];
 
-      for (const emailGroup of processableEmails) {
+      // If still empty, try to use all emails as fallback
+      if (processableEmails.length === 0 && processedEmails.length > 0) {
+        console.log('[Email Processing] No processable emails from filter, using all emails as fallback');
+        processableEmails = processedEmails.map(email => ({ emails: [email] }));
+      }
+
+      console.log(`[Email Processing] Creating jobs for ${processableEmails.length} processable email groups`);
+
+      for (let i = 0; i < processableEmails.length; i++) {
+        const emailGroup = processableEmails[i];
+        console.log(`[Email Processing] Processing email group ${i + 1}/${processableEmails.length}:`, {
+          hasEmails: !!(emailGroup.emails || emailGroup.email),
+          emailCount: emailGroup.emails?.length || (emailGroup.email ? 1 : 0)
+        });
+
         try {
+          const emailsToProcess = emailGroup.emails || [emailGroup.email] || [emailGroup];
+          const jobPayload = {
+            type: 'email_processing',
+            name: `Process ${emailType} emails - ${new Date().toLocaleDateString()}`,
+            data: {
+              emails: emailsToProcess,
+              emailType: emailType,
+              userId: userId,
+              connectionId: connectionId,
+              processingPrompt: `Process ${emailType} emails and extract key insights`
+            },
+            metadata: {
+              source: 'gmail_composio',
+              emailCount: emailsToProcess.length,
+              emailType: emailType
+            }
+          };
+
+          console.log(`[Email Processing] Creating job with payload:`, JSON.stringify(jobPayload, null, 2));
+
           // Create a processing job via backend API
           const jobResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://api.shrinked.ai'}/jobs`, {
             method: 'POST',
@@ -175,31 +230,18 @@ export async function POST(request: Request) {
               'Content-Type': 'application/json',
               'x-api-key': userApiKey
             },
-            body: JSON.stringify({
-              type: 'email_processing',
-              name: `Process ${emailType} emails - ${new Date().toLocaleDateString()}`,
-              data: {
-                emails: emailGroup.emails || [emailGroup.email],
-                emailType: emailType,
-                userId: userId,
-                connectionId: connectionId,
-                processingPrompt: `Process ${emailType} emails and extract key insights`
-              },
-              metadata: {
-                source: 'gmail_composio',
-                emailCount: emailGroup.emails?.length || 1,
-                emailType: emailType
-              }
-            })
+            body: JSON.stringify(jobPayload)
           });
+
+          console.log(`[Email Processing] Job creation response status: ${jobResponse.status}`);
 
           if (jobResponse.ok) {
             const job = await jobResponse.json();
             jobsCreated.push(job);
-            console.log(`[Email Processing] Created job: ${job.id}`);
+            console.log(`[Email Processing] Successfully created job:`, job);
           } else {
             const errorText = await jobResponse.text();
-            console.error('[Email Processing] Job creation failed:', errorText);
+            console.error(`[Email Processing] Job creation failed with status ${jobResponse.status}:`, errorText);
           }
         } catch (jobError) {
           console.error('[Email Processing] Job creation error:', jobError);
