@@ -68,36 +68,46 @@ export async function POST(request: Request) {
       let processedEmails: any[] = [];
 
       try {
-        console.log('[Email Processing] Using Composio Gmail API directly');
+        console.log('[Email Processing] Using Composio Gmail API via connected account');
 
-        // Use Composio Gmail integration to fetch emails
-        const gmail = composio.connectedAccounts.get(connectionId);
+        // Get the connected account first
+        const connectedAccount = await composio.connectedAccounts.get(connectionId);
+        console.log('[Email Processing] Connected account status:', connectedAccount.status);
 
-        // Try to execute Gmail search through the connected account
-        const response = await fetch(`https://composio.dev/api/v1/connectedAccounts/${connectionId}/tools/gmail_search_emails`, {
+        if (connectedAccount.status !== 'ACTIVE') {
+          throw new Error(`Gmail connection not active. Status: ${connectedAccount.status}`);
+        }
+
+        // Use a more direct approach - try to call Gmail API through Composio's REST API
+        const response = await fetch(`https://backend.composio.dev/api/v1/connectedAccounts/${connectionId}/tools/execute`, {
           method: 'POST',
           headers: {
             'X-API-KEY': process.env.COMPOSIO_API_KEY!,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            query: gmailQuery,
-            maxResults: 50
+            tool: 'GMAIL_FETCH_EMAILS',
+            parameters: {
+              query: gmailQuery,
+              max_results: 50,
+              include_payload: true
+            }
           })
         });
 
-        console.log('[Email Processing] Composio Gmail API response status:', response.status);
+        console.log('[Email Processing] Composio REST API response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Composio Gmail API failed: ${response.status} - ${errorText}`);
+          console.error('[Email Processing] Composio REST API error:', errorText);
+          throw new Error(`Composio REST API failed: ${response.status} - ${errorText}`);
         }
 
-        const responseData = await response.json();
-        console.log('[Email Processing] Composio Gmail response:', responseData);
+        const emailsResponse = await response.json();
+        console.log('[Email Processing] Composio Gmail emails response:', emailsResponse);
 
         // Transform Composio response to our expected format
-        const emails = responseData.data?.messages || responseData.messages || [];
+        const emails = emailsResponse.data?.messages || emailsResponse.messages || [];
         const transformedEmails = emails.map((email: any) => {
           // Extract headers for subject, from, to
           const headers = email.payload?.headers || [];
