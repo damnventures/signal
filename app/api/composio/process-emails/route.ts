@@ -194,8 +194,9 @@ export async function POST(request: Request) {
         console.log('[Email Processing] Filter worker full response:', JSON.stringify(filterResult, null, 2));
       }
 
-      // Step 3: Create processing jobs for filtered emails
-      const jobsCreated = [];
+      // For now, just return the filter results without creating jobs
+      // Job creation will be added later when we implement the process-emails action in the Intent Worker
+      console.log('[Email Processing] Filter completed successfully');
       console.log('[Email Processing] Filter result structure:', {
         hasResults: !!filterResult.results,
         resultsKeys: filterResult.results ? Object.keys(filterResult.results) : [],
@@ -203,85 +204,26 @@ export async function POST(request: Request) {
         createNewLength: filterResult.results?.create_new?.length || 0
       });
 
-      // Try different possible response formats
-      let processableEmails = filterResult.results?.create_new ||
-                             filterResult.create_new ||
-                             filterResult.processable ||
-                             filterResult.filtered ||
-                             [];
+      const processableEmails = filterResult.results?.create_new || [];
+      console.log(`[Email Processing] Found ${processableEmails.length} emails ready for processing`);
 
-      // If still empty, try to use all emails as fallback
-      if (processableEmails.length === 0 && processedEmails.length > 0) {
-        console.log('[Email Processing] No processable emails from filter, using all emails as fallback');
-        processableEmails = processedEmails.map(email => ({ emails: [email] }));
-      }
-
-      console.log(`[Email Processing] Creating jobs for ${processableEmails.length} processable email groups`);
-
-      for (let i = 0; i < processableEmails.length; i++) {
-        const emailGroup = processableEmails[i];
-        console.log(`[Email Processing] Processing email group ${i + 1}/${processableEmails.length}:`, {
-          hasEmails: !!(emailGroup.emails || emailGroup.email),
-          emailCount: emailGroup.emails?.length || (emailGroup.email ? 1 : 0)
-        });
-
-        try {
-          const emailsToProcess = emailGroup.emails || [emailGroup.email] || [emailGroup];
-          const jobPayload = {
-            type: 'email_processing',
-            name: `Process ${emailType} emails - ${new Date().toLocaleDateString()}`,
-            data: {
-              emails: emailsToProcess,
-              emailType: emailType,
-              userId: userId,
-              connectionId: connectionId,
-              processingPrompt: `Process ${emailType} emails and extract key insights`
-            },
-            metadata: {
-              source: 'gmail_composio',
-              emailCount: emailsToProcess.length,
-              emailType: emailType
-            }
-          };
-
-          console.log(`[Email Processing] Creating job with payload:`, JSON.stringify(jobPayload, null, 2));
-
-          // Create a processing job via backend API
-          const jobResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://api.shrinked.ai'}/jobs`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': userApiKey
-            },
-            body: JSON.stringify(jobPayload)
-          });
-
-          console.log(`[Email Processing] Job creation response status: ${jobResponse.status}`);
-
-          if (jobResponse.ok) {
-            const job = await jobResponse.json();
-            jobsCreated.push(job);
-            console.log(`[Email Processing] Successfully created job:`, job);
-          } else {
-            const errorText = await jobResponse.text();
-            console.error(`[Email Processing] Job creation failed with status ${jobResponse.status}:`, errorText);
-          }
-        } catch (jobError) {
-          console.error('[Email Processing] Job creation error:', jobError);
-        }
-      }
+      // TODO: Add job creation later via Intent Worker process-emails action
 
       return NextResponse.json({
         success: true,
-        message: `Successfully processed ${processedEmails.length} emails`,
+        message: `Successfully filtered ${processedEmails.length} emails. Found ${processableEmails.length} emails ready for processing.`,
         emailsFound: processedEmails.length,
-        emailsProcessed: processableEmails.length,
-        jobsCreated: jobsCreated.map(job => ({
-          id: job.id,
-          name: job.name,
-          status: job.status
-        })),
-        filterResult: filterResult
+        emailsFiltered: processableEmails.length,
+        filterResult: {
+          summary: filterResult.summary,
+          classifications: processableEmails.map((email: any) => ({
+            subject: email.email?.subject,
+            priority: email.classification?.priority,
+            action: email.classification?.action,
+            keywords: email.classification?.keywords
+          }))
+        },
+        nextSteps: "Email filtering completed. Job processing will be added later."
       });
 
     } catch (composioError: any) {
