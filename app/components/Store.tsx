@@ -284,6 +284,66 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
     return false;
   };
 
+  const processInvestingEmails = async () => {
+    if (!user?.email || !gmailConnectionId) {
+      setStatusMessage('Gmail connection required for email processing');
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 3000);
+      return;
+    }
+
+    try {
+      const accessToken = localStorage.getItem('auth_access_token');
+      const userApiKey = localStorage.getItem('auth_api_key');
+
+      if (!accessToken || !userApiKey) {
+        setStatusMessage('Please log in to process emails');
+        setStatusVisible(true);
+        setTimeout(() => setStatusVisible(false), 3000);
+        return;
+      }
+
+      setStatusMessage('Processing investing emails...');
+      setStatusVisible(true);
+
+      const response = await fetch('/api/composio/process-emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: accessToken,
+          userId: user.id || user._id,
+          userEmail: user.email,
+          connectionId: gmailConnectionId,
+          emailType: 'investing',
+          userApiKey: userApiKey
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setStatusMessage(`Successfully processed ${result.emailsProcessed} emails. ${result.jobsCreated.length} jobs created.`);
+        } else {
+          setStatusMessage(result.message || 'Email processing completed');
+        }
+      } else {
+        const errorData = await response.json();
+        setStatusMessage(`Email processing failed: ${errorData.error}`);
+      }
+
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 5000);
+
+    } catch (error) {
+      console.error('Error processing emails:', error);
+      setStatusMessage('Error processing emails. Please try again.');
+      setStatusVisible(true);
+      setTimeout(() => setStatusVisible(false), 3000);
+    }
+  };
+
   const disconnectGmail = async () => {
     try {
       // Clear local storage
@@ -955,7 +1015,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
                   </div>
 
                   <div className="manage-actions">
-                    <button className="manage-button primary" onClick={() => setEmailView('investing')}>
+                    <button className="manage-button primary" onClick={processInvestingEmails}>
                       🚀 Process Investing Emails
                     </button>
 
