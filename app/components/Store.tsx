@@ -324,7 +324,21 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setStatusMessage(`Successfully filtered ${result.emailsFound} emails. Found ${result.emailsFiltered} emails ready for processing.`);
+          const jobsCreated = result.jobsCreated || 0;
+          const emailsProcessed = result.emailsFound || 0;
+
+          if (jobsCreated > 0) {
+            setStatusMessage(`Successfully processed ${emailsProcessed} emails and created ${jobsCreated} processing jobs! Check your jobs to see progress.`);
+
+            // Optionally refresh capsules after a delay to show new processed content
+            if (onRefreshCapsules) {
+              setTimeout(() => {
+                onRefreshCapsules();
+              }, 2000);
+            }
+          } else {
+            setStatusMessage(`Filtered ${emailsProcessed} emails but found no investment-related content to process.`);
+          }
         } else {
           setStatusMessage(result.message || 'Email processing completed');
         }

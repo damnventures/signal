@@ -68,68 +68,49 @@ export async function POST(request: Request) {
       let processedEmails: any[] = [];
 
       try {
-        // For now, skip direct Composio Gmail API and use the existing Gmail service
-        // This will be implemented via the gmail-fetcher worker that's referenced in gmail-service.ts
-        console.log('[Email Processing] Using Gmail fetcher worker (via gmail-service)');
+        console.log('[Email Processing] Using Composio Gmail API directly');
 
-        // Import and use the existing Gmail service
-        const { GmailService } = await import('../../../lib/gmail-service');
-        const gmailService = new GmailService();
-
-        // Set connection config
-        gmailService.setConnectionConfig({
-          userConnectionId: connectionId
+        // Use Composio Gmail actions to fetch emails
+        const response = await composio.tools.execute({
+          action: 'gmail_search_emails',
+          connectedAccountId: connectionId,
+          input: {
+            query: gmailQuery,
+            maxResults: 50
+          }
         });
 
-        // Fetch emails based on type
-        const fetchResult = emailType === 'investing'
-          ? await gmailService.fetchInvestingEmails()
-          : await gmailService.fetchBusinessEmails();
+        console.log('[Email Processing] Composio Gmail response:', response);
 
-        console.log('[Email Processing] Gmail service response:', fetchResult);
+        if (response.error) {
+          throw new Error(`Composio Gmail error: ${response.error}`);
+        }
 
-        // Transform the response to our expected format
-        const emails = fetchResult.emails || [];
-        const transformedEmails = emails.map((email: any) => ({
-          id: email.id || `email_${Date.now()}_${Math.random()}`,
-          threadId: email.threadId || `thread_${Date.now()}`,
-          subject: email.subject || '(no subject)',
-          from: email.from || 'unknown',
-          to: email.to || userEmail,
-          date: email.date || new Date().toISOString(),
-          content: email.content || email.snippet || '',
-          snippet: email.snippet || ''
-        }));
+        // Transform Composio response to our expected format
+        const emails = response.data?.messages || [];
+        const transformedEmails = emails.map((email: any) => {
+          // Extract headers for subject, from, to
+          const headers = email.payload?.headers || [];
+          const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 
-        console.log(`[Email Processing] Transformed ${transformedEmails.length} emails`);
+          return {
+            id: email.id || `email_${Date.now()}_${Math.random()}`,
+            threadId: email.threadId || `thread_${Date.now()}`,
+            subject: getHeader('Subject') || '(no subject)',
+            from: getHeader('From') || 'unknown',
+            to: getHeader('To') || userEmail,
+            date: email.internalDate ? new Date(parseInt(email.internalDate)).toISOString() : new Date().toISOString(),
+            content: email.snippet || '',
+            snippet: email.snippet || ''
+          };
+        });
+
+        console.log(`[Email Processing] Transformed ${transformedEmails.length} emails from Composio`);
         processedEmails = transformedEmails;
 
       } catch (gmailError) {
-        console.warn('[Email Processing] Gmail API failed, using fallback data:', gmailError);
-
-        // Fallback to simulated emails for testing
-        processedEmails = [
-          {
-            id: 'test_email_1',
-            threadId: 'test_thread_1',
-            subject: 'Investment Opportunity - Series A Round',
-            from: 'investor@venturetech.com',
-            to: userEmail,
-            date: new Date().toISOString(),
-            content: 'We are excited to discuss a potential Series A investment opportunity with your company. Our fund focuses on early-stage startups with strong growth potential.',
-            snippet: 'Series A investment opportunity discussion'
-          },
-          {
-            id: 'test_email_2',
-            threadId: 'test_thread_2',
-            subject: 'Due Diligence Materials Request',
-            from: 'dd@acceleratorvc.com',
-            to: userEmail,
-            date: new Date().toISOString(),
-            content: 'Following our initial meeting, we would like to proceed with due diligence. Please provide financial statements, user metrics, and technical documentation.',
-            snippet: 'Due diligence request for investment review'
-          }
-        ];
+        console.error('[Email Processing] Composio Gmail API failed:', gmailError);
+        throw new Error(`Failed to fetch emails from Gmail: ${gmailError instanceof Error ? gmailError.message : 'Unknown error'}`);
       }
 
       console.log(`[Email Processing] Found ${processedEmails.length} emails`);
@@ -194,8 +175,7 @@ export async function POST(request: Request) {
         console.log('[Email Processing] Filter worker full response:', JSON.stringify(filterResult, null, 2));
       }
 
-      // For now, just return the filter results without creating jobs
-      // Job creation will be added later when we implement the process-emails action in the Intent Worker
+      // Create jobs for filtered emails
       console.log('[Email Processing] Filter completed successfully');
       console.log('[Email Processing] Filter result structure:', {
         hasResults: !!filterResult.results,
@@ -207,13 +187,81 @@ export async function POST(request: Request) {
       const processableEmails = filterResult.results?.create_new || [];
       console.log(`[Email Processing] Found ${processableEmails.length} emails ready for processing`);
 
-      // TODO: Add job creation later via Intent Worker process-emails action
+      const jobsCreated = [];
+
+      if (processableEmails.length > 0) {
+        console.log('[Email Processing] Creating jobs for filtered emails...');
+
+        for (const emailData of processableEmails) {
+          const email = emailData.email;
+          const classification = emailData.classification;
+
+          try {
+            // Create job payload following the API spec
+            const jobPayload = {
+              jobName: `Email Processing - ${email.subject}`,
+              scenario: 'TEXT_FILE_DEFAULT',
+              email: userEmail,
+              lang: 'en',
+              isPublic: false,
+              createPage: true,
+              links: [`data:text/plain;base64,${Buffer.from(JSON.stringify({
+                id: email.id,
+                subject: email.subject,
+                from: email.from,
+                to: email.to,
+                date: email.date,
+                content: email.content,
+                classification: classification
+              })).toString('base64')}`]
+            };
+
+            console.log(`[Email Processing] Creating job for email: ${email.subject}`);
+
+            // Create job via dev API for testing
+            const jobResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://dev-api.shrinked.ai'}/jobs`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': userApiKey
+              },
+              body: JSON.stringify(jobPayload)
+            });
+
+            if (!jobResponse.ok) {
+              const errorText = await jobResponse.text();
+              console.error(`[Email Processing] Job creation failed for ${email.subject}:`, errorText);
+              continue; // Skip this email and continue with others
+            }
+
+            const jobResult = await jobResponse.json();
+            console.log(`[Email Processing] Job created successfully for ${email.subject}:`, jobResult._id);
+
+            jobsCreated.push({
+              emailId: email.id,
+              emailSubject: email.subject,
+              jobId: jobResult._id,
+              jobName: jobResult.jobName,
+              status: jobResult.status,
+              priority: classification.priority,
+              keywords: classification.keywords
+            });
+
+          } catch (jobError) {
+            console.error(`[Email Processing] Failed to create job for email ${email.subject}:`, jobError);
+          }
+        }
+      }
+
+      console.log(`[Email Processing] Successfully created ${jobsCreated.length} jobs`);
 
       return NextResponse.json({
         success: true,
-        message: `Successfully filtered ${processedEmails.length} emails. Found ${processableEmails.length} emails ready for processing.`,
+        message: `Successfully processed ${processedEmails.length} emails. Created ${jobsCreated.length} processing jobs.`,
         emailsFound: processedEmails.length,
         emailsFiltered: processableEmails.length,
+        jobsCreated: jobsCreated.length,
+        jobs: jobsCreated,
         filterResult: {
           summary: filterResult.summary,
           classifications: processableEmails.map((email: any) => ({
@@ -222,8 +270,7 @@ export async function POST(request: Request) {
             action: email.classification?.action,
             keywords: email.classification?.keywords
           }))
-        },
-        nextSteps: "Email filtering completed. Job processing will be added later."
+        }
       });
 
     } catch (composioError: any) {
