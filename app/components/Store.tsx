@@ -324,7 +324,7 @@ const Store: React.FC<StoreProps> = React.memo(({ isOpen, onClose, userCapsules 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setStatusMessage(`Successfully processed ${result.emailsProcessed} emails. ${result.jobsCreated.length} jobs created.`);
+          setStatusMessage(`Successfully filtered ${result.emailsFound} emails. Found ${result.emailsFiltered} emails ready for processing.`);
         } else {
           setStatusMessage(result.message || 'Email processing completed');
         }
