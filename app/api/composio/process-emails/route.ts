@@ -81,21 +81,19 @@ export async function POST(request: Request) {
         // Try using the SDK method properly with the connected account ID
         console.log('[Email Processing] Attempting to use Composio SDK tools.execute method');
 
-        // Try alternative v3 REST endpoint directly since SDK has signature issues
-        const response = await fetch(`https://backend.composio.dev/api/v3/connectedAccounts/${connectionId}/execute`, {
+        // Use correct v3 API endpoint for tool execution
+        const response = await fetch(`https://backend.composio.dev/api/v3/tools/execute/GMAIL_FETCH_EMAILS`, {
           method: 'POST',
           headers: {
             'X-API-KEY': process.env.COMPOSIO_API_KEY!,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            appName: 'gmail',
-            actionName: 'GMAIL_FETCH_EMAILS',
-            params: {
-              query: gmailQuery,
-              max_results: 50,
-              include_payload: true
-            }
+            user_id: userId,
+            connected_account_id: connectionId,
+            query: gmailQuery,
+            max_results: 50,
+            include_payload: true
           })
         });
 
