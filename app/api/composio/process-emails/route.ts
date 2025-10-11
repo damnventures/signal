@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
   try {
@@ -39,9 +41,9 @@ export async function POST(request: Request) {
     }
 
     // Check if environment variables are set
-    if (!process.env.COMPOSIO_API_KEY) {
+    if (!process.env.COMPOSIO_API_KEY || !process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || !process.env.R2_BUCKET_NAME || !process.env.R2_PUBLIC_URL) {
       return NextResponse.json({
-        error: 'COMPOSIO_API_KEY not configured'
+        error: 'Environment variables for Composio or R2 are not configured'
       }, { status: 500 });
     }
 
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
       let totalInvestmentEmails = 0;
       const targetInvestmentEmails = 10; // Target number of investment-relevant emails
       const maxBatches = 5; // Maximum number of batches to prevent infinite loops
-      const batchSize = 50; // Emails per batch
+      const batchSize = 20; // Emails per batch
       let currentBatch = 0;
       let nextPageToken: string | undefined;
 
@@ -229,14 +231,37 @@ export async function POST(request: Request) {
       if (processableEmails.length > 0) {
         console.log('[Email Processing] Creating jobs for filtered emails...');
 
+        // Initialize S3 client for R2
+        const s3Client = new S3Client({
+          region: 'auto',
+          endpoint: process.env.R2_ENDPOINT!,
+          credentials: {
+            accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+          },
+        });
+
         for (const emailData of processableEmails) {
           const email = emailData.email;
           const classification = emailData.classification;
 
           try {
-            // Create job payload following the API spec
             // Create a simple text content for the email
             const emailContent = `Subject: ${email.subject}\nFrom: ${email.from}\nTo: ${email.to}\nDate: ${email.date}\n\nContent: ${email.content}\n\nClassification: ${JSON.stringify(classification, null, 2)}`;
+            
+            // Generate a unique filename
+            const fileName = `${randomUUID()}.txt`;
+
+            // Upload to R2
+            await s3Client.send(new PutObjectCommand({
+              Bucket: process.env.R2_BUCKET_NAME!,
+              Key: fileName,
+              Body: emailContent,
+              ContentType: 'text/plain',
+            }));
+
+            const publicUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            console.log(`[Email Processing] Uploaded email content to ${publicUrl}`);
 
             const jobPayload = {
               jobName: `Email Processing - ${email.subject.substring(0, 50)}...`,
@@ -245,13 +270,13 @@ export async function POST(request: Request) {
               lang: 'en',
               isPublic: false,
               createPage: true,
-              links: [`data:text/plain;charset=utf-8,${encodeURIComponent(emailContent)}`]
+              links: [publicUrl]
             };
 
             console.log(`[Email Processing] Creating job for email: ${email.subject}`);
 
-            // Create job via dev API for testing
-            const jobResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://dev-api.shrinked.ai'}/jobs`, {
+            // Create job
+            const jobResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://api.shrinked.ai'}/jobs`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -276,7 +301,8 @@ export async function POST(request: Request) {
               jobName: jobResult.jobName,
               status: jobResult.status,
               priority: classification.priority,
-              keywords: classification.keywords
+              keywords: classification.keywords,
+              r2Url: publicUrl
             });
 
           } catch (jobError) {
