@@ -65,7 +65,13 @@ export async function POST(request: Request) {
 
       console.log(`[Email Processing] Gmail query: ${gmailQuery}`);
 
-      let processedEmails: any[] = [];
+      let allProcessedEmails: any[] = [];
+      let totalInvestmentEmails = 0;
+      const targetInvestmentEmails = 10; // Target number of investment-relevant emails
+      const maxBatches = 5; // Maximum number of batches to prevent infinite loops
+      const batchSize = 50; // Emails per batch
+      let currentBatch = 0;
+      let nextPageToken: string | undefined;
 
       try {
         console.log('[Email Processing] Using Composio Gmail API via connected account');
@@ -78,65 +84,122 @@ export async function POST(request: Request) {
           throw new Error(`Gmail connection not active. Status: ${connectedAccount.status}`);
         }
 
-        // Try using the SDK method properly with the connected account ID
-        console.log('[Email Processing] Attempting to use Composio SDK tools.execute method');
+        console.log(`[Email Processing] Starting batch processing. Target: ${targetInvestmentEmails} investment emails, Max batches: ${maxBatches}`);
 
-        // Use correct v3 API endpoint for tool execution
-        const response = await fetch(`https://backend.composio.dev/api/v3/tools/execute/GMAIL_FETCH_EMAILS`, {
-          method: 'POST',
-          headers: {
-            'X-API-KEY': process.env.COMPOSIO_API_KEY!,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            connected_account_id: connectionId,
-            arguments: {
-              query: gmailQuery,
-              max_results: 50,
-              include_payload: true
-            }
-          })
-        });
+        // Process emails in batches until we reach our target or max batches
+        while (currentBatch < maxBatches && totalInvestmentEmails < targetInvestmentEmails) {
+          currentBatch++;
+          console.log(`[Email Processing] Processing batch ${currentBatch}/${maxBatches}`);
 
-        console.log('[Email Processing] Composio v3 REST API response status:', response.status);
+          // Prepare request arguments
+          const requestArgs: any = {
+            query: gmailQuery,
+            max_results: batchSize,
+            include_payload: true
+          };
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[Email Processing] Composio v3 REST API error:', errorText);
-          throw new Error(`Composio v3 REST API failed: ${response.status} - ${errorText}`);
+          // Add page token for subsequent batches
+          if (nextPageToken) {
+            requestArgs.page_token = nextPageToken;
+          }
+
+          // Fetch emails from Gmail
+          const response = await fetch(`https://backend.composio.dev/api/v3/tools/execute/GMAIL_FETCH_EMAILS`, {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': process.env.COMPOSIO_API_KEY!,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              connected_account_id: connectionId,
+              arguments: requestArgs
+            })
+          });
+
+          console.log(`[Email Processing] Batch ${currentBatch} - Composio API response status:`, response.status);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[Email Processing] Batch ${currentBatch} - API error:`, errorText);
+            throw new Error(`Composio API failed for batch ${currentBatch}: ${response.status} - ${errorText}`);
+          }
+
+          const emailsResponse = await response.json();
+          console.log(`[Email Processing] Batch ${currentBatch} - Received ${emailsResponse.data?.messages?.length || 0} emails`);
+
+          // Update next page token for subsequent batches
+          nextPageToken = emailsResponse.data?.nextPageToken;
+
+          // Transform emails
+          const emails = emailsResponse.data?.messages || [];
+          const transformedEmails = emails.map((email: any) => {
+            const headers = email.payload?.headers || [];
+            const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+
+            return {
+              id: email.id || `email_${Date.now()}_${Math.random()}`,
+              threadId: email.threadId || `thread_${Date.now()}`,
+              subject: getHeader('Subject') || '(no subject)',
+              from: getHeader('From') || 'unknown',
+              to: getHeader('To') || userEmail,
+              date: email.internalDate ? new Date(parseInt(email.internalDate)).toISOString() : new Date().toISOString(),
+              content: email.snippet || '',
+              snippet: email.snippet || ''
+            };
+          });
+
+          // Add to all processed emails
+          allProcessedEmails.push(...transformedEmails);
+
+          // Quick filter check to see how many investment emails we have in this batch
+          console.log(`[Email Processing] Batch ${currentBatch} - Sending ${transformedEmails.length} emails to filter worker for quick assessment`);
+
+          const quickFilterResponse = await fetch('https://chars-email.shrinked.workers.dev/filter-emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': userApiKey
+            },
+            body: JSON.stringify({
+              emails: transformedEmails,
+              filterPrompt: `Filter and classify ${emailType} emails for processing. Focus on investment-related content like funding rounds, valuations, term sheets, due diligence, and investor communications.`,
+              existingCapsules: [],
+              batchSize: 10
+            })
+          });
+
+          if (quickFilterResponse.ok) {
+            const quickFilterResult = await quickFilterResponse.json();
+            const batchInvestmentEmails = quickFilterResult.results?.create_new?.length || 0;
+            totalInvestmentEmails += batchInvestmentEmails;
+
+            console.log(`[Email Processing] Batch ${currentBatch} - Found ${batchInvestmentEmails} investment emails (Total: ${totalInvestmentEmails}/${targetInvestmentEmails})`);
+          } else {
+            console.warn(`[Email Processing] Batch ${currentBatch} - Filter worker failed, continuing with next batch`);
+          }
+
+          // Check if we have no more emails or reached our target
+          if (!nextPageToken || emails.length === 0) {
+            console.log(`[Email Processing] No more emails available after batch ${currentBatch}`);
+            break;
+          }
+
+          if (totalInvestmentEmails >= targetInvestmentEmails) {
+            console.log(`[Email Processing] Reached target of ${targetInvestmentEmails} investment emails after batch ${currentBatch}`);
+            break;
+          }
         }
 
-        const emailsResponse = await response.json();
-
-        console.log('[Email Processing] Composio Gmail emails response:', emailsResponse);
-
-        // Transform Composio response to our expected format
-        const emails = emailsResponse.data?.messages || emailsResponse.messages || [];
-        const transformedEmails = emails.map((email: any) => {
-          // Extract headers for subject, from, to
-          const headers = email.payload?.headers || [];
-          const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || '';
-
-          return {
-            id: email.id || `email_${Date.now()}_${Math.random()}`,
-            threadId: email.threadId || `thread_${Date.now()}`,
-            subject: getHeader('Subject') || '(no subject)',
-            from: getHeader('From') || 'unknown',
-            to: getHeader('To') || userEmail,
-            date: email.internalDate ? new Date(parseInt(email.internalDate)).toISOString() : new Date().toISOString(),
-            content: email.snippet || '',
-            snippet: email.snippet || ''
-          };
-        });
-
-        console.log(`[Email Processing] Transformed ${transformedEmails.length} emails from Composio`);
-        processedEmails = transformedEmails;
+        console.log(`[Email Processing] Completed ${currentBatch} batches. Total emails: ${allProcessedEmails.length}, Investment emails found: ${totalInvestmentEmails}`);
 
       } catch (gmailError) {
         console.error('[Email Processing] Composio Gmail API failed:', gmailError);
         throw new Error(`Failed to fetch emails from Gmail: ${gmailError instanceof Error ? gmailError.message : 'Unknown error'}`);
       }
+
+      // Set processed emails to all collected emails
+      const processedEmails = allProcessedEmails;
 
       console.log(`[Email Processing] Found ${processedEmails.length} emails`);
 
@@ -223,22 +286,17 @@ export async function POST(request: Request) {
 
           try {
             // Create job payload following the API spec
+            // Create a simple text content for the email
+            const emailContent = `Subject: ${email.subject}\nFrom: ${email.from}\nTo: ${email.to}\nDate: ${email.date}\n\nContent: ${email.content}\n\nClassification: ${JSON.stringify(classification, null, 2)}`;
+
             const jobPayload = {
-              jobName: `Email Processing - ${email.subject}`,
+              jobName: `Email Processing - ${email.subject.substring(0, 50)}...`,
               scenario: 'TEXT_FILE_DEFAULT',
               email: userEmail,
               lang: 'en',
               isPublic: false,
               createPage: true,
-              links: [`data:text/plain;base64,${Buffer.from(JSON.stringify({
-                id: email.id,
-                subject: email.subject,
-                from: email.from,
-                to: email.to,
-                date: email.date,
-                content: email.content,
-                classification: classification
-              })).toString('base64')}`]
+              links: [`data:text/plain;charset=utf-8,${encodeURIComponent(emailContent)}`]
             };
 
             console.log(`[Email Processing] Creating job for email: ${email.subject}`);
