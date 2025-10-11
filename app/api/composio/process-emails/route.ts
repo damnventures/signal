@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       console.log(`[Email Processing] Gmail query: ${gmailQuery}`);
 
       let allProcessedEmails: any[] = [];
+      let allInvestmentEmails: any[] = []; // Store investment emails found across batches
       let totalInvestmentEmails = 0;
       const targetInvestmentEmails = 10; // Target number of investment-relevant emails
       const maxBatches = 5; // Maximum number of batches to prevent infinite loops
@@ -171,8 +172,12 @@ export async function POST(request: Request) {
 
           if (quickFilterResponse.ok) {
             const quickFilterResult = await quickFilterResponse.json();
-            const batchInvestmentEmails = quickFilterResult.results?.create_new?.length || 0;
+            const batchInvestmentEmailsData = quickFilterResult.results?.create_new || [];
+            const batchInvestmentEmails = batchInvestmentEmailsData.length;
             totalInvestmentEmails += batchInvestmentEmails;
+
+            // Store the investment emails for later job creation
+            allInvestmentEmails.push(...batchInvestmentEmailsData);
 
             console.log(`[Email Processing] Batch ${currentBatch} - Found ${batchInvestmentEmails} investment emails (Total: ${totalInvestmentEmails}/${targetInvestmentEmails})`);
           } else {
@@ -212,67 +217,11 @@ export async function POST(request: Request) {
         });
       }
 
-      // Step 2: Send emails to filter worker for processing
-      console.log('[Email Processing] Sending emails to filter worker...');
-      console.log('[Email Processing] Filter worker URL: https://chars-email.shrinked.workers.dev/');
-      console.log('[Email Processing] Request payload:', {
-        emailCount: processedEmails.length,
-        emailType: emailType,
-        userId: userId,
-        userApiKey: userApiKey ? `...${userApiKey.slice(-4)}` : 'none'
-      });
+      // Use the investment emails we already found during batching
+      console.log('[Email Processing] Using investment emails found during batch filtering');
+      console.log(`[Email Processing] Total investment emails found: ${allInvestmentEmails.length}`);
 
-      // Use the correct endpoint from the worker code
-      const workerEndpoint = 'https://chars-email.shrinked.workers.dev/filter-emails';
-      console.log(`[Email Processing] Using worker endpoint: ${workerEndpoint}`);
-
-      const filterResponse = await fetch(workerEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': userApiKey
-        },
-        body: JSON.stringify({
-          emails: processedEmails,
-          filterPrompt: `Filter and classify ${emailType} emails for processing. Focus on investment-related content like funding rounds, valuations, term sheets, due diligence, and investor communications.`,
-          existingCapsules: [],
-          batchSize: 10
-        })
-      });
-
-      console.log(`[Email Processing] Filter worker response status: ${filterResponse.status}`);
-
-      console.log('[Email Processing] Filter worker response headers:', Object.fromEntries(filterResponse.headers.entries()));
-
-      let filterResult;
-
-      if (!filterResponse.ok) {
-        const errorText = await filterResponse.text();
-        console.error('[Email Processing] Filter worker error response:', errorText);
-
-        // Use fallback instead of failing
-        console.log('[Email Processing] Worker failed, using fallback processing');
-        filterResult = {
-          success: true,
-          results: {
-            create_new: processedEmails.map(email => ({ emails: [email] }))
-          }
-        };
-      } else {
-        filterResult = await filterResponse.json();
-        console.log('[Email Processing] Filter worker full response:', JSON.stringify(filterResult, null, 2));
-      }
-
-      // Create jobs for filtered emails
-      console.log('[Email Processing] Filter completed successfully');
-      console.log('[Email Processing] Filter result structure:', {
-        hasResults: !!filterResult.results,
-        resultsKeys: filterResult.results ? Object.keys(filterResult.results) : [],
-        createNewExists: !!filterResult.results?.create_new,
-        createNewLength: filterResult.results?.create_new?.length || 0
-      });
-
-      const processableEmails = filterResult.results?.create_new || [];
+      const processableEmails = allInvestmentEmails;
       console.log(`[Email Processing] Found ${processableEmails.length} emails ready for processing`);
 
       const jobsCreated = [];
@@ -340,18 +289,26 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Successfully processed ${processedEmails.length} emails. Created ${jobsCreated.length} processing jobs.`,
+        message: `Successfully processed ${processedEmails.length} emails via ${currentBatch} batches. Created ${jobsCreated.length} processing jobs.`,
         emailsFound: processedEmails.length,
         emailsFiltered: processableEmails.length,
         jobsCreated: jobsCreated.length,
         jobs: jobsCreated,
+        batchInfo: {
+          batchesProcessed: currentBatch,
+          targetReached: totalInvestmentEmails >= targetInvestmentEmails,
+          investmentEmailsFound: totalInvestmentEmails
+        },
         filterResult: {
-          summary: filterResult.summary,
-          classifications: processableEmails.map((email: any) => ({
-            subject: email.email?.subject,
-            priority: email.classification?.priority,
-            action: email.classification?.action,
-            keywords: email.classification?.keywords
+          summary: {
+            create_new: processableEmails.length,
+            total_processed: processedEmails.length
+          },
+          classifications: processableEmails.map((emailData: any) => ({
+            subject: emailData.email?.subject,
+            priority: emailData.classification?.priority,
+            action: emailData.classification?.action,
+            keywords: emailData.classification?.keywords
           }))
         }
       });
