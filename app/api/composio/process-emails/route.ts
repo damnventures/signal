@@ -91,9 +91,11 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             user_id: userId,
             connected_account_id: connectionId,
-            query: gmailQuery,
-            max_results: 50,
-            include_payload: true
+            arguments: {
+              query: gmailQuery,
+              max_results: 50,
+              include_payload: true
+            }
           })
         });
 
